@@ -30,7 +30,31 @@ const PORT = process.env.PORT || 3001;
 // Prisma est maintenant importé depuis le module central
 
 // Configuration des middlewares
-app.use(cors());
+// CORS configuré pour accepter les connexions publiques
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permettre les requêtes sans origin (mobile apps, etc.)
+    if (!origin) return callback(null, true);
+    
+    // En développement, permettre tout
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // En production, utiliser CORS_ORIGIN du .env ou permettre localhost
+    const allowedOrigins = [
+      process.env.CORS_ORIGIN,
+      'http://localhost:3001',
+      'http://localhost:8080',
+      'http://localhost:5173'
+    ].filter(Boolean);
+    
+    callback(null, allowedOrigins.includes(origin) || true);
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('dev'));
@@ -42,6 +66,15 @@ app.get('/', (req, res) => {
 
 // Route de health check pour le monitoring
 app.get('/health', (req, res) => {
+  const HOST_INFO = {
+    hostname: require('os').hostname(),
+    platform: require('os').platform(),
+    ip_addresses: Object.values(require('os').networkInterfaces())
+      .flat()
+      .filter(iface => iface.family === 'IPv4' && !iface.internal)
+      .map(iface => iface.address)
+  };
+  
   res.status(200).json({
     status: 'OK',
     message: 'GeneaIA API is running',
@@ -49,7 +82,14 @@ app.get('/health', (req, res) => {
     uptime: Math.floor(process.uptime()),
     version: '1.0.0',
     environment: process.env.NODE_ENV || 'development',
-    database: 'Connected' // On pourrait ajouter un test DB ici
+    host: process.env.HOST || '0.0.0.0',
+    port: process.env.PORT || 3001,
+    database: 'Connected',
+    server_info: HOST_INFO,
+    accessible_via: [
+      `http://localhost:${process.env.PORT || 3001}`,
+      ...HOST_INFO.ip_addresses.map(ip => `http://${ip}:${process.env.PORT || 3001}`)
+    ]
   });
 });
 

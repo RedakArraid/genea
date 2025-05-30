@@ -248,6 +248,11 @@ setup-firewall: ## 🔥 Configuration pare-feu pour IP publique
 		echo "$(RED)Utilisez: sudo make setup-firewall$(NC)"; \
 	fi
 
+test-api: ## 🧪 Test complet du backend API
+	@echo "$(BLUE)🧪 Test backend API...$(NC)"
+	@chmod +x scripts/test-backend-api.sh
+	@./scripts/test-backend-api.sh
+
 test-public: ## 🌍 Tester l'accès via IP publique
 	@echo "$(BLUE)🌍 Test accès public...$(NC)"
 	@PUBLIC_IP=$(curl -s http://ipv4.icanhazip.com 2>/dev/null || echo "IP_NON_DETECTEE"); \
