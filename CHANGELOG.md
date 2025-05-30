@@ -1,3 +1,28 @@
+
+## 2025-05-30 10:37:34 - Commit d383a5a
+
+- Auto-deploy: 2025-05-30 10:37:19
+
+### Fichiers modifiés:
+- .github/workflows/deploy.yml
+- .gitignore
+- CHANGELOG.md
+- Makefile
+- README-DEPLOY.md
+- SETUP-COMPLETE.md
+- backend/.env.example
+- deploy/README.md
+- ecosystem.config.js
+- frontend/.env.example
+- scripts/auto-push.sh
+- scripts/clean.sh
+- scripts/demo.sh
+- scripts/post-push.sh
+- scripts/quick-init.sh
+- scripts/setup-deploy.sh
+- scripts/validate-deploy.sh
+- scripts/vps-update.sh
+
 # 📋 Changelog GeneaIA
 
 Historique des versions et déploiements automatiques.
