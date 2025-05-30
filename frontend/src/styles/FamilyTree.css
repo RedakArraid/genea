@@ -1,0 +1,416 @@
+/* Styles pour les nœuds de personnes et arêtes dans l'arbre généalogique */
+/* Version améliorée avec lignes droites et points de connexion colorés */
+
+/* Nœud personne */
+.person-node-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  background-color: white;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+  position: relative;
+}
+
+.person-node-wrapper:hover {
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+  transform: translateY(-2px);
+}
+
+.person-node-wrapper.selected {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.node-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  height: 100%;
+}
+
+.node-content.expanded {
+  height: auto;
+}
+
+/* Container d'image */
+.node-image-container {
+  width: 100px;
+  height: 100px;
+  overflow: hidden;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.node-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Information de la personne */
+.node-name {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+/* Boutons d'action */
+.node-actions {
+  position: absolute;
+  bottom: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background-color: hsl(var(--background));
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: hsl(var(--foreground));
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.action-button:hover {
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+}
+
+/* Handles ReactFlow améliorés */
+.react-flow__handle {
+  width: 12px;
+  height: 12px;
+  border: 2px solid white;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.react-flow__handle:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+}
+
+/* Styles pour les lignes droites et points de connexion */
+.react-flow__edge-path {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Styles spécifiques pour les types de relations */
+.react-flow__edge[data-type="parent_child_connection"] path {
+  stroke: #3b82f6;
+  stroke-width: 3px;
+  stroke-dasharray: none;
+}
+
+/* Styles améliorés pour les connexions de conjoint */
+.react-flow__edge[data-type="spouse_connection"] path {
+  stroke: #e11d48;
+  stroke-width: 5px;
+  stroke-dasharray: 10,5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 2px 4px rgba(225, 29, 72, 0.3));
+  cursor: context-menu;
+}
+
+/* Survol des liens de mariage pour indiquer qu'ils sont cliquables */
+.react-flow__edge[data-type="spouse_connection"]:hover path {
+  stroke-width: 6px;
+  filter: drop-shadow(0 3px 6px rgba(225, 29, 72, 0.5));
+}
+
+/* Styles spéciaux pour les connexions d'enfants de mariage */
+.react-flow__edge[data-type="marriage_child_connection"] path {
+  stroke: #10b981;
+  stroke-width: 0; /* Cacher les arêtes par défaut car nous utilisons nos lignes personnalisées */
+  stroke-dasharray: none;
+}
+
+/* Styles pour les lignes de distribution des enfants */
+.children-distribution-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.children-distribution-lines line {
+  stroke: #10b981;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Animation pour les nouvelles lignes d'enfants */
+.children-distribution-lines line {
+  stroke-dasharray: 5;
+  stroke-dashoffset: 5;
+  animation: drawChildLine 0.6s ease-out forwards;
+}
+
+@keyframes drawChildLine {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.react-flow__edge[data-type="sibling_connection"] path {
+  stroke: #8b5cf6;
+  stroke-width: 2px;
+  stroke-dasharray: 4,2;
+}
+
+/* Styles personnalisés pour les types d'arêtes */
+.edge-spouse_connection {
+  stroke: hsl(300, 70%, 50%);
+  stroke-width: 4;
+  stroke-dasharray: 8,4;
+}
+
+.edge-marriage_child_connection {
+  stroke: hsl(220, 70%, 50%);
+  stroke-width: 3;
+}
+
+.edge-parent_child_connection {
+  stroke: hsl(260, 70%, 60%);
+  stroke-width: 3;
+}
+
+.edge-sibling_connection {
+  stroke: hsl(280, 70%, 60%);
+  stroke-width: 2;
+  stroke-dasharray: 4,2;
+}
+
+/* Style pour le nœud sélectionné */
+.selected-node {
+  border: 2px solid hsl(var(--primary));
+}
+
+/* Style pour le menu contextuel */
+.context-menu {
+  position: fixed;
+  background-color: hsl(var(--background));
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 8px 0;
+  min-width: 180px;
+  z-index: 1000;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.context-menu-item:hover {
+  background-color: hsl(var(--muted));
+}
+
+.context-menu-item svg {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Styles pour les points de mariage */
+.marriage-connection-point {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.marriage-connection-point:hover {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+/* Animation pulse pour les points de mariage */
+@keyframes marriage-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+.marriage-pulse {
+  animation: marriage-pulse 2s infinite;
+}
+
+/* Styles pour l'alignement générationnel */
+.generation-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Classes pour les connexions ReactFlow avec lignes droites */
+.react-flow__connection-line {
+  stroke: #94a3b8;
+  stroke-width: 2;
+  stroke-dasharray: 5,5;
+}
+
+.react-flow__edge.selected path {
+  stroke: #3b82f6;
+  stroke-width: 4;
+}
+
+/* Amélioration des minimap et contrôles */
+.react-flow__minimap {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.react-flow__controls {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.react-flow__controls button {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+}
+
+.react-flow__controls button:hover {
+  background-color: #f3f4f6;
+}
+
+/* Styles pour les tooltips */
+.tooltip {
+  position: absolute;
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Animation d'apparition pour les nouveaux nœuds */
+.node-appear {
+  animation: nodeAppear 0.5s ease-out;
+}
+
+@keyframes nodeAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation pour les nouvelles connexions */
+.edge-appear path {
+  stroke-dasharray: 10;
+  stroke-dashoffset: 10;
+  animation: edgeAppear 0.5s ease-out forwards;
+}
+
+@keyframes edgeAppear {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Responsive pour les petits écrans */
+@media (max-width: 768px) {
+  .person-node-wrapper {
+    width: 120px !important;
+    height: 140px !important;
+  }
+  
+  .marriage-connection-point {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  
+  .react-flow__handle {
+    width: 10px !important;
+    height: 10px !important;
+  }
+  
+  .node-actions {
+    bottom: -32px;
+    gap: 2px;
+  }
+  
+  .action-button {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .action-button svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Amélioration de l'accessibilité */
+.react-flow__handle:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.action-button:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Styles pour le drag and drop */
+.react-flow__node.dragging {
+  opacity: 0.8;
+  transform: rotate(5deg);
+}
+
+.react-flow__node.drop-target {
+  box-shadow: 0 0 0 2px #10b981;
+}
+
+/* Styles pour la sélection multiple */
+.react-flow__node.selected {
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.react-flow__edge.selected {
+  z-index: 1000;
+}
+
+.react-flow__edge.selected path {
+  stroke: #3b82f6;
+  stroke-width: 4;
+}
