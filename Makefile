@@ -1,6 +1,8 @@
 # 🚀 Makefile GeneaIA - Déploiement Automatisé
 # Usage: make [commande]
 
+
+
 # Couleurs
 BLUE := \033[0;34m
 GREEN := \033[0;32m
