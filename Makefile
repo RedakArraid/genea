@@ -239,10 +239,27 @@ prod-logs: ## 📋 Logs production
 		pm2 logs; \
 	fi
 
-prod-backup: ## 💾 Sauvegarde manuelle
-	@echo "$(BLUE)💾 Sauvegarde...$(NC)"
-	@chmod +x scripts/backup-db.sh 2>/dev/null || echo "Script backup non trouvé"
-	@./scripts/backup-db.sh 2>/dev/null || echo "Exécutez ce script sur le VPS"
+setup-firewall: ## 🔥 Configuration pare-feu pour IP publique
+	@echo "$(BLUE)🔥 Configuration pare-feu...$(NC)"
+	@if [ "$EUID" -eq 0 ]; then \
+		chmod +x scripts/setup-firewall.sh; \
+		./scripts/setup-firewall.sh; \
+	else \
+		echo "$(RED)Utilisez: sudo make setup-firewall$(NC)"; \
+	fi
+
+test-public: ## 🌍 Tester l'accès via IP publique
+	@echo "$(BLUE)🌍 Test accès public...$(NC)"
+	@PUBLIC_IP=$(curl -s http://ipv4.icanhazip.com 2>/dev/null || echo "IP_NON_DETECTEE"); \
+	if [ "$PUBLIC_IP" != "IP_NON_DETECTEE" ]; then \
+		echo "IP publique: $PUBLIC_IP"; \
+		echo "Test API..."; \
+		curl -f "http://$PUBLIC_IP:3001/health" && echo " ✅ API OK" || echo " ❌ API inaccessible"; \
+		echo "Test Frontend..."; \
+		curl -f "http://$PUBLIC_IP:8080" && echo " ✅ Frontend OK" || echo " ❌ Frontend inaccessible"; \
+	else \
+		echo "$(RED)Impossible de détecter l'IP publique$(NC)"; \
+	fi
 
 # === DÉVELOPPEMENT AVANCÉ ===
 

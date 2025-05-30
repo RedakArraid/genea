@@ -89,9 +89,13 @@ app.use((err, req, res, next) => {
 });
 
 // Démarrage du serveur
-app.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
-  console.log(`URL: http://localhost:${PORT}`);
+const HOST = process.env.HOST || '0.0.0.0'; // Écouter sur toutes les interfaces
+app.listen(PORT, HOST, () => {
+  console.log(`Serveur démarré sur ${HOST}:${PORT}`);
+  console.log(`URL locale: http://localhost:${PORT}`);
+  if (HOST === '0.0.0.0') {
+    console.log(`Accessible via IP publique sur le port ${PORT}`);
+  }
 });
 
 // Gestion propre de la fermeture du processus

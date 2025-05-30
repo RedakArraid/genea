@@ -137,7 +137,22 @@ sudo certbot --nginx -d votre-domaine.com -d www.votre-domaine.com
 sudo certbot renew --dry-run
 ```
 
-### 4. 🔥 Configuration du Pare-feu (UFW)
+### 4. 🔥 Configuration du Pare-feu (UFW) avec Support IP Publique
+
+#### Option 1: Script automatique (recommandé)
+
+```bash
+# Utiliser le script de configuration automatique
+sudo chmod +x scripts/setup-firewall.sh
+sudo ./scripts/setup-firewall.sh
+
+# Choisir l'option adaptée :
+# 1) Développement - Tous les ports ouverts pour tests
+# 2) Production avec Nginx - HTTP/HTTPS uniquement
+# 3) Production directe - Ports app (3001, 8080) ouverts
+```
+
+#### Option 2: Configuration manuelle
 
 ```bash
 # Activer UFW
@@ -147,14 +162,19 @@ sudo ufw enable
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 
-# Autoriser SSH
+# Autoriser SSH (OBLIGATOIRE !)
 sudo ufw allow ssh
 
-# Autoriser HTTP et HTTPS
-sudo ufw allow 'Nginx Full'
+# Pour accès direct via IP publique
+sudo ufw allow 3001 comment "GeneaIA Backend API"
+sudo ufw allow 8080 comment "GeneaIA Frontend"
+
+# Ports web standards
+sudo ufw allow 80 comment "HTTP"
+sudo ufw allow 443 comment "HTTPS"
 
 # Vérifier les règles
-sudo ufw status
+sudo ufw status numbered
 ```
 
 ### 5. ⚡ Script de Lancement Facile

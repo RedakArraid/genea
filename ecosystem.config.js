@@ -29,7 +29,7 @@ module.exports = {
       name: 'geneaia-frontend',
       script: 'serve',
       cwd: './frontend',
-      args: 'dist -l 8080 -s',
+      args: 'dist -l 8080 -s --host 0.0.0.0',
       instances: 1,
       exec_mode: 'fork',
       env: {
