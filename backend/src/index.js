@@ -40,6 +40,31 @@ app.get('/', (req, res) => {
   res.json({ message: 'Bienvenue sur l\'API GeneaIA' });
 });
 
+// Route de health check pour le monitoring
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    message: 'GeneaIA API is running',
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    database: 'Connected' // On pourrait ajouter un test DB ici
+  });
+});
+
+// Route de health check pour l'API
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    message: 'GeneaIA API is running',
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Enregistrement des routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);

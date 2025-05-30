@@ -33,16 +33,13 @@ help: ## 📖 Afficher cette aide
 
 dev: ## 🔧 Démarrer en mode développement
 	@echo "$(BLUE)🔧 Démarrage en mode développement...$(NC)"
-	@if [ ! -d "backend/node_modules" ]; then \
-		echo "📦 Installation des dépendances backend..."; \
-		cd backend && npm install; \
-	fi
-	@if [ ! -d "frontend/node_modules" ]; then \
-		echo "📦 Installation des dépendances frontend..."; \
-		cd frontend && npm install; \
-	fi
-	@echo "$(GREEN)✅ Démarrage des services...$(NC)"
-	@npm run dev
+	@chmod +x scripts/launch.sh
+	@echo "1" | ./scripts/launch.sh
+
+launch: ## 🚀 Lanceur interactif (dev/prod/monitoring)
+	@echo "$(BLUE)🚀 Lanceur GeneaIA...$(NC)"
+	@chmod +x scripts/launch.sh
+	@./scripts/launch.sh
 
 dev-setup: ## 📦 Configuration initiale du développement
 	@echo "$(BLUE)📦 Configuration du développement...$(NC)"
@@ -216,13 +213,36 @@ config-check: ## ✅ Vérifier la configuration
 	@pm2 --version 2>/dev/null && echo "  ✅ PM2 installé" || echo "  ⚠️ PM2 non installé"
 	@psql --version 2>/dev/null && echo "  ✅ PostgreSQL CLI" || echo "  ⚠️ PostgreSQL CLI manquant"
 
-# === SÉCURITÉ ===
+prod-deploy: ## 🚀 Déploiement production complet
+	@echo "$(BLUE)🚀 Déploiement production...$(NC)"
+	@chmod +x scripts/deploy-production.sh
+	@./scripts/deploy-production.sh
 
-audit: ## 🔍 Audit de sécurité
-	@echo "$(BLUE)🔍 Audit de sécurité...$(NC)"
-	@cd backend && npm audit
-	@cd frontend && npm audit
-	@echo "$(GREEN)✅ Audit terminé$(NC)"
+prod-status: ## 📊 Statut production complet
+	@echo "$(BLUE)📊 Statut production...$(NC)"
+	@echo "API Health:"
+	@curl -s http://localhost:3001/health | jq . || curl -s http://localhost:3001/health || echo "API non accessible"
+	@echo ""
+	@echo "Services PM2:"
+	@pm2 status 2>/dev/null || echo "PM2 non accessible"
+	@echo ""
+	@echo "Système:"
+	@echo "CPU: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' 2>/dev/null || echo "N/A")"
+	@echo "Memory: $(free | awk 'NR==2{printf "%.1f%%", $3*100/$2}' 2>/dev/null || echo "N/A")"
+	@echo "Disk: $(df / | awk 'NR==2 {print $5}' 2>/dev/null || echo "N/A")"
+
+prod-logs: ## 📋 Logs production
+	@echo "$(BLUE)📋 Logs production...$(NC)"
+	@if [ -d "/var/log/geneaia" ]; then \
+		tail -f /var/log/geneaia/*.log; \
+	else \
+		pm2 logs; \
+	fi
+
+prod-backup: ## 💾 Sauvegarde manuelle
+	@echo "$(BLUE)💾 Sauvegarde...$(NC)"
+	@chmod +x scripts/backup-db.sh 2>/dev/null || echo "Script backup non trouvé"
+	@./scripts/backup-db.sh 2>/dev/null || echo "Exécutez ce script sur le VPS"
 
 # === DÉVELOPPEMENT AVANCÉ ===
 
