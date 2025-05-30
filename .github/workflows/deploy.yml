@@ -1,0 +1,115 @@
+name: 🚀 Deploy GeneaIA
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: 🧪 Tests
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: geneaia_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 🔧 Install dependencies
+      run: |
+        npm ci
+        cd backend && npm ci
+        cd ../frontend && npm ci
+
+    - name: 🏗️ Generate Prisma Client
+      run: |
+        cd backend
+        npx prisma generate
+
+    - name: 🗄️ Run database migrations
+      run: |
+        cd backend
+        npx prisma migrate deploy
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneaia_test
+
+    - name: 🧪 Run backend tests
+      run: |
+        cd backend
+        npm test
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneaia_test
+        JWT_SECRET: test-secret-key
+        NODE_ENV: test
+
+    - name: 🎨 Build frontend
+      run: |
+        cd frontend
+        npm run build
+      env:
+        VITE_API_URL: http://localhost:3001/api
+
+    - name: ✅ Validate build artifacts
+      run: |
+        ls -la frontend/dist/
+        test -f frontend/dist/index.html
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    name: 🚀 Deploy
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: 🏗️ Build production
+      run: |
+        cd frontend
+        npm ci
+        npm run build
+      env:
+        VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://api.geneaia.com' }}
+
+    - name: 🚀 Deploy to VPS
+      if: ${{ secrets.VPS_HOST && secrets.VPS_USER && secrets.VPS_SSH_KEY }}
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        port: ${{ secrets.VPS_PORT || 22 }}
+        script: |
+          cd ${{ secrets.VPS_PATH || '/var/www/geneaia' }}
+          git pull origin ${{ github.ref_name }}
+          make vps-update
