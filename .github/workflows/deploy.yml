@@ -135,19 +135,23 @@ jobs:
       uses: actions/checkout@v4
 
     - name: 🚀 Deploy to Staging Server
-      uses: appleboy/ssh-action@v1.0.0
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.STAGING_HOST }}
         username: ${{ secrets.STAGING_USER }}
         key: ${{ secrets.STAGING_SSH_KEY }}
         port: ${{ secrets.STAGING_PORT || 22 }}
+        command_timeout: 10m
         script: |
+          set -e
+          echo "Starting deployment to staging..."
+          
           # Créer le dossier s'il n'existe pas
           mkdir -p ${{ secrets.STAGING_PATH }}
           cd ${{ secrets.STAGING_PATH }}
           
-          # Copier le fichier docker-compose
-          cat > docker-compose.yml << 'EOF'
+          # Créer le fichier docker-compose.yml
+          cat > docker-compose.yml << 'STAGING_EOF'
           version: '3.8'
           
           services:
@@ -195,14 +199,20 @@ jobs:
           volumes:
             postgres_staging_data:
               driver: local
-          EOF
+          STAGING_EOF
+          
+          echo "Docker compose file created"
           
           # Déployer
-          docker-compose pull
+          docker-compose pull || echo "Pull failed, continuing..."
           docker-compose up -d
+          
+          echo "Deployment completed"
           
           # Nettoyer
           docker system prune -f
+          
+          echo "Cleanup completed"
 
   deploy-production:
     needs: [test, build]
