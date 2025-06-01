@@ -121,7 +121,7 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         build-args: |
-          VITE_API_URL=http://168.231.86.179:3001/api
+          VITE_API_URL=${{ github.ref == 'refs/heads/staging' && 'http://168.231.86.179:3011/api' || 'http://168.231.86.179:8090/api' }}
 
   deploy-staging:
     needs: [test, build]

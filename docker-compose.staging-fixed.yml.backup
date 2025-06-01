@@ -24,14 +24,14 @@ services:
       - NODE_ENV=staging
       - DATABASE_URL=postgresql://geneaia_staging:staging123password@postgres:5432/geneaia_staging?schema=public
       - JWT_SECRET=staging_jwt_secret_xyz789abc
-      - CORS_ORIGIN=http://168.231.86.179:3010  # Frontend staging sur port 3010
+      - CORS_ORIGIN=http://168.231.86.179:3000
       - PORT=3001
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
     ports:
-      - "3011:3001"  # Staging backend sur port 3011 (libre)
+      - "3002:3001"  # ← CORRECTION: Port externe 3002 pour éviter conflit
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/health || exit 1"]
       interval: 30s
@@ -42,10 +42,10 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/geneaia-frontend:staging
     container_name: geneaia-frontend-staging
     environment:
-      - VITE_API_URL=http://168.231.86.179:3011/api  # Pointer vers le bon port backend staging
+      - VITE_API_URL=http://168.231.86.179:3002/api  # ← CORRECTION: Pointer vers port 3002
     restart: unless-stopped
     ports:
-      - "3010:80"  # Staging frontend sur port 3010 (libre)
+      - "3000:80"
 
 volumes:
   postgres_staging_data:
