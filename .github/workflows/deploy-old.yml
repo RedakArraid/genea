@@ -230,23 +230,59 @@ jobs:
       uses: actions/checkout@v4
 
     - name: 🚀 Deploy to Production Server
-      uses: appleboy/ssh-action@v1.0.3
+      uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.PROD_HOST }}
         username: ${{ secrets.PROD_USER }}
         key: ${{ secrets.PROD_SSH_KEY }}
         port: ${{ secrets.PROD_PORT || 22 }}
-        command_timeout: 10m
         script: |
-          set -e
-          echo "Starting deployment to production..."
-          
           # Créer le dossier s'il n'existe pas
           mkdir -p ${{ secrets.PROD_PATH }}
           cd ${{ secrets.PROD_PATH }}
           
-          # Créer le fichier docker-compose.yml
-          cat > docker-compose.yml << 'PRODUCTION_EOF'
+          # Copier la configuration nginx
+          cat > nginx.conf << 'EOF'
+          events {
+              worker_connections 1024;
+          }
+          
+          http {
+              upstream backend {
+                  server backend:3001;
+              }
+          
+              upstream frontend {
+                  server frontend:80;
+              }
+          
+              server {
+                  listen 80;
+                  server_name _;
+          
+                  client_max_body_size 10M;
+          
+                  location / {
+                      proxy_pass http://frontend;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_set_header X-Forwarded-Proto $scheme;
+                  }
+          
+                  location /api/ {
+                      proxy_pass http://backend;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_set_header X-Forwarded-Proto $scheme;
+                  }
+              }
+          }
+          EOF
+          
+          # Copier le fichier docker-compose
+          cat > docker-compose.yml << 'EOF'
           version: '3.8'
           
           services:
@@ -267,7 +303,7 @@ jobs:
                 retries: 5
           
             backend:
-              image: ghcr.io/redakarraid/genea-backend:main
+              image: ghcr.io/redakarraid/genea-backend:latest
               container_name: geneaia-backend-prod
               environment:
                 - NODE_ENV=production
@@ -279,44 +315,34 @@ jobs:
                 postgres:
                   condition: service_healthy
               restart: unless-stopped
-              ports:
-                - "3001:3001"
           
             frontend:
-              image: ghcr.io/redakarraid/genea-frontend:main
+              image: ghcr.io/redakarraid/genea-frontend:latest
               container_name: geneaia-frontend-prod
               environment:
                 - VITE_API_URL=${{ secrets.PROD_API_URL }}
               restart: unless-stopped
+          
+            nginx:
+              image: nginx:alpine
+              container_name: geneaia-nginx-prod
               ports:
-                - "8080:80"
+                - "80:80"
+              volumes:
+                - ./nginx.conf:/etc/nginx/nginx.conf:ro
+              depends_on:
+                - frontend
+                - backend
+              restart: unless-stopped
           
           volumes:
             postgres_prod_data:
               driver: local
-          PRODUCTION_EOF
-          
-          echo "Docker compose file created"
-          
-          # Arrêter et nettoyer les anciens containers
-          docker-compose down --remove-orphans || echo "No containers to stop"
-          docker system prune -f || echo "Prune completed"
+          EOF
           
           # Déployer
-          docker-compose pull || echo "Pull failed, continuing..."
+          docker-compose pull
           docker-compose up -d
-          
-          echo "Deployment completed"
           
           # Nettoyer
           docker system prune -f
-          
-          echo "Cleanup completed"
-
-    - name: 🎉 Production deployment successful
-      if: success()
-      run: echo "Production deployment completed successfully"
-
-    - name: 😱 Production deployment failed
-      if: failure()
-      run: echo "Production deployment failed"
