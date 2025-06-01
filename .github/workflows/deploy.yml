@@ -104,8 +104,8 @@ jobs:
         file: ./backend/Dockerfile
         push: true
         tags: |
-          ${{ env.REGISTRY }}/${{ github.repository_owner }}/geneaia-backend:${{ github.ref_name }}
-          ${{ env.REGISTRY }}/${{ github.repository_owner }}/geneaia-backend:latest
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/genea-backend:${{ github.ref_name }}
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/genea-backend:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -116,8 +116,8 @@ jobs:
         file: ./frontend/Dockerfile
         push: true
         tags: |
-          ${{ env.REGISTRY }}/${{ github.repository_owner }}/geneaia-frontend:${{ github.ref_name }}
-          ${{ env.REGISTRY }}/${{ github.repository_owner }}/geneaia-frontend:latest
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/genea-frontend:${{ github.ref_name }}
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/genea-frontend:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
         build-args: |
@@ -168,7 +168,7 @@ jobs:
                 retries: 5
           
             backend:
-              image: ghcr.io/${{ github.repository_owner }}/geneaia-backend:staging
+              image: ghcr.io/${{ github.repository_owner }}/genea-backend:staging
               container_name: geneaia-backend-staging
               environment:
                 - NODE_ENV=staging
@@ -184,7 +184,7 @@ jobs:
                 - "3001:3001"
           
             frontend:
-              image: ghcr.io/${{ github.repository_owner }}/geneaia-frontend:staging
+              image: ghcr.io/${{ github.repository_owner }}/genea-frontend:staging
               container_name: geneaia-frontend-staging
               environment:
                 - VITE_API_URL=${{ secrets.STAGING_API_URL }}
@@ -289,7 +289,7 @@ jobs:
                 retries: 5
           
             backend:
-              image: ghcr.io/${{ github.repository_owner }}/geneaia-backend:latest
+              image: ghcr.io/${{ github.repository_owner }}/genea-backend:latest
               container_name: geneaia-backend-prod
               environment:
                 - NODE_ENV=production
@@ -303,7 +303,7 @@ jobs:
               restart: unless-stopped
           
             frontend:
-              image: ghcr.io/${{ github.repository_owner }}/geneaia-frontend:latest
+              image: ghcr.io/${{ github.repository_owner }}/genea-frontend:latest
               container_name: geneaia-frontend-prod
               environment:
                 - VITE_API_URL=${{ secrets.PROD_API_URL }}
