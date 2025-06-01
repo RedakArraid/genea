@@ -3,6 +3,7 @@ import { Handle, Position } from 'reactflow';
 import { User, Edit3, PlusCircle, Trash2, Users, UserPlus, Link as LinkIcon, Calendar, MapPin, Baby } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFamilyTreeStore } from '../../store/familyTreeStore';
+import { useGenderColors } from '../../hooks/useGenderColors';
 import { compressImage, ensureBase64Size } from '../../utils/imageCompression';
 
 /**
@@ -11,9 +12,16 @@ import { compressImage, ensureBase64Size } from '../../utils/imageCompression';
  */
 const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPerson, onDeletePerson }) => {
   const { updatePerson, nodes, edges } = useFamilyTreeStore();
+  const { getPersonCardStyles } = useGenderColors();
   const [showActions, setShowActions] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Vérifier si la personne est décédée
+  const isDeceased = Boolean(data.deathDate);
+  
+  // Obtenir les styles selon le genre et l'état
+  const cardStyles = getPersonCardStyles(data.gender, isDeceased);
   
   // Gérer les erreurs de chargement d'image
   const handleImageError = (e) => {
@@ -163,7 +171,7 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
       className={`
         person-node relative border-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200
         ${selected ? 'border-blue-500 ring-2 ring-blue-200 dark:border-blue-400 dark:ring-blue-300' : 'border-gray-200 dark:border-slate-500'}
-        ${data.gender === 'male' ? 'bg-blue-50 dark:bg-slate-600' : data.gender === 'female' ? 'bg-pink-50 dark:bg-slate-600' : 'bg-gray-50 dark:bg-slate-600'}
+        ${cardStyles.card}
         dark:shadow-slate-900/50
       `}
       style={{ width: 140, height: showDetails ? 'auto' : 160 }}
@@ -178,9 +186,7 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
         <label htmlFor={`file-upload-${id}`} className={`cursor-pointer ${isUploading ? 'opacity-50' : ''}`}>
           <div className={`
             w-16 h-16 rounded-full flex items-center justify-center overflow-hidden group relative
-            ${data.gender === 'male' ? 'bg-blue-100 border-2 border-blue-200 dark:bg-slate-500 dark:border-slate-400' : 
-              data.gender === 'female' ? 'bg-pink-100 border-2 border-pink-200 dark:bg-slate-500 dark:border-slate-400' : 
-              'bg-gray-100 border-2 border-gray-200 dark:bg-slate-500 dark:border-slate-400'}
+            ${cardStyles.avatar}
           `}>
             {data.photoUrl ? (
               <img 
@@ -214,7 +220,9 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
       
       {/* Informations de base */}
       <div className="px-3 py-2 text-center">
-        <div className="person-name font-semibold text-sm text-gray-800 dark:text-slate-100 line-clamp-2 leading-tight" title={`${data.firstName} ${data.lastName}`}>
+        <div className={`person-name font-semibold text-sm line-clamp-2 leading-tight ${
+          isDeceased ? 'text-gray-600 dark:text-gray-400' : 'text-gray-800 dark:text-slate-100'
+        }`} title={`${data.firstName} ${data.lastName}`}>
           {data.firstName} {data.lastName}
         </div>
         {data.birthDate && (

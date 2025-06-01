@@ -23,6 +23,7 @@ import AddPersonModal from '../components/FamilyTree/AddPersonModal';
 import EditPersonModal from '../components/FamilyTree/EditPersonModal';
 import HelpTooltip from '../components/FamilyTree/HelpTooltip';
 import ShortcutNotification from '../components/FamilyTree/ShortcutNotification';
+import GenderColorsToggle from '../components/ui/GenderColorsToggle';
 import LegendTooltip from '../components/FamilyTree/LegendTooltip';
 import { useFamilyTreeStore } from '../store/familyTreeStore';
 import { useToast } from '../hooks/useToast';
@@ -666,6 +667,7 @@ const FamilyTreePage = () => {
               )}
             </div>
             <div className="flex items-center space-x-2">
+              <GenderColorsToggle />
               <button
                 onClick={openAddModalStandalone}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
@@ -847,29 +849,6 @@ const FamilyTreePage = () => {
             </div>
           </div>
         )}
-        
-        {/* Bouton flottant pour ajouter une personne */}
-        <button
-          onClick={openAddModalStandalone}
-          className="fixed bottom-6 right-6 z-10 group flex items-center bg-primary text-primary-foreground rounded-full shadow-lg hover:bg-primary/90 hover:shadow-xl transition-all duration-200 px-4 py-3"
-          title="Ajouter une personne (Ctrl+N ou +)"
-        >
-          <svg
-            className="w-5 h-5 mr-2 transition-transform group-hover:scale-110"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
-          <span className="font-medium">Ajouter une personne</span>
-        </button>
         
         {/* Composant d'aide */}
         <HelpTooltip isOpen={showHelp} onToggle={toggleHelp} />

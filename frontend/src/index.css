@@ -124,6 +124,7 @@
 
 .react-flow__controls {
   @apply bg-card border border-border rounded-lg shadow-sm;
+  bottom: 16px !important; /* Remonter les contrôles */
 }
 
 .react-flow__controls button {
