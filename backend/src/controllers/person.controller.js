@@ -82,9 +82,9 @@ exports.createPerson = async (req, res, next) => {
       data: {
         firstName,
         lastName,
-        birthDate: (birthDate && birthDate.trim()) ? new Date(birthDate) : null,
+        birthDate: birthDate ? new Date(birthDate) : null,
         birthPlace,
-        deathDate: (deathDate && deathDate.trim()) ? new Date(deathDate) : null,
+        deathDate: deathDate ? new Date(deathDate) : null,
         occupation,
         biography,
         gender,
@@ -107,19 +107,9 @@ exports.createPerson = async (req, res, next) => {
  */
 exports.updatePerson = async (req, res, next) => {
   try {
-    console.log('Requête de mise à jour reçue pour la personne ID:', req.params.id);
-    console.log('Contenu de req.body:', {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      // Ne pas logger toute la photoUrl pour des raisons de performances, juste sa taille
-      photoUrlSize: req.body.photoUrl ? req.body.photoUrl.length : 0,
-      photoUrlStart: req.body.photoUrl ? req.body.photoUrl.substring(0, 30) + '...' : null
-    });
-    
     // Validation des données
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.error('Erreurs de validation:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
     
@@ -141,37 +131,35 @@ exports.updatePerson = async (req, res, next) => {
     
     if (firstName !== undefined) updateData.firstName = firstName;
     if (lastName !== undefined) updateData.lastName = lastName;
-    if (birthDate !== undefined) updateData.birthDate = (birthDate && birthDate.trim()) ? new Date(birthDate) : null;
+    if (birthDate !== undefined) {
+      updateData.birthDate = (birthDate && birthDate !== '' && birthDate !== null) 
+        ? new Date(birthDate) 
+        : null;
+    }
     if (birthPlace !== undefined) updateData.birthPlace = birthPlace;
-    if (deathDate !== undefined) updateData.deathDate = (deathDate && deathDate.trim()) ? new Date(deathDate) : null;
+    if (deathDate !== undefined) {
+      updateData.deathDate = (deathDate && deathDate !== '' && deathDate !== null) 
+        ? new Date(deathDate) 
+        : null;
+    }
     if (occupation !== undefined) updateData.occupation = occupation;
     if (biography !== undefined) updateData.biography = biography;
     if (gender !== undefined) updateData.gender = gender;
-    if (photoUrl !== undefined) {
-      console.log('Photo URL fournie, longueur:', photoUrl.length);
-      updateData.photoUrl = photoUrl;
-    }
+    if (photoUrl !== undefined) updateData.photoUrl = photoUrl;
     
-    try {
-      const updatedPerson = await prisma.person.update({
-        where: { id },
-        data: updateData
-      });
-      
-      console.log('Personne mise à jour avec succès, ID:', updatedPerson.id);
-      res.status(200).json({
-        message: 'Personne mise à jour avec succès',
-        person: updatedPerson
-      });
-    } catch (dbError) {
-      console.error('Erreur Prisma lors de la mise à jour:', dbError);
-      if (dbError.code === 'P2025') {
-        return res.status(404).json({ message: 'Personne non trouvée' });
-      }
-      throw dbError; // Remonter l'erreur pour le catch global
-    }
+    const updatedPerson = await prisma.person.update({
+      where: { id },
+      data: updateData
+    });
+    
+    res.status(200).json({
+      message: 'Personne mise à jour avec succès',
+      person: updatedPerson
+    });
   } catch (error) {
-    console.error('Erreur générale updatePerson:', error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'Personne non trouvée' });
+    }
     next(error);
   }
 };

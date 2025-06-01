@@ -36,9 +36,31 @@ router.post(
   [
     body('firstName').trim().notEmpty().withMessage('Le prénom est requis'),
     body('lastName').trim().notEmpty().withMessage('Le nom de famille est requis'),
-    body('birthDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Format de date de naissance invalide'),
+    body('birthDate').custom((value) => {
+      // Accepter les valeurs vides/null
+      if (!value || value === '' || value === null) {
+        return true;
+      }
+      // Vérifier que c'est une date ISO valide
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        throw new Error('Format de date de naissance invalide');
+      }
+      return true;
+    }),
     body('birthPlace').optional(),
-    body('deathDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Format de date de décès invalide'),
+    body('deathDate').custom((value) => {
+      // Accepter les valeurs vides/null
+      if (!value || value === '' || value === null) {
+        return true;
+      }
+      // Vérifier que c'est une date ISO valide
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        throw new Error('Format de date de décès invalide');
+      }
+      return true;
+    }),
     body('occupation').optional(),
     body('biography').optional(),
     body('gender').optional().isIn(['male', 'female', 'other']).withMessage('Genre invalide'),
@@ -59,9 +81,31 @@ router.put(
   [
     body('firstName').optional().trim().notEmpty().withMessage('Le prénom ne peut pas être vide'),
     body('lastName').optional().trim().notEmpty().withMessage('Le nom de famille ne peut pas être vide'),
-    body('birthDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Format de date de naissance invalide'),
+    body('birthDate').custom((value) => {
+      // Accepter les valeurs vides/null
+      if (!value || value === '' || value === null) {
+        return true;
+      }
+      // Vérifier que c'est une date ISO valide
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        throw new Error('Format de date de naissance invalide');
+      }
+      return true;
+    }),
     body('birthPlace').optional(),
-    body('deathDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Format de date de décès invalide'),
+    body('deathDate').custom((value) => {
+      // Accepter les valeurs vides/null
+      if (!value || value === '' || value === null) {
+        return true;
+      }
+      // Vérifier que c'est une date ISO valide
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        throw new Error('Format de date de décès invalide');
+      }
+      return true;
+    }),
     body('occupation').optional(),
     body('biography').optional(),
     body('gender').optional().isIn(['male', 'female', 'other']).withMessage('Genre invalide'),
