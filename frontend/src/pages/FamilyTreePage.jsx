@@ -23,6 +23,7 @@ import AddPersonModal from '../components/FamilyTree/AddPersonModal';
 import EditPersonModal from '../components/FamilyTree/EditPersonModal';
 import HelpTooltip from '../components/FamilyTree/HelpTooltip';
 import ShortcutNotification from '../components/FamilyTree/ShortcutNotification';
+import LegendTooltip from '../components/FamilyTree/LegendTooltip';
 import { useFamilyTreeStore } from '../store/familyTreeStore';
 import { useToast } from '../hooks/useToast';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
@@ -794,30 +795,8 @@ const FamilyTreePage = () => {
           <MiniMap position="bottom-left" className="react-flow__minimap"/>
         </ReactFlow>
         
-        {/* Légende */}
-        <div className="absolute top-4 left-4 bg-white p-3 rounded-lg shadow-md border">
-          <h3 className="font-semibold mb-2 text-gray-800 text-sm">Légende</h3>
-          <div className="space-y-1 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-0.5 bg-blue-500"></div>
-              <span className="text-gray-600">Parent-enfant</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-0.5 bg-red-500" style={{ background: 'repeating-linear-gradient(to right, #e11d48 0, #e11d48 2px, transparent 2px, transparent 4px)' }}></div>
-              <span className="text-gray-600">Mariage</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-0.5 bg-green-500"></div>
-              <span className="text-gray-600">Enfant d'union</span>
-            </div>
-          </div>
-          <div className="mt-2 pt-2 border-t border-gray-200">
-            <div className="text-xs text-gray-600">
-              <div>• Glisser depuis un point rose → Mariage</div>
-              <div>• Glisser depuis un point bleu/vert → Parent-enfant</div>
-            </div>
-          </div>
-        </div>
+        {/* Composant de légende sous forme de bouton */}
+        <LegendTooltip />
         
         {/* Message d'accueil si l'arbre est vide */}
         {nodes.length === 0 && (

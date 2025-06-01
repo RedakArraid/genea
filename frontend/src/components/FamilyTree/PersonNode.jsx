@@ -161,9 +161,10 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
   return (
     <motion.div
       className={`
-        relative bg-white border-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200
-        ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'}
-        ${data.gender === 'male' ? 'bg-blue-50' : data.gender === 'female' ? 'bg-pink-50' : 'bg-gray-50'}
+        person-node relative border-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200
+        ${selected ? 'border-blue-500 ring-2 ring-blue-200 dark:border-blue-400 dark:ring-blue-300' : 'border-gray-200 dark:border-slate-500'}
+        ${data.gender === 'male' ? 'bg-blue-50 dark:bg-slate-600' : data.gender === 'female' ? 'bg-pink-50 dark:bg-slate-600' : 'bg-gray-50 dark:bg-slate-600'}
+        dark:shadow-slate-900/50
       `}
       style={{ width: 140, height: showDetails ? 'auto' : 160 }}
       onMouseEnter={() => setShowActions(true)}
@@ -177,9 +178,9 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
         <label htmlFor={`file-upload-${id}`} className={`cursor-pointer ${isUploading ? 'opacity-50' : ''}`}>
           <div className={`
             w-16 h-16 rounded-full flex items-center justify-center overflow-hidden group relative
-            ${data.gender === 'male' ? 'bg-blue-100 border-2 border-blue-200' : 
-              data.gender === 'female' ? 'bg-pink-100 border-2 border-pink-200' : 
-              'bg-gray-100 border-2 border-gray-200'}
+            ${data.gender === 'male' ? 'bg-blue-100 border-2 border-blue-200 dark:bg-slate-500 dark:border-slate-400' : 
+              data.gender === 'female' ? 'bg-pink-100 border-2 border-pink-200 dark:bg-slate-500 dark:border-slate-400' : 
+              'bg-gray-100 border-2 border-gray-200 dark:bg-slate-500 dark:border-slate-400'}
           `}>
             {data.photoUrl ? (
               <img 
@@ -189,7 +190,7 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
                 onError={handleImageError}
               />
             ) : (
-              <User className="w-8 h-8 text-gray-600" />
+              <User className="w-8 h-8 text-gray-600 dark:text-slate-300" />
             )}
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               {isUploading ? (
@@ -213,11 +214,11 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
       
       {/* Informations de base */}
       <div className="px-3 py-2 text-center">
-        <div className="font-semibold text-sm text-gray-800 line-clamp-2 leading-tight" title={`${data.firstName} ${data.lastName}`}>
+        <div className="person-name font-semibold text-sm text-gray-800 dark:text-slate-100 line-clamp-2 leading-tight" title={`${data.firstName} ${data.lastName}`}>
           {data.firstName} {data.lastName}
         </div>
         {data.birthDate && (
-          <div className="text-xs text-gray-500 mt-1">
+          <div className="person-details text-xs text-gray-500 dark:text-slate-300 mt-1">
             {new Date(data.birthDate).getFullYear()}
             {data.deathDate && ` - ${new Date(data.deathDate).getFullYear()}`}
           </div>
@@ -236,26 +237,26 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
           >
             {getAgeOrLifespan() && (
               <div className="flex items-center justify-center gap-1">
-                <Calendar className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                <span className="text-xs text-gray-600">{getAgeOrLifespan()}</span>
+                <Calendar className="w-3 h-3 text-gray-400 dark:text-slate-400 flex-shrink-0" />
+                <span className="person-details text-xs text-gray-600 dark:text-slate-200">{getAgeOrLifespan()}</span>
               </div>
             )}
             
             {data.birthPlace && (
               <div className="flex items-center justify-center gap-1">
-                <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                <span className="text-xs text-gray-600 truncate" title={data.birthPlace}>{data.birthPlace}</span>
+                <MapPin className="w-3 h-3 text-gray-400 dark:text-slate-400 flex-shrink-0" />
+                <span className="person-details text-xs text-gray-600 dark:text-slate-200 truncate" title={data.birthPlace}>{data.birthPlace}</span>
               </div>
             )}
             
             {data.occupation && (
-              <div className="text-xs text-gray-600 text-center italic" title={data.occupation}>
+              <div className="person-details text-xs text-gray-600 dark:text-slate-200 text-center italic" title={data.occupation}>
                 {data.occupation}
               </div>
             )}
             
             {data.biography && (
-              <p className="text-xs text-gray-600 text-center line-clamp-2 italic" title={data.biography}>
+              <p className="person-details text-xs text-gray-600 dark:text-slate-200 text-center line-clamp-2 italic" title={data.biography}>
                 {data.biography}
               </p>
             )}
@@ -334,55 +335,55 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
       <AnimatePresence>
         {showActions && !isUploading && (
           <motion.div 
-            className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 flex gap-1 bg-white rounded-lg shadow-lg p-1 z-20 border"
+            className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 flex gap-1 bg-white dark:bg-slate-700 rounded-lg shadow-lg p-1 z-20 border border-gray-200 dark:border-slate-600"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
           >
             <button 
-              className="p-1.5 hover:bg-gray-100 rounded transition-colors" 
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-600 rounded transition-colors" 
               title="Ajouter parent"
               onClick={(e) => handleActionClick(e, 'parent')}
             >
-              <Users className="w-4 h-4 text-blue-600" />
+              <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </button>
             <button 
-              className="p-1.5 hover:bg-gray-100 rounded transition-colors" 
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-600 rounded transition-colors" 
               title="Ajouter conjoint"
               onClick={(e) => handleActionClick(e, 'spouse')}
             >
-              <LinkIcon className="w-4 h-4 text-pink-600" />
+              <LinkIcon className="w-4 h-4 text-pink-600 dark:text-pink-400" />
             </button>
             <button 
-              className="p-1.5 hover:bg-gray-100 rounded transition-colors" 
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-600 rounded transition-colors" 
               title="Ajouter enfant"
               onClick={(e) => handleActionClick(e, 'child')}
             >
-              <Baby className="w-4 h-4 text-green-600" />
+              <Baby className="w-4 h-4 text-green-600 dark:text-green-400" />
             </button>
             {canAddChildToMarriage() && (
               <button 
-                className="p-1.5 hover:bg-gray-100 rounded transition-colors" 
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-600 rounded transition-colors" 
                 title="Enfant d'union"
                 onClick={(e) => handleActionClick(e, 'marriage_child')}
               >
-                <Users className="w-4 h-4 text-purple-600" />
+                <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               </button>
             )}
             <button 
-              className="p-1.5 hover:bg-gray-100 rounded transition-colors" 
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-600 rounded transition-colors" 
               title="Modifier"
               onClick={(e) => handleActionClick(e, 'edit')}
             >
-              <Edit3 className="w-4 h-4 text-blue-600" />
+              <Edit3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </button>
             <button 
-              className="p-1.5 hover:bg-gray-100 rounded transition-colors" 
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-600 rounded transition-colors" 
               title="Supprimer"
               onClick={(e) => handleActionClick(e, 'delete')}
             >
-              <Trash2 className="w-4 h-4 text-red-600" />
+              <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
             </button>
           </motion.div>
         )}
