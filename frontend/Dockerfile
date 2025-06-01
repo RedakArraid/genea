@@ -1,59 +1,40 @@
-# Multi-stage build pour le frontend
-FROM node:18-alpine AS base
+# Dockerfile simplifié pour le frontend
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
 # Copier les fichiers de dépendances
 COPY package*.json ./
 
-# Phase de construction
-FROM base AS build
-
-# Arguments de build
-ARG VITE_API_URL
-ARG NODE_ENV=production
-
-# Variables d'environnement
-ENV VITE_API_URL=$VITE_API_URL
-ENV NODE_ENV=$NODE_ENV
-
-# Installer les dépendances
-RUN npm ci --only=production && npm cache clean --force
+# Installer toutes les dépendances
+RUN npm ci
 
 # Copier le code source
 COPY . .
+
+# Variables d'environnement pour le build
+ARG VITE_API_URL=http://168.231.86.179:3001/api
+ENV VITE_API_URL=$VITE_API_URL
 
 # Build de l'application
 RUN npm run build
 
 # Phase de production avec Nginx
-FROM nginx:alpine AS production
+FROM nginx:alpine
 
-# Copier la configuration Nginx optimisée
+# Copier les configurations Nginx
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY nginx.default.conf /etc/nginx/conf.d/default.conf
 
 # Copier les fichiers buildés
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Créer un utilisateur non-root
-RUN addgroup -g 1001 -S nginx
-RUN adduser -S nginx -u 1001 -G nginx
-
-# Ajuster les permissions
-RUN chown -R nginx:nginx /usr/share/nginx/html
-RUN chown -R nginx:nginx /var/cache/nginx
-RUN chown -R nginx:nginx /var/log/nginx
-RUN chown -R nginx:nginx /etc/nginx/conf.d
-RUN touch /var/run/nginx.pid
-RUN chown -R nginx:nginx /var/run/nginx.pid
-
-USER nginx
-
+# Exposer le port
 EXPOSE 80
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Health check simple
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
 
+# Démarrer Nginx
 CMD ["nginx", "-g", "daemon off;"]
