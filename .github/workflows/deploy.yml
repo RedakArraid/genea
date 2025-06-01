@@ -203,6 +203,10 @@ jobs:
           
           echo "Docker compose file created"
           
+          # Arrêter et nettoyer les anciens containers
+          docker-compose down --remove-orphans || echo "No containers to stop"
+          docker system prune -f || echo "Prune completed"
+          
           # Déployer
           docker-compose pull || echo "Pull failed, continuing..."
           docker-compose up -d
