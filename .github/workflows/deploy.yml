@@ -178,22 +178,22 @@ jobs:
                 - NODE_ENV=staging
                 - DATABASE_URL=postgresql://geneaia_staging:${{ secrets.STAGING_DB_PASSWORD }}@postgres:5432/geneaia_staging?schema=public
                 - JWT_SECRET=${{ secrets.STAGING_JWT_SECRET }}
-                - CORS_ORIGIN=${{ secrets.STAGING_CORS_ORIGIN }}
+                - CORS_ORIGIN=http://${{ secrets.STAGING_HOST }}:3010
                 - PORT=3001
               depends_on:
                 - postgres
               restart: unless-stopped
               ports:
-                - "3001:3001"
+                - "3011:3001"
           
             frontend:
               image: ghcr.io/redakarraid/genea-frontend:staging
               container_name: geneaia-frontend-staging
               environment:
-                - VITE_API_URL=${{ secrets.STAGING_API_URL }}
+                - VITE_API_URL=http://${{ secrets.STAGING_HOST }}:3011/api
               restart: unless-stopped
               ports:
-                - "3000:80"
+                - "3010:80"
           
           volumes:
             postgres_staging_data:
