@@ -181,8 +181,7 @@ jobs:
                 - CORS_ORIGIN=${{ secrets.STAGING_CORS_ORIGIN }}
                 - PORT=3001
               depends_on:
-                postgres:
-                  condition: service_healthy
+                - postgres
               restart: unless-stopped
               ports:
                 - "3001:3001"
@@ -276,8 +275,7 @@ jobs:
                 - CORS_ORIGIN=${{ secrets.PROD_CORS_ORIGIN }}
                 - PORT=3001
               depends_on:
-                postgres:
-                  condition: service_healthy
+                - postgres
               restart: unless-stopped
               ports:
                 - "3001:3001"
