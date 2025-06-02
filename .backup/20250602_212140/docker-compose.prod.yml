@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: geneaia_production
       POSTGRES_USER: geneaia_prod
-      POSTGRES_PASSWORD: ${PROD_DB_PASSWORD:-prod456password}
+      POSTGRES_PASSWORD: prod456password
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
       - ./backups:/backups
@@ -19,13 +19,13 @@ services:
       retries: 5
 
   backend:
-    image: ghcr.io/redakarraid/geneaia-backend:latest
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/geneaia-backend:latest
     container_name: geneaia-backend-prod
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://geneaia_prod:${PROD_DB_PASSWORD:-prod456password}@postgres:5432/geneaia_production?schema=public
-      - JWT_SECRET=${PROD_JWT_SECRET:-prod_jwt_secret_abc123xyz}
-      - CORS_ORIGIN=http://168.231.86.179:8090
+      - DATABASE_URL=postgresql://geneaia_prod:prod456password@postgres:5432/geneaia_production?schema=public
+      - JWT_SECRET=prod_jwt_secret_abc123xyz
+      - CORS_ORIGIN=http://168.231.86.179:8090  # Production frontend sur port 8090
       - PORT=3001
     volumes:
       - uploads_data:/app/uploads
@@ -41,21 +41,20 @@ services:
       retries: 3
 
   frontend:
-    image: ghcr.io/redakarraid/geneaia-frontend:latest
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/geneaia-frontend:latest
     container_name: geneaia-frontend-prod
     environment:
-      - VITE_API_URL=http://168.231.86.179:8090/api
+      - VITE_API_URL=http://168.231.86.179:8090/api  # API via Nginx sur port 8090
     restart: unless-stopped
 
   nginx:
     image: nginx:alpine
     container_name: geneaia-nginx-prod
     ports:
-      - "8090:80"
-      - "8443:443"
+      - "8090:80"  # Production frontend sur port 8090 (libre)
+      - "8443:443"  # HTTPS sur port 8443 si nécessaire
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      # - ./ssl:/etc/nginx/ssl:ro  # Pour HTTPS plus tard
     depends_on:
       - frontend
       - backend
