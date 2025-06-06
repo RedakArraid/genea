@@ -1,143 +1,171 @@
 #!/bin/bash
 
-echo "🔍 Validation des corrections CI/CD"
+# Script de validation automatique des corrections GeneaIA
+# Ce script vérifie que les corrections appliquées fonctionnent correctement
+
+set -e  # Arrête le script en cas d'erreur
+
+echo "🚀 Validation des corrections GeneaIA"
 echo "===================================="
 
-cd "/Users/kader/Desktop/projet-en-cours/geneaIA"
+# Couleurs pour l'affichage
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-# Fonction pour vérifier un fichier
-check_file() {
-    local file=$1
-    local description=$2
+# Fonction pour afficher les résultats
+print_result() {
     
-    if [ -f "$file" ]; then
-        echo "✅ $description : $file"
-        return 0
+    if [ $1 -eq 0 ]; then
+        echo -e "${GREEN}✅ $2${NC}"
     else
-        echo "❌ $description : $file (MANQUANT)"
+        echo -e "${RED}❌ $2${NC}"
         return 1
     fi
 }
 
-# Fonction pour vérifier une ligne dans un fichier
-check_content() {
-    local file=$1
-    local pattern=$2
-    local description=$3
-    
-    if [ -f "$file" ] && grep -q "$pattern" "$file"; then
-        echo "✅ $description"
-        return 0
+# Test 1: Vérification de la structure des fichiers
+echo -e "\n${YELLOW}1. Vérification de la structure des fichiers${NC}"
+
+# Vérifier que les fichiers critiques existent
+test -f "backend/src/lib/prisma.js" && print_result 0 "Module Prisma central créé" || print_result 1 "Module Prisma central manquant"
+test -f "backend/.env.example" && print_result 0 "Fichier .env.example backend créé" || print_result 1 "Fichier .env.example backend manquant"
+test -f "frontend/.env.example" && print_result 0 "Fichier .env.example frontend créé" || print_result 1 "Fichier .env.example frontend manquant"
+test -f "package.json" && print_result 0 "Package.json racine créé" || print_result 1 "Package.json racine manquant"
+test -f "backend/src/middleware/person.middleware.js" && print_result 0 "Middleware de sécurité créé" || print_result 1 "Middleware de sécurité manquant"
+
+# Test 2: Vérification des imports Prisma
+echo -e "\n${YELLOW}2. Vérification des imports Prisma dans les contrôleurs${NC}"
+
+check_prisma_import() {
+    if grep -q "require('../lib/prisma')" "$1"; then
+        print_result 0 "Import Prisma correct dans $(basename $1)"
     else
-        echo "❌ $description (MANQUANT dans $file)"
-        return 1
+        print_result 1 "Import Prisma manquant dans $(basename $1)"
     fi
 }
 
-echo ""
-echo "📁 Vérification des fichiers principaux..."
+check_prisma_import "backend/src/controllers/auth.controller.js"
+check_prisma_import "backend/src/controllers/familyTree.controller.js"
+check_prisma_import "backend/src/controllers/person.controller.js"
+check_prisma_import "backend/src/controllers/relationship.controller.js"
 
-# Vérifier les workflows
-check_file ".github/workflows/deploy.yml" "Workflow principal"
-check_file ".github/workflows/test-only.yml" "Workflow de tests (optionnel)"
+# Test 3: Vérification de la configuration Vite
+echo -e "\n${YELLOW}3. Vérification de la configuration Vite${NC}"
 
-# Vérifier les docker-compose
-check_file "docker-compose.yml" "Docker-compose local"
-check_file "docker-compose.staging.yml" "Docker-compose staging"
-check_file "docker-compose.prod.yml" "Docker-compose production"
-
-echo ""
-echo "🔍 Vérification de la cohérence des noms d'images..."
-
-# Vérifier les noms d'images dans les workflows
-check_content ".github/workflows/deploy.yml" "ghcr.io/redakarraid/geneaia-backend" "Nom backend cohérent dans workflow"
-check_content ".github/workflows/deploy.yml" "ghcr.io/redakarraid/geneaia-frontend" "Nom frontend cohérent dans workflow"
-
-# Vérifier les noms d'images dans docker-compose
-check_content "docker-compose.staging.yml" "ghcr.io/redakarraid/geneaia-backend:staging" "Nom backend cohérent en staging"
-check_content "docker-compose.staging.yml" "ghcr.io/redakarraid/geneaia-frontend:staging" "Nom frontend cohérent en staging"
-
-check_content "docker-compose.prod.yml" "ghcr.io/redakarraid/geneaia-backend:latest" "Nom backend cohérent en prod"
-check_content "docker-compose.prod.yml" "ghcr.io/redakarraid/geneaia-frontend:latest" "Nom frontend cohérent en prod"
-
-echo ""
-echo "🌐 Vérification des URLs et ports..."
-
-# Vérifier les ports staging
-check_content "docker-compose.staging.yml" "3010:80" "Port frontend staging (3010)"
-check_content "docker-compose.staging.yml" "3011:3001" "Port backend staging (3011)"
-
-# Vérifier les URLs API
-check_content "docker-compose.staging.yml" "http://168.231.86.179:3011/api" "URL API staging"
-check_content "docker-compose.prod.yml" "http://168.231.86.179:8090/api" "URL API production"
-
-# Vérifier les ports production
-check_content "docker-compose.prod.yml" "8090:80" "Port production via Nginx (8090)"
-
-echo ""
-echo "🔐 Vérification de la sécurité..."
-
-# Vérifier l'utilisation de variables d'environnement
-check_content "docker-compose.staging.yml" "\${STAGING_DB_PASSWORD" "Variables sécurisées staging"
-check_content "docker-compose.prod.yml" "\${PROD_DB_PASSWORD" "Variables sécurisées production"
-
-# Vérifier les health checks
-check_content "docker-compose.staging.yml" "healthcheck:" "Health checks staging"
-check_content "docker-compose.prod.yml" "healthcheck:" "Health checks production"
-
-echo ""
-echo "🏗️ Vérification des workflows..."
-
-# Vérifier les déclencheurs
-check_content ".github/workflows/deploy.yml" "branches: \[ main, staging \]" "Déclencheurs corrects"
-
-# Vérifier les jobs
-check_content ".github/workflows/deploy.yml" "deploy-staging:" "Job staging"
-check_content ".github/workflows/deploy.yml" "deploy-production:" "Job production"
-
-# Vérifier les conditions
-check_content ".github/workflows/deploy.yml" "if: github.ref == 'refs/heads/staging'" "Condition staging"
-check_content ".github/workflows/deploy.yml" "if: github.ref == 'refs/heads/main'" "Condition production"
-
-echo ""
-echo "🗑️ Vérification de la suppression des fichiers obsolètes..."
-
-# Vérifier que les anciens fichiers sont supprimés
-if [ ! -f ".github/workflows/deploy-old.yml" ]; then
-    echo "✅ deploy-old.yml supprimé"
+if grep -q "rewrite.*replace" "frontend/vite.config.js"; then
+    print_result 1 "Configuration proxy Vite incorrecte (rewrite présent)"
 else
-    echo "❌ deploy-old.yml encore présent"
+    print_result 0 "Configuration proxy Vite corrigée"
 fi
 
-if [ ! -f ".github/workflows/ci-cd.yml" ]; then
-    echo "✅ ci-cd.yml supprimé (ou renommé)"
+# Test 4: Vérification du package.json backend
+echo -e "\n${YELLOW}4. Vérification des scripts backend${NC}"
+
+if grep -q '"dev": "nodemon' "backend/package.json"; then
+    print_result 0 "Script dev backend utilise nodemon"
 else
-    echo "⚠️ ci-cd.yml encore présent (peut être gardé si voulu)"
+    print_result 1 "Script dev backend n'utilise pas nodemon"
 fi
 
-echo ""
-echo "📊 Résumé de la validation..."
+# Test 5: Vérification des middlewares de sécurité
+echo -e "\n${YELLOW}5. Vérification des middlewares de sécurité${NC}"
 
-# Compter les succès et échecs
-success_count=$(grep -c "✅" /tmp/validation_log 2>/dev/null || echo "0")
-error_count=$(grep -c "❌" /tmp/validation_log 2>/dev/null || echo "0")
+if grep -q "canAccessPerson" "backend/src/routes/person.routes.js"; then
+    print_result 0 "Middleware de sécurité appliqué aux routes person"
+else
+    print_result 1 "Middleware de sécurité manquant sur les routes person"
+fi
 
-echo "✅ Vérifications réussies : À déterminer manuellement"
-echo "❌ Problèmes détectés : À déterminer manuellement"
+if grep -q "canCreateRelationship" "backend/src/routes/relationship.routes.js"; then
+    print_result 0 "Middleware de sécurité appliqué aux routes relationship"
+else
+    print_result 1 "Middleware de sécurité manquant sur les routes relationship"
+fi
 
-echo ""
-echo "🎯 Recommandations finales :"
-echo "   1. Configurer tous les secrets GitHub"
-echo "   2. Tester un push sur staging pour valider le pipeline"
-echo "   3. Vérifier que les images Docker se construisent"
-echo "   4. Tester l'accès aux URLs de staging et production"
+# Test 6: Vérification de la simplification du seed
+echo -e "\n${YELLOW}6. Vérification de la simplification du fichier seed${NC}"
 
-echo ""
-echo "✨ Validation terminée !"
+# Compter le nombre de relations dans le seed
+relation_count=$(grep -c "prisma.relationship.create" "backend/prisma/seed.js" || echo "0")
 
-# Test rapide des images Docker si Docker est disponible
-if command -v docker &> /dev/null; then
-    echo ""
-    echo "🐳 Test rapide Docker (optionnel)..."
-    docker images | grep geneaia | head -5 || echo "Aucune image geneaia locale trouvée"
+if [ "$relation_count" -le 15 ]; then
+    print_result 0 "Fichier seed simplifié (${relation_count} relations au lieu de >30)"
+else
+    print_result 1 "Fichier seed pas assez simplifié (${relation_count} relations)"
+fi
+
+# Test 7: Vérification des dépendances
+echo -e "\n${YELLOW}7. Vérification des dépendances${NC}"
+
+if [ -f "backend/node_modules/.package-lock.json" ] || [ -f "backend/package-lock.json" ]; then
+    print_result 0 "Dépendances backend installées"
+else
+    print_result 1 "Dépendances backend non installées"
+fi
+
+if [ -f "frontend/node_modules/.package-lock.json" ] || [ -f "frontend/package-lock.json" ]; then
+    print_result 0 "Dépendances frontend installées"
+else
+    print_result 1 "Dépendances frontend non installées"
+fi
+
+# Test 8: Test de démarrage rapide (si possible)
+echo -e "\n${YELLOW}8. Test de syntaxe des fichiers principaux${NC}"
+
+# Test de syntaxe JavaScript
+if node -c "backend/src/index.js" 2>/dev/null; then
+    print_result 0 "Syntaxe backend/src/index.js valide"
+else
+    print_result 1 "Erreur de syntaxe dans backend/src/index.js"
+fi
+
+if node -c "backend/src/lib/prisma.js" 2>/dev/null; then
+    print_result 0 "Syntaxe backend/src/lib/prisma.js valide"
+else
+    print_result 1 "Erreur de syntaxe dans backend/src/lib/prisma.js"
+fi
+
+# Résumé
+echo -e "\n${YELLOW}📊 Résumé de la validation${NC}"
+echo "=================================="
+
+# Compter les tests réussis vs échoués en relançant les vérifications
+total_tests=0
+passed_tests=0
+
+# Fonction pour compter les tests
+count_test() {
+    total_tests=$((total_tests + 1))
+    if [ $1 -eq 0 ]; then
+        passed_tests=$((passed_tests + 1))
+    fi
+}
+
+# Recompter rapidement (version silencieuse)
+test -f "backend/src/lib/prisma.js" && count_test 0 || count_test 1
+test -f "backend/.env.example" && count_test 0 || count_test 1
+test -f "frontend/.env.example" && count_test 0 || count_test 1
+test -f "package.json" && count_test 0 || count_test 1
+test -f "backend/src/middleware/person.middleware.js" && count_test 0 || count_test 1
+
+grep -q "require('../lib/prisma')" "backend/src/controllers/auth.controller.js" && count_test 0 || count_test 1
+grep -q "require('../lib/prisma')" "backend/src/controllers/familyTree.controller.js" && count_test 0 || count_test 1
+grep -q "require('../lib/prisma')" "backend/src/controllers/person.controller.js" && count_test 0 || count_test 1
+
+grep -q "rewrite.*replace" "frontend/vite.config.js" && count_test 1 || count_test 0
+grep -q '"dev": "nodemon' "backend/package.json" && count_test 0 || count_test 1
+
+echo "Tests réussis: ${passed_tests}/${total_tests}"
+
+if [ $passed_tests -eq $total_tests ]; then
+    echo -e "${GREEN}🎉 Toutes les corrections ont été appliquées avec succès !${NC}"
+    echo -e "${GREEN}Le projet GeneaIA est prêt pour le développement.${NC}"
+    exit 0
+else
+    failed_tests=$((total_tests - passed_tests))
+    echo -e "${RED}⚠️  ${failed_tests} test(s) ont échoué.${NC}"
+    echo -e "${YELLOW}Veuillez vérifier les corrections ci-dessus.${NC}"
+    exit 1
 fi
