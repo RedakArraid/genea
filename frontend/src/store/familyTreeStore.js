@@ -292,32 +292,13 @@ export const useFamilyTreeStore = create((set, get) => ({
       const response = await api.post('/relationships', relationshipData);
       const newRelationship = response.data.relationship;
       
-      // Création de l'arête pour ReactFlow
-      const newEdge = {
-        id: newRelationship.id,
-        source: newRelationship.sourceId,
-        target: newRelationship.targetId,
-        type: 'straight',
-        data: relationshipData.data,
-        sourceHandle: relationshipData.sourceHandle,
-        targetHandle: relationshipData.targetHandle
-      };
+      // Supprimer la logique de création d'arête côté client, car elle est maintenant gérée par le backend
+      // et l'arbre sera rechargé pour refléter les changements du backend.
 
-      // Enregistrer l'arête avec les handles
-      await api.post(`/edges`, {
-        source: newEdge.source,
-        target: newEdge.target,
-        type: newEdge.type,
-        sourceHandle: newEdge.sourceHandle,
-        targetHandle: newEdge.targetHandle,
-        data: newEdge.data,
-        treeId: get().currentTree.id
-      });
+      // Recharger l'arbre complet pour s'assurer que les nœuds et les arêtes sont à jour
+      await get().fetchTreeById(get().currentTree.id);
 
-      set(state => ({ 
-        edges: [...state.edges, newEdge],
-        isLoading: false 
-      }));
+      showToast(`Nouveau lien ${relationshipData.type === 'spouse' ? 'conjugal' : 'familial'} ajouté`, "success");
       return { success: true };
     } catch (error) {
       console.error('Erreur lors de l\'ajout de la relation:', error);

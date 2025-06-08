@@ -132,7 +132,7 @@ exports.createRelationship = async (req, res, next) => {
       }
     });
     
-    // Si c'est une relation parent-enfant, créer aussi la relation inverse
+    // Si c'est une relation parent-enfant, créer aussi la relation inverse et l'arête
     if (type === 'parent') {
       await prisma.relationship.create({
         data: {
@@ -141,12 +141,32 @@ exports.createRelationship = async (req, res, next) => {
           targetId: sourceId
         }
       });
+      // Créer l'arête pour la relation parent-enfant
+      await prisma.edge.create({
+        data: {
+          source: sourceId,
+          target: targetId,
+          type: 'parent_child_connection', // Un type d'arête spécifique pour les liens parent-enfant
+          data: { type: 'parent_child_connection' },
+          treeId: source.treeId // L'ID de l'arbre est disponible via la personne source
+        }
+      });
     } else if (type === 'child') {
       await prisma.relationship.create({
         data: {
           type: 'parent',
           sourceId: targetId,
           targetId: sourceId
+        }
+      });
+      // Créer l'arête pour la relation enfant-parent (inverse)
+      await prisma.edge.create({
+        data: {
+          source: targetId,
+          target: sourceId,
+          type: 'parent_child_connection',
+          data: { type: 'parent_child_connection' },
+          treeId: source.treeId
         }
       });
     } else if (type === 'spouse') {
@@ -170,6 +190,16 @@ exports.createRelationship = async (req, res, next) => {
           }
         });
       }
+      // Créer l'arête pour la relation de conjoint
+      await prisma.edge.create({
+        data: {
+          source: sourceId,
+          target: targetId,
+          type: 'spouse_connection', // Un type d'arête spécifique pour les liens de conjoint
+          data: { type: 'spouse_connection' },
+          treeId: source.treeId
+        }
+      });
     } else if (type === 'sibling') {
       // Pour les frères et sœurs, créer la relation dans les deux sens si elle n'existe pas
       const existingReverseRelationship = await prisma.relationship.findFirst({
