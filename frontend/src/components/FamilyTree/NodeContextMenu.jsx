@@ -39,45 +39,6 @@ const NodeContextMenu = ({ x, y, node, onClose, onAddPerson, onEditPerson, onDel
       transition={{ duration: 0.2 }}
       onClick={stopPropagation}
     >
-      <div className="context-menu-item" onClick={() => handleAddPerson('parent')}>
-        <UserPlus size={16} />
-        <span>Ajouter un parent</span>
-      </div>
-      
-      <div className="context-menu-item" onClick={() => handleAddPerson('spouse')}>
-        <LinkIcon size={16} />
-        <span>Ajouter un(e) conjoint(e)</span>
-      </div>
-      
-      <div className="context-menu-item" onClick={() => handleAddPerson('child')}>
-        <PlusCircle size={16} />
-        <span>Ajouter un enfant</span>
-      </div>
-      
-      <div className="context-menu-item" onClick={() => handleAddPerson('sibling')}>
-        <Users size={16} />
-        <span>Ajouter un frère/une sœur</span>
-      </div>
-      
-      {marriageEdges.length > 0 && (
-        <>
-          <div className="border-t border-border my-1"></div>
-          
-          {marriageEdges.map(edge => (
-            <div 
-              key={edge.id} 
-              className="context-menu-item" 
-              onClick={() => handleAddPerson('marriage_child', edge.id)}
-            >
-              <Baby size={16} />
-              <span>Ajouter un enfant d'union</span>
-            </div>
-          ))}
-        </>
-      )}
-      
-      <div className="border-t border-border my-1"></div>
-      
       <div className="context-menu-item" onClick={handleEditPerson}>
         <Edit3 size={16} />
         <span>Modifier</span>

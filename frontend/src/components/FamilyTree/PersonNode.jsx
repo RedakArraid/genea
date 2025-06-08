@@ -272,126 +272,150 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
         )}
       </AnimatePresence>
 
-      {/* Points de connexion avec couleurs spécifiques */}
+      {/* Points de connexion avec icônes + et actions de clic - Masqués par défaut */}
       {/* Parent (haut) - Bleu */}
-      <Handle 
-        type="target" 
-        position={Position.Top} 
-        isConnectable={isConnectable} 
-        className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white !top-[-6px] hover:!scale-110 transition-transform"
-        id="parent-target"
-      />
-      <Handle 
-        type="source" 
-        position={Position.Top} 
-        isConnectable={isConnectable} 
-        className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white !top-[-6px] hover:!scale-110 transition-transform"
-        id="parent-source"
-      />
+      <div 
+        className={`absolute -top-1.5 left-1/2 transform -translate-x-1/2 group cursor-pointer z-20 transition-opacity duration-200 ${
+          showActions ? 'opacity-100' : 'opacity-0'
+        }`}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleActionClick(e, 'parent');
+        }}
+        title="Ajouter un parent"
+      >
+        <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center border-0 shadow-sm hover:scale-150 transition-all duration-200">
+          <PlusCircle className="w-1.5 h-1.5 text-white" />
+        </div>
+        <Handle 
+          type="target" 
+          position={Position.Top} 
+          isConnectable={isConnectable} 
+          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
+          id="parent-target"
+        />
+        <Handle 
+          type="source" 
+          position={Position.Top} 
+          isConnectable={isConnectable} 
+          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
+          id="parent-source"
+        />
+      </div>
       
       {/* Enfant (bas) - Vert */}
-      <Handle 
-        type="target" 
-        position={Position.Bottom} 
-        isConnectable={isConnectable} 
-        className="!w-3 !h-3 !bg-green-500 !border-2 !border-white !bottom-[-6px] hover:!scale-110 transition-transform"
-        id="child-target"
-      />
-      <Handle 
-        type="source" 
-        position={Position.Bottom} 
-        isConnectable={isConnectable} 
-        className="!w-3 !h-3 !bg-green-500 !border-2 !border-white !bottom-[-6px] hover:!scale-110 transition-transform"
-        id="child-source"
-      />
+      <div 
+        className={`absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 group cursor-pointer z-20 transition-opacity duration-200 ${
+          showActions ? 'opacity-100' : 'opacity-0'
+        }`}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleActionClick(e, 'child');
+        }}
+        title="Ajouter un enfant"
+      >
+        <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center border-0 shadow-sm hover:scale-150 transition-all duration-200">
+          <PlusCircle className="w-1.5 h-1.5 text-white" />
+        </div>
+        <Handle 
+          type="target" 
+          position={Position.Bottom} 
+          isConnectable={isConnectable} 
+          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
+          id="child-target"
+        />
+        <Handle 
+          type="source" 
+          position={Position.Bottom} 
+          isConnectable={isConnectable} 
+          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
+          id="child-source"
+        />
+      </div>
       
-      {/* Conjoint (gauche et droite) - Rouge/Rose avec meilleure visibilité */}
-      <Handle 
-        type="target" 
-        position={Position.Left} 
-        isConnectable={isConnectable} 
-        className="!w-4 !h-4 !bg-pink-500 !border-2 !border-white !left-[-8px] hover:!scale-125 transition-all duration-200 !shadow-lg"
-        id="spouse-left-target"
-        style={{ zIndex: 10 }}
-      />
-      <Handle 
-        type="source" 
-        position={Position.Left} 
-        isConnectable={isConnectable} 
-        className="!w-4 !h-4 !bg-pink-500 !border-2 !border-white !left-[-8px] hover:!scale-125 transition-all duration-200 !shadow-lg"
-        id="spouse-left-source"
-        style={{ zIndex: 10 }}
-      />
-      <Handle 
-        type="target" 
-        position={Position.Right} 
-        isConnectable={isConnectable} 
-        className="!w-4 !h-4 !bg-pink-500 !border-2 !border-white !right-[-8px] hover:!scale-125 transition-all duration-200 !shadow-lg"
-        id="spouse-right-target"
-        style={{ zIndex: 10 }}
-      />
-      <Handle 
-        type="source" 
-        position={Position.Right} 
-        isConnectable={isConnectable} 
-        className="!w-4 !h-4 !bg-pink-500 !border-2 !border-white !right-[-8px] hover:!scale-125 transition-all duration-200 !shadow-lg"
-        id="spouse-right-source"
-        style={{ zIndex: 10 }}
-      />
+      {/* Conjoint (gauche) - Rose */}
+      <div 
+        className={`absolute -left-1.5 top-1/2 transform -translate-y-1/2 group cursor-pointer z-20 transition-opacity duration-200 ${
+          showActions ? 'opacity-100' : 'opacity-0'
+        }`}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleActionClick(e, 'spouse');
+        }}
+        title="Ajouter un(e) conjoint(e)"
+      >
+        <div className="w-3 h-3 bg-pink-500 rounded-full flex items-center justify-center border-0 shadow-sm hover:scale-150 transition-all duration-200">
+          <PlusCircle className="w-1.5 h-1.5 text-white" />
+        </div>
+        <Handle 
+          type="target" 
+          position={Position.Left} 
+          isConnectable={isConnectable} 
+          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
+          id="spouse-left-target"
+        />
+        <Handle 
+          type="source" 
+          position={Position.Left} 
+          isConnectable={isConnectable} 
+          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
+          id="spouse-left-source"
+        />
+      </div>
+      
+      {/* Conjoint (droite) - Rose */}
+      <div 
+        className={`absolute -right-1.5 top-1/2 transform -translate-y-1/2 group cursor-pointer z-20 transition-opacity duration-200 ${
+          showActions ? 'opacity-100' : 'opacity-0'
+        }`}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleActionClick(e, 'spouse');
+        }}
+        title="Ajouter un(e) conjoint(e)"
+      >
+        <div className="w-3 h-3 bg-pink-500 rounded-full flex items-center justify-center border-0 shadow-sm hover:scale-150 transition-all duration-200">
+          <PlusCircle className="w-1.5 h-1.5 text-white" />
+        </div>
+        <Handle 
+          type="target" 
+          position={Position.Right} 
+          isConnectable={isConnectable} 
+          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
+          id="spouse-right-target"
+        />
+        <Handle 
+          type="source" 
+          position={Position.Right} 
+          isConnectable={isConnectable} 
+          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
+          id="spouse-right-source"
+        />
+      </div>
 
-      {/* Menu d'actions au survol */}
+      {/* Menu d'actions au survol - Simplifié et taille très réduite */}
       <AnimatePresence>
         {showActions && !isUploading && (
           <motion.div 
-            className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 flex gap-1 bg-white dark:bg-slate-700 rounded-lg shadow-lg p-1 z-20 border border-gray-200 dark:border-slate-600"
+            className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 flex gap-0 bg-white dark:bg-slate-700 rounded shadow p-0 z-20 border border-gray-200 dark:border-slate-600"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
           >
             <button 
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-600 rounded transition-colors" 
-              title="Ajouter parent"
-              onClick={(e) => handleActionClick(e, 'parent')}
-            >
-              <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            </button>
-            <button 
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-600 rounded transition-colors" 
-              title="Ajouter conjoint"
-              onClick={(e) => handleActionClick(e, 'spouse')}
-            >
-              <LinkIcon className="w-4 h-4 text-pink-600 dark:text-pink-400" />
-            </button>
-            <button 
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-600 rounded transition-colors" 
-              title="Ajouter enfant"
-              onClick={(e) => handleActionClick(e, 'child')}
-            >
-              <Baby className="w-4 h-4 text-green-600 dark:text-green-400" />
-            </button>
-            {canAddChildToMarriage() && (
-              <button 
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-600 rounded transition-colors" 
-                title="Enfant d'union"
-                onClick={(e) => handleActionClick(e, 'marriage_child')}
-              >
-                <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              </button>
-            )}
-            <button 
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-600 rounded transition-colors" 
+              className="p-0.5 hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors" 
               title="Modifier"
               onClick={(e) => handleActionClick(e, 'edit')}
             >
-              <Edit3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <Edit3 className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
             </button>
             <button 
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-600 rounded transition-colors" 
+              className="p-0.5 hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors" 
               title="Supprimer"
               onClick={(e) => handleActionClick(e, 'delete')}
             >
-              <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <Trash2 className="w-2.5 h-2.5 text-red-600 dark:text-red-400" />
             </button>
           </motion.div>
         )}

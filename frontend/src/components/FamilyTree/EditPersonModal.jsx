@@ -21,7 +21,11 @@ const EditPersonModal = ({
     gender: 'male',
     occupation: '',
     biography: '',
-    photoUrl: ''
+    photoUrl: '',
+    fatherFirstName: '',
+    fatherLastName: '',
+    motherFirstName: '',
+    motherLastName: ''
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -39,7 +43,11 @@ const EditPersonModal = ({
         gender: nodeData.gender || 'male',
         occupation: nodeData.occupation || '',
         biography: nodeData.biography || '',
-        photoUrl: photoUrl
+        photoUrl: photoUrl,
+        fatherFirstName: nodeData.fatherFirstName || '',
+        fatherLastName: nodeData.fatherLastName || '',
+        motherFirstName: nodeData.motherFirstName || '',
+        motherLastName: nodeData.motherLastName || ''
       });
       
       // Si une photo existe déjà, l'afficher en prévisualisation
@@ -362,6 +370,71 @@ const EditPersonModal = ({
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
               />
+            </div>
+            
+            {/* Section Parents */}
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Parents</h3>
+              
+              {/* Père */}
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <div>
+                  <label htmlFor="fatherFirstName" className="block text-sm font-medium text-gray-700">
+                    Prénom du père
+                  </label>
+                  <input
+                    id="fatherFirstName"
+                    name="fatherFirstName"
+                    type="text"
+                    value={formData.fatherFirstName || ''}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="fatherLastName" className="block text-sm font-medium text-gray-700">
+                    Nom du père
+                  </label>
+                  <input
+                    id="fatherLastName"
+                    name="fatherLastName"
+                    type="text"
+                    value={formData.fatherLastName || ''}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  />
+                </div>
+              </div>
+              
+              {/* Mère */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="motherFirstName" className="block text-sm font-medium text-gray-700">
+                    Prénom de la mère
+                  </label>
+                  <input
+                    id="motherFirstName"
+                    name="motherFirstName"
+                    type="text"
+                    value={formData.motherFirstName || ''}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="motherLastName" className="block text-sm font-medium text-gray-700">
+                    Nom de la mère
+                  </label>
+                  <input
+                    id="motherLastName"
+                    name="motherLastName"
+                    type="text"
+                    value={formData.motherLastName || ''}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { getSmoothStepPath, BaseEdge } from 'reactflow';
 
 /**
@@ -13,8 +13,12 @@ const MarriageEdge = ({
   sourcePosition,
   targetPosition,
   data,
-  markerEnd
+  markerEnd,
+  onAddChild
 }) => {
+  // État de survol local
+  const [isHovered, setIsHovered] = useState(false);
+  
   // Créer le chemin de l'arête
   const [edgePath] = getSmoothStepPath({
     sourceX,
@@ -34,7 +38,10 @@ const MarriageEdge = ({
   const children = data?.children || [];
 
   return (
-    <g>
+    <g
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Ligne de mariage principale */}
       <BaseEdge
         path={edgePath}
@@ -46,15 +53,40 @@ const MarriageEdge = ({
         }}
       />
       
-      {/* Point central plus petit */}
-      <circle
-        cx={centerX}
-        cy={centerY}
-        r="4"
-        fill="#e11d48"
-        stroke="white"
-        strokeWidth="1"
-      />
+      {/* Point central cliquable avec icône + - Masqué par défaut */}
+      <g 
+        className={`transition-opacity duration-200 ${
+          isHovered ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        <circle
+          cx={centerX}
+          cy={centerY}
+          r="6"
+          fill="#e11d48"
+          stroke="white"
+          strokeWidth="1"
+          className="cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onAddChild) {
+              onAddChild(id);
+            }
+          }}
+        />
+        <text
+          x={centerX}
+          y={centerY + 1}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="white"
+          fontSize="8"
+          fontWeight="bold"
+          className="cursor-pointer pointer-events-none select-none"
+        >
+          +
+        </text>
+      </g>
       
       {/* Texte de debug plus discret */}
       <text
