@@ -91,18 +91,14 @@
   color: hsl(var(--secondary-foreground));
 }
 
-/* Handles ReactFlow améliorés */
+/* Handles ReactFlow optimisés */
 .react-flow__handle {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   border: 2px solid white;
-  transition: all 0.2s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.react-flow__handle:hover {
-  transform: scale(1.2);
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  position: relative;
+  cursor: pointer;
 }
 
 /* Styles pour les lignes droites et points de connexion */
@@ -118,7 +114,7 @@
   stroke-dasharray: none;
 }
 
-/* Styles améliorés pour les connexions de conjoint */
+/* Amélioration des styles pour les liens de mariage avec bouton + */
 .react-flow__edge[data-type="spouse_connection"] path {
   stroke: #e11d48;
   stroke-width: 5px;
@@ -132,6 +128,17 @@
 .react-flow__edge[data-type="spouse_connection"]:hover path {
   stroke-width: 6px;
   filter: drop-shadow(0 3px 6px rgba(225, 29, 72, 0.5));
+}
+
+/* Style pour le bouton + du mariage */
+.marriage-add-button {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.marriage-add-button:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 /* Styles spéciaux pour les connexions d'enfants de mariage */
@@ -160,16 +167,18 @@
 }
 
 /* Animation pour les nouvelles lignes d'enfants */
-.children-distribution-lines line {
-  stroke-dasharray: 5;
-  stroke-dashoffset: 5;
-  animation: drawChildLine 0.6s ease-out forwards;
-}
-
 @keyframes drawChildLine {
+  from {
+    stroke-dasharray: 5;
+    stroke-dashoffset: 5;
+  }
   to {
     stroke-dashoffset: 0;
   }
+}
+
+.children-distribution-lines line.animate {
+  animation: drawChildLine 0.6s ease-out forwards;
 }
 
 .react-flow__edge[data-type="sibling_connection"] path {
@@ -243,7 +252,7 @@
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
-/* Animation pulse pour les points de mariage */
+/* Animation pulse pour les points de mariage (usage futur) */
 @keyframes marriage-pulse {
   0%, 100% {
     opacity: 0.3;
@@ -255,9 +264,7 @@
   }
 }
 
-.marriage-pulse {
-  animation: marriage-pulse 2s infinite;
-}
+/* .marriage-pulse { animation: marriage-pulse 2s infinite; } */
 
 /* Styles pour l'alignement générationnel */
 .generation-line {

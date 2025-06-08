@@ -8,26 +8,50 @@
 export const findMarriageChildren = (marriageEdgeId, nodes, edges) => {
   // Trouver l'arête de mariage
   const marriageEdge = edges.find(e => e.id === marriageEdgeId);
-  if (!marriageEdge) return [];
+  if (!marriageEdge) {
+    return [];
+  }
 
   // Trouver tous les enfants de ce mariage en évitant les doublons
   const childrenMap = new Map();
   
-  edges
-    .filter(edge => 
-      edge.data?.type === 'marriage_child_connection' &&
-      edge.data?.marriageEdgeId === marriageEdgeId
-    )
-    .forEach(edge => {
-      const childNode = nodes.find(n => n.id === edge.target);
-      if (childNode && !childrenMap.has(edge.target)) {
-        childrenMap.set(edge.target, { 
-          id: edge.target, 
+  // Rechercher les arêtes marriage_child_connection qui référencent ce mariage
+  const marriageChildEdges = edges.filter(edge => 
+    edge.data?.type === 'marriage_child_connection' &&
+    edge.data?.marriageEdgeId === marriageEdgeId
+  );
+  
+  marriageChildEdges.forEach(edge => {
+    // La logique correcte: les relations marriage_child_connection ont:
+    // - sourceId = parent
+    // - targetId = enfant  
+    // - data.marriageEdgeId = ID du mariage
+    
+    // Déterminer qui est l'enfant en vérifiant qui N'EST PAS un parent du mariage
+    const sourceIsParent = edge.source === marriageEdge.source || edge.source === marriageEdge.target;
+    const targetIsParent = edge.target === marriageEdge.source || edge.target === marriageEdge.target;
+    
+    let childId = null;
+    
+    if (sourceIsParent && !targetIsParent) {
+      // source = parent, target = enfant
+      childId = edge.target;
+    } else if (!sourceIsParent && targetIsParent) {
+      // source = enfant, target = parent
+      childId = edge.source;
+    }
+    
+    if (childId) {
+      const childNode = nodes.find(n => n.id === childId);
+      if (childNode && !childrenMap.has(childId)) {
+        childrenMap.set(childId, { 
+          id: childId, 
           edgeId: edge.id,
           node: childNode 
         });
       }
-    });
+    }
+  });
 
   return Array.from(childrenMap.values());
 };

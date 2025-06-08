@@ -28,6 +28,18 @@ const AddPersonModal = ({
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [useTreeName, setUseTreeName] = useState(false); // Nouvelle state pour la case à cocher
+  const [createBothParents, setCreateBothParents] = useState(false); // Option pour créer les deux parents
+  const [secondParentData, setSecondParentData] = useState({
+    firstName: '',
+    lastName: '',
+    birthDate: '',
+    birthPlace: '',
+    deathDate: '',
+    gender: 'female',
+    occupation: '',
+    biography: '',
+    photoUrl: ''
+  });
 
   // Réinitialiser le formulaire à chaque ouverture
   useEffect(() => {
@@ -43,9 +55,21 @@ const AddPersonModal = ({
         biography: '',
         photoUrl: ''
       });
+      setSecondParentData({
+        firstName: '',
+        lastName: '',
+        birthDate: '',
+        birthPlace: '',
+        deathDate: '',
+        gender: 'female',
+        occupation: '',
+        biography: '',
+        photoUrl: ''
+      });
       setPhotoFile(null);
       setPhotoPreview(null);
-      setUseTreeName(false); // Réinitialiser la case à cocher
+      setUseTreeName(false);
+      setCreateBothParents(false);
     }
   }, [isOpen]);
 
@@ -58,6 +82,29 @@ const AddPersonModal = ({
     }));
   };
 
+  // Gestion des changements dans les champs du second parent
+  const handleSecondParentChange = (e) => {
+    const { name, value } = e.target;
+    setSecondParentData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Gestion de l'option "créer les deux parents"
+  const handleCreateBothParentsChange = (e) => {
+    const checked = e.target.checked;
+    setCreateBothParents(checked);
+    
+    // Si on active l'option et qu'on utilise le nom de l'arbre, l'appliquer au second parent aussi
+    if (checked && useTreeName && treeName) {
+      setSecondParentData(prev => ({
+        ...prev,
+        lastName: treeName
+      }));
+    }
+  };
+
   // Gestion de la case à cocher pour utiliser le nom de l'arbre
   const handleUseTreeNameChange = (e) => {
     const checked = e.target.checked;
@@ -68,11 +115,24 @@ const AddPersonModal = ({
         ...prev,
         lastName: treeName
       }));
+      // Appliquer aussi au second parent si l'option est activée
+      if (createBothParents) {
+        setSecondParentData(prev => ({
+          ...prev,
+          lastName: treeName
+        }));
+      }
     } else if (!checked) {
       setFormData(prev => ({
         ...prev,
         lastName: ''
       }));
+      if (createBothParents) {
+        setSecondParentData(prev => ({
+          ...prev,
+          lastName: ''
+        }));
+      }
     }
   };
 
@@ -125,7 +185,14 @@ const AddPersonModal = ({
   // Soumission du formulaire
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData, parentNodeId, relationType, marriageEdgeId);
+    
+    if (createBothParents && relationType === 'parent') {
+      // Créer les deux parents
+      onSubmit(formData, secondParentData, parentNodeId, relationType, marriageEdgeId);
+    } else {
+      // Créer une seule personne
+      onSubmit(formData, parentNodeId, relationType, marriageEdgeId);
+    }
   };
 
   // Animation pour le modal
@@ -425,6 +492,144 @@ const AddPersonModal = ({
               />
             </div>
             
+            {/* Option pour créer les deux parents en même temps */}
+            {relationType === 'parent' && (
+              <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                <div className="flex items-center mb-3">
+                  <input
+                    id="createBothParents"
+                    name="createBothParents"
+                    type="checkbox"
+                    checked={createBothParents}
+                    onChange={handleCreateBothParentsChange}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="createBothParents" className="ml-2 block text-sm font-medium text-gray-700">
+                    Créer les deux parents en même temps (père et mère)
+                  </label>
+                </div>
+                
+                {createBothParents && (
+                  <div className="space-y-4 border-t border-gray-200 pt-4">
+                    <h4 className="text-sm font-medium text-gray-900">Second parent</h4>
+                    
+                    {/* Informations du second parent */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="secondFirstName" className="block text-sm font-medium text-gray-700">
+                          Prénom*
+                        </label>
+                        <input
+                          id="secondFirstName"
+                          name="firstName"
+                          type="text"
+                          value={secondParentData.firstName}
+                          onChange={handleSecondParentChange}
+                          required={createBothParents}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="secondLastName" className="block text-sm font-medium text-gray-700">
+                          Nom de famille*
+                        </label>
+                        <input
+                          id="secondLastName"
+                          name="lastName"
+                          type="text"
+                          value={secondParentData.lastName}
+                          onChange={handleSecondParentChange}
+                          required={createBothParents}
+                          disabled={useTreeName}
+                          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
+                            useTreeName ? 'bg-gray-100 cursor-not-allowed' : ''
+                          }`}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Genre du second parent */}
+                    <div>
+                      <label htmlFor="secondGender" className="block text-sm font-medium text-gray-700">
+                        Genre
+                      </label>
+                      <select
+                        id="secondGender"
+                        name="gender"
+                        value={secondParentData.gender}
+                        onChange={handleSecondParentChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                      >
+                        <option value="male">Homme</option>
+                        <option value="female">Femme</option>
+                        <option value="other">Autre</option>
+                      </select>
+                    </div>
+                    
+                    {/* Dates du second parent */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="secondBirthDate" className="block text-sm font-medium text-gray-700">
+                          Date de naissance
+                        </label>
+                        <input
+                          id="secondBirthDate"
+                          name="birthDate"
+                          type="date"
+                          value={secondParentData.birthDate}
+                          onChange={handleSecondParentChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="secondDeathDate" className="block text-sm font-medium text-gray-700">
+                          Date de décès
+                        </label>
+                        <input
+                          id="secondDeathDate"
+                          name="deathDate"
+                          type="date"
+                          value={secondParentData.deathDate}
+                          onChange={handleSecondParentChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Lieu de naissance du second parent */}
+                    <div>
+                      <label htmlFor="secondBirthPlace" className="block text-sm font-medium text-gray-700">
+                        Lieu de naissance
+                      </label>
+                      <input
+                        id="secondBirthPlace"
+                        name="birthPlace"
+                        type="text"
+                        value={secondParentData.birthPlace}
+                        onChange={handleSecondParentChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                      />
+                    </div>
+                    
+                    {/* Profession du second parent */}
+                    <div>
+                      <label htmlFor="secondOccupation" className="block text-sm font-medium text-gray-700">
+                        Profession
+                      </label>
+                      <input
+                        id="secondOccupation"
+                        name="occupation"
+                        type="text"
+                        value={secondParentData.occupation}
+                        onChange={handleSecondParentChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Biographie */}
             <div>
               <label htmlFor="biography" className="block text-sm font-medium text-gray-700">
@@ -454,7 +659,7 @@ const AddPersonModal = ({
               type="submit"
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
-              Ajouter
+              {createBothParents && relationType === 'parent' ? 'Ajouter les deux parents' : 'Ajouter'}
             </button>
           </div>
         </form>

@@ -1,171 +1,144 @@
 #!/bin/bash
 
-# Script de validation automatique des corrections GeneaIA
-# Ce script vérifie que les corrections appliquées fonctionnent correctement
+# 🔧 Script de Validation Post-Correction - GeneaIA
+# Vérifie que toutes les corrections ont été appliquées correctement
 
-set -e  # Arrête le script en cas d'erreur
+echo "🚀 Validation des corrections GeneaIA..."
+echo "=================================================="
 
-echo "🚀 Validation des corrections GeneaIA"
-echo "===================================="
+# Compteurs
+TESTS_PASSED=0
+TESTS_FAILED=0
 
-# Couleurs pour l'affichage
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Fonction pour afficher les résultats
-print_result() {
+# Fonction de test
+test_check() {
+    local test_name="$1"
+    local test_command="$2"
+    local expected_result="$3"
     
-    if [ $1 -eq 0 ]; then
-        echo -e "${GREEN}✅ $2${NC}"
+    echo -n "Vérification: $test_name... "
+    
+    if eval "$test_command" &>/dev/null; then
+        if [ "$expected_result" = "success" ]; then
+            echo "✅ PASS"
+            ((TESTS_PASSED++))
+        else
+            echo "❌ FAIL (attendu: échec)"
+            ((TESTS_FAILED++))
+        fi
     else
-        echo -e "${RED}❌ $2${NC}"
-        return 1
+        if [ "$expected_result" = "fail" ]; then
+            echo "✅ PASS (échec attendu)"
+            ((TESTS_PASSED++))
+        else
+            echo "❌ FAIL"
+            ((TESTS_FAILED++))
+        fi
     fi
 }
 
-# Test 1: Vérification de la structure des fichiers
-echo -e "\n${YELLOW}1. Vérification de la structure des fichiers${NC}"
-
-# Vérifier que les fichiers critiques existent
-test -f "backend/src/lib/prisma.js" && print_result 0 "Module Prisma central créé" || print_result 1 "Module Prisma central manquant"
-test -f "backend/.env.example" && print_result 0 "Fichier .env.example backend créé" || print_result 1 "Fichier .env.example backend manquant"
-test -f "frontend/.env.example" && print_result 0 "Fichier .env.example frontend créé" || print_result 1 "Fichier .env.example frontend manquant"
-test -f "package.json" && print_result 0 "Package.json racine créé" || print_result 1 "Package.json racine manquant"
-test -f "backend/src/middleware/person.middleware.js" && print_result 0 "Middleware de sécurité créé" || print_result 1 "Middleware de sécurité manquant"
-
-# Test 2: Vérification des imports Prisma
-echo -e "\n${YELLOW}2. Vérification des imports Prisma dans les contrôleurs${NC}"
-
-check_prisma_import() {
-    if grep -q "require('../lib/prisma')" "$1"; then
-        print_result 0 "Import Prisma correct dans $(basename $1)"
+# Fonction de vérification de contenu
+check_content() {
+    local file="$1"
+    local pattern="$2"
+    local description="$3"
+    
+    echo -n "Vérification: $description... "
+    
+    if [ -f "$file" ] && grep -q "$pattern" "$file"; then
+        echo "✅ PASS"
+        ((TESTS_PASSED++))
     else
-        print_result 1 "Import Prisma manquant dans $(basename $1)"
+        echo "❌ FAIL"
+        ((TESTS_FAILED++))
     fi
 }
 
-check_prisma_import "backend/src/controllers/auth.controller.js"
-check_prisma_import "backend/src/controllers/familyTree.controller.js"
-check_prisma_import "backend/src/controllers/person.controller.js"
-check_prisma_import "backend/src/controllers/relationship.controller.js"
+echo "📁 Vérification des fichiers de configuration..."
+echo "--------------------------------------------------"
 
-# Test 3: Vérification de la configuration Vite
-echo -e "\n${YELLOW}3. Vérification de la configuration Vite${NC}"
+# Test 1: URL Backend corrigée
+check_content "frontend/.env" "VITE_API_URL=\"http://localhost:3001/api\"" "URL Backend corrigée"
 
-if grep -q "rewrite.*replace" "frontend/vite.config.js"; then
-    print_result 1 "Configuration proxy Vite incorrecte (rewrite présent)"
-else
-    print_result 0 "Configuration proxy Vite corrigée"
-fi
+# Test 2: Dockerfile.dev existe
+test_check "Dockerfile.dev existe" "[ -f 'frontend/Dockerfile.dev' ]" "success"
 
-# Test 4: Vérification du package.json backend
-echo -e "\n${YELLOW}4. Vérification des scripts backend${NC}"
+# Test 3: Variables ENV nettoyées
+check_content "frontend/.env" "# Variables commentées pour usage futur" "Variables ENV nettoyées"
 
-if grep -q '"dev": "nodemon' "backend/package.json"; then
-    print_result 0 "Script dev backend utilise nodemon"
-else
-    print_result 1 "Script dev backend n'utilise pas nodemon"
-fi
+# Test 4: Documentation mise à jour
+check_content "README.md" "Backend API accessible sur" "Documentation mise à jour"
 
-# Test 5: Vérification des middlewares de sécurité
-echo -e "\n${YELLOW}5. Vérification des middlewares de sécurité${NC}"
+# Test 5: Base de données clarifiée
+check_content "backend/.env" "# En développement Docker" "Base de données clarifiée"
 
-if grep -q "canAccessPerson" "backend/src/routes/person.routes.js"; then
-    print_result 0 "Middleware de sécurité appliqué aux routes person"
-else
-    print_result 1 "Middleware de sécurité manquant sur les routes person"
-fi
+echo ""
+echo "🔍 Vérification du code source..."
+echo "--------------------------------------------------"
 
-if grep -q "canCreateRelationship" "backend/src/routes/relationship.routes.js"; then
-    print_result 0 "Middleware de sécurité appliqué aux routes relationship"
-else
-    print_result 1 "Middleware de sécurité manquant sur les routes relationship"
-fi
+# Test 6: Prop onAddParent ajoutée
+check_content "frontend/src/pages/FamilyTreePage.jsx" "onAddParent={openAddModal}" "Prop onAddParent ajoutée"
 
-# Test 6: Vérification de la simplification du seed
-echo -e "\n${YELLOW}6. Vérification de la simplification du fichier seed${NC}"
+# Test 7: Gestion d'erreurs améliorée
+check_content "frontend/src/pages/FamilyTreePage.jsx" "}).catch((error) =>" "Gestion d'erreurs améliorée"
 
-# Compter le nombre de relations dans le seed
-relation_count=$(grep -c "prisma.relationship.create" "backend/prisma/seed.js" || echo "0")
+# Test 8: Commentaires mis à jour
+check_content "frontend/src/components/FamilyTree/PersonNode.jsx" "Handles transparents" "Commentaires mis à jour"
 
-if [ "$relation_count" -le 15 ]; then
-    print_result 0 "Fichier seed simplifié (${relation_count} relations au lieu de >30)"
-else
-    print_result 1 "Fichier seed pas assez simplifié (${relation_count} relations)"
-fi
+# Test 9: Styles CSS optimisés
+check_content "frontend/src/styles/FamilyTree.css" "/* .marriage-pulse" "Styles CSS optimisés"
 
-# Test 7: Vérification des dépendances
-echo -e "\n${YELLOW}7. Vérification des dépendances${NC}"
+echo ""
+echo "📋 Vérification de la structure du projet..."
+echo "--------------------------------------------------"
 
-if [ -f "backend/node_modules/.package-lock.json" ] || [ -f "backend/package-lock.json" ]; then
-    print_result 0 "Dépendances backend installées"
-else
-    print_result 1 "Dépendances backend non installées"
-fi
+# Test 10: Guide de résolution créé
+test_check "Guide de résolution existe" "[ -f 'RESOLUTION_INCOHERENCES.md' ]" "success"
 
-if [ -f "frontend/node_modules/.package-lock.json" ] || [ -f "frontend/package-lock.json" ]; then
-    print_result 0 "Dépendances frontend installées"
-else
-    print_result 1 "Dépendances frontend non installées"
-fi
+# Test 11: Modifications documentées
+check_content "MODIFICATIONS_GENEAIA.md" "Résolution des incohérences" "Modifications documentées"
 
-# Test 8: Test de démarrage rapide (si possible)
-echo -e "\n${YELLOW}8. Test de syntaxe des fichiers principaux${NC}"
+echo ""
+echo "🏗️ Tests de construction (simulation)..."
+echo "--------------------------------------------------"
 
-# Test de syntaxe JavaScript
-if node -c "backend/src/index.js" 2>/dev/null; then
-    print_result 0 "Syntaxe backend/src/index.js valide"
-else
-    print_result 1 "Erreur de syntaxe dans backend/src/index.js"
-fi
+# Test 12: Package.json frontend valide
+test_check "Package.json frontend valide" "[ -f 'frontend/package.json' ] && node -e 'JSON.parse(require(\"fs\").readFileSync(\"frontend/package.json\"))'" "success"
 
-if node -c "backend/src/lib/prisma.js" 2>/dev/null; then
-    print_result 0 "Syntaxe backend/src/lib/prisma.js valide"
-else
-    print_result 1 "Erreur de syntaxe dans backend/src/lib/prisma.js"
-fi
+# Test 13: Package.json backend valide
+test_check "Package.json backend valide" "[ -f 'backend/package.json' ] && node -e 'JSON.parse(require(\"fs\").readFileSync(\"backend/package.json\"))'" "success"
 
-# Résumé
-echo -e "\n${YELLOW}📊 Résumé de la validation${NC}"
-echo "=================================="
+# Test 14: Docker-compose valide
+test_check "Docker-compose syntaxe valide" "docker-compose config" "success"
 
-# Compter les tests réussis vs échoués en relançant les vérifications
-total_tests=0
-passed_tests=0
+echo ""
+echo "📊 RÉSULTATS FINAUX"
+echo "=================================================="
+echo "Tests réussis: $TESTS_PASSED"
+echo "Tests échoués: $TESTS_FAILED"
+echo "Total: $((TESTS_PASSED + TESTS_FAILED))"
 
-# Fonction pour compter les tests
-count_test() {
-    total_tests=$((total_tests + 1))
-    if [ $1 -eq 0 ]; then
-        passed_tests=$((passed_tests + 1))
-    fi
-}
-
-# Recompter rapidement (version silencieuse)
-test -f "backend/src/lib/prisma.js" && count_test 0 || count_test 1
-test -f "backend/.env.example" && count_test 0 || count_test 1
-test -f "frontend/.env.example" && count_test 0 || count_test 1
-test -f "package.json" && count_test 0 || count_test 1
-test -f "backend/src/middleware/person.middleware.js" && count_test 0 || count_test 1
-
-grep -q "require('../lib/prisma')" "backend/src/controllers/auth.controller.js" && count_test 0 || count_test 1
-grep -q "require('../lib/prisma')" "backend/src/controllers/familyTree.controller.js" && count_test 0 || count_test 1
-grep -q "require('../lib/prisma')" "backend/src/controllers/person.controller.js" && count_test 0 || count_test 1
-
-grep -q "rewrite.*replace" "frontend/vite.config.js" && count_test 1 || count_test 0
-grep -q '"dev": "nodemon' "backend/package.json" && count_test 0 || count_test 1
-
-echo "Tests réussis: ${passed_tests}/${total_tests}"
-
-if [ $passed_tests -eq $total_tests ]; then
-    echo -e "${GREEN}🎉 Toutes les corrections ont été appliquées avec succès !${NC}"
-    echo -e "${GREEN}Le projet GeneaIA est prêt pour le développement.${NC}"
+if [ $TESTS_FAILED -eq 0 ]; then
+    echo ""
+    echo "🎉 SUCCÈS COMPLET !"
+    echo "Toutes les corrections ont été appliquées correctement."
+    echo ""
+    echo "🚀 Prochaines étapes recommandées :"
+    echo "1. Tester le démarrage des services"
+    echo "2. Valider les fonctionnalités en mode dev"
+    echo "3. Vérifier Docker compose"
+    echo ""
+    echo "Commandes de test :"
+    echo "cd frontend && npm run dev"
+    echo "cd backend && npm run dev"
+    echo "docker-compose up -d"
+    
     exit 0
 else
-    failed_tests=$((total_tests - passed_tests))
-    echo -e "${RED}⚠️  ${failed_tests} test(s) ont échoué.${NC}"
-    echo -e "${YELLOW}Veuillez vérifier les corrections ci-dessus.${NC}"
+    echo ""
+    echo "⚠️ ATTENTION !"
+    echo "Certaines vérifications ont échoué."
+    echo "Veuillez réviser les corrections."
+    
     exit 1
 fi

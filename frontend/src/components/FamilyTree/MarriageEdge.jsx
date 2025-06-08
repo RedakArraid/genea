@@ -1,5 +1,6 @@
 import React from 'react';
 import { getSmoothStepPath, BaseEdge } from 'reactflow';
+import { Plus } from 'lucide-react';
 
 /**
  * Arête personnalisée pour les mariages avec gestion des enfants
@@ -13,7 +14,8 @@ const MarriageEdge = ({
   sourcePosition,
   targetPosition,
   data,
-  markerEnd
+  markerEnd,
+  onAddChild // Prop pour gérer l'ajout d'enfant
 }) => {
   // Créer le chemin de l'arête
   const [edgePath] = getSmoothStepPath({
@@ -34,7 +36,7 @@ const MarriageEdge = ({
   const children = data?.children || [];
 
   return (
-    <g>
+    <>
       {/* Ligne de mariage principale */}
       <BaseEdge
         path={edgePath}
@@ -46,26 +48,43 @@ const MarriageEdge = ({
         }}
       />
       
-      {/* Point central plus petit */}
-      <circle
-        cx={centerX}
-        cy={centerY}
-        r="4"
-        fill="#e11d48"
-        stroke="white"
-        strokeWidth="1"
-      />
-      
-      {/* Texte de debug plus discret */}
-      <text
-        x={centerX + 10}
-        y={centerY - 10}
-        fill="#666"
-        fontSize="10"
-        fontWeight="normal"
+      {/* Bouton HTML pour ajouter des enfants */}
+      <foreignObject
+        x={centerX - 8}
+        y={centerY - 8}
+        width={16}
+        height={16}
+        style={{ pointerEvents: 'all' }}
       >
-        {children.length}
-      </text>
+        <button
+          className="w-4 h-4 bg-red-500 border-2 border-white rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-110 z-50"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onAddChild) {
+              const sourceId = data?.sourceId || null;
+              const targetId = data?.targetId || null;
+              onAddChild(id, sourceId, targetId);
+            }
+          }}
+          title="Ajouter un enfant à l'union"
+        >
+          <Plus className="w-2 h-2 text-white" strokeWidth={3} />
+        </button>
+      </foreignObject>
+      
+      {/* Nombre d'enfants (optionnel) */}
+      {children.length > 0 && (
+        <text
+          x={centerX + 12}
+          y={centerY - 8}
+          fill="#666"
+          fontSize="10"
+          fontWeight="normal"
+        >
+          {children.length}
+        </text>
+      )}
       
       {/* Lignes vers les enfants */}
       {children.length === 1 ? (
@@ -172,7 +191,7 @@ const MarriageEdge = ({
           );
         })()
       ) : null}
-    </g>
+    </>
   );
 };
 

@@ -37,6 +37,9 @@ export const useFamilyTreeStore = create((set, get) => ({
     try {
       const response = await api.get(`/family-trees/${treeId}`);
       const { tree } = response.data;
+      
+      console.log('🌳 ARBRE RÉCUPÉRÉ DU BACKEND:', tree);
+      console.log('🌳 Arêtes dans l\'arbre:', tree.Edge?.length || 0);
 
       // Transformer les données pour ReactFlow
       const nodes = tree.Person.map(person => ({
@@ -49,18 +52,30 @@ export const useFamilyTreeStore = create((set, get) => ({
         }
       }));
 
-      const edges = tree.Edge.map(edge => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        type: edge.type,
-        data: edge.data,
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle
-      }));
+      const edges = tree.Edge.map(edge => {
+        console.log('🔗 ARÊTE RÉCUPÉRÉE:', {
+          id: edge.id,
+          type: edge.type,
+          dataType: edge.data?.type,
+          marriageEdgeId: edge.data?.marriageEdgeId
+        });
+        return {
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          type: edge.type,
+          data: edge.data,
+          sourceHandle: edge.sourceHandle,
+          targetHandle: edge.targetHandle
+        };
+      });
 
       // Calculer les handles intelligents pour les arêtes sans handles
       const smartEdges = calculateAllSmartHandles(edges, nodes);
+      
+      console.log('🔗 ARÊTES FINALES POUR REACTFLOW:', smartEdges.length);
+      const marriageChildEdges = smartEdges.filter(e => e.data?.type === 'marriage_child_connection');
+      console.log('🔗 Arêtes marriage_child_connection finales:', marriageChildEdges.length);
 
       set({ 
         currentTree: tree,

@@ -1,0 +1,29 @@
+# Dockerfile pour développement - Version optimisée pour hot reload
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Installer les dépendances globales pour le développement
+RUN npm install -g npm@latest
+
+# Copier les fichiers de dépendances
+COPY package*.json ./
+
+# Installer toutes les dépendances (y compris dev)
+RUN npm ci
+
+# Copier le code source
+COPY . .
+
+# Exposer le port Vite
+EXPOSE 5173
+
+# Variables d'environnement pour le développement
+ENV NODE_ENV=development
+
+# Health check pour le développement
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD curl -f http://localhost:5173/ || exit 1
+
+# Démarrer le serveur de développement avec hot reload
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

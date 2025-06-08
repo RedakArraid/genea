@@ -44,6 +44,8 @@ Backend:  http://localhost:3001/api
 | **Staging** | http://168.231.86.179:3010 | Tests et preview |
 | **Production** | http://168.231.86.179:8080 | Application live |
 
+**Note**: Backend API accessible sur `http://localhost:3001/api` en développement
+
 ## 📖 Documentation
 
 - **[Guide CI/CD complet](README-CICD.md)** - Configuration et déploiement
