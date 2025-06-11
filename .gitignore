@@ -52,3 +52,13 @@ temp/
 # Archives de déploiement (générées dynamiquement)
 *.tar.gz
 *.zip
+
+MIGRATION_GUIDE.md
+fix-migration-order.sh
+fix-prisma-migrations.sh
+fix-staging-commit.sh
+fix-vps-migrations.sh
+force-staging.sh
+migrate-staging.sh
+rollback-staging.sh
+setup-scripts.sh
