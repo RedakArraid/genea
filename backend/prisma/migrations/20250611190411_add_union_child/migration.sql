@@ -1,10 +1,3 @@
-/*
-  Warnings:
-
-  - Added UnionChild table for managing children of marriage unions
-
-*/
-
 -- CreateTable
 CREATE TABLE "UnionChild" (
     "id" TEXT NOT NULL,
