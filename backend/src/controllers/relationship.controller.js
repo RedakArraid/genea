@@ -68,9 +68,60 @@ exports.createRelationship = async (req, res, next) => {
       return res.status(400).json({ errors: errors.array() });
     }
     
-    const { type, sourceId, targetId } = req.body;
+    const { type, sourceId, targetId, data } = req.body;
     
-    // Vérifier que les personnes existent
+    // CAS SPÉCIAL : Enfant d'union (sourceId commence par 'union-' ou est 'union-marker')
+    if (type === 'union_child' && (sourceId === 'union-marker' || sourceId.startsWith('union-'))) {
+      // Vérifier que l'enfant (target) existe
+      const target = await prisma.person.findUnique({
+        where: { id: targetId },
+        include: { FamilyTree: true }
+      });
+      
+      if (!target) {
+        return res.status(404).json({ message: 'Enfant non trouvé' });
+      }
+      
+      // Vérifier que le mariage existe (si marriageEdgeId fourni)
+      if (data?.marriageEdgeId) {
+        const marriageEdge = await prisma.edge.findUnique({
+          where: { id: data.marriageEdgeId }
+        });
+        
+        if (!marriageEdge) {
+          return res.status(404).json({ message: 'Mariage non trouvé' });
+        }
+      }
+      
+      // Créer la relation spéciale enfant d'union SANS vérifier l'existence du sourceId
+      const newRelationship = await prisma.relationship.create({
+        data: {
+          type,
+          sourceId, // Peut être 'union-marker' ou 'union-{marriageId}'
+          targetId
+        }
+      });
+      
+      // Créer aussi l'arête pour l'affichage
+      if (data?.marriageEdgeId) {
+        await prisma.edge.create({
+          data: {
+            source: data.marriageEdgeId, // Source = ID du mariage
+            target: targetId,
+            type: 'union_child_connection',
+            data: data,
+            treeId: target.treeId
+          }
+        });
+      }
+      
+      return res.status(201).json({
+        message: 'Enfant d\'union créé avec succès',
+        relationship: newRelationship
+      });
+    }
+    
+    // CAS NORMAL : Vérifier que les personnes existent
     const source = await prisma.person.findUnique({
       where: { id: sourceId },
       include: { FamilyTree: true }

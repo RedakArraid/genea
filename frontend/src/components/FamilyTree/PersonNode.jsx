@@ -8,7 +8,7 @@ import { compressImage, ensureBase64Size } from '../../utils/imageCompression';
 
 /**
  * Composant PersonNode - Représente une personne dans l'arbre généalogique
- * Version améliorée avec lignes droites et points de connexion colorés
+ * Version avec boutons d'action et handles invisibles pour les connexions ReactFlow
  */
 const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPerson, onDeletePerson }) => {
   const { updatePerson, nodes, edges } = useFamilyTreeStore();
@@ -272,8 +272,8 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
         )}
       </AnimatePresence>
 
-      {/* Points de connexion avec icônes + et actions de clic - Masqués par défaut */}
-      {/* Parent (haut) - Bleu */}
+      {/* Boutons d'action directe */}
+      {/* Bouton ajouter parent (haut) - Bleu */}
       <div 
         className={`absolute -top-1.5 left-1/2 transform -translate-x-1/2 group cursor-pointer z-20 transition-opacity duration-200 ${
           showActions ? 'opacity-100' : 'opacity-0'
@@ -287,23 +287,9 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
         <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center border-0 shadow-sm hover:scale-150 transition-all duration-200">
           <PlusCircle className="w-1.5 h-1.5 text-white" />
         </div>
-        <Handle 
-          type="target" 
-          position={Position.Top} 
-          isConnectable={isConnectable} 
-          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
-          id="parent-target"
-        />
-        <Handle 
-          type="source" 
-          position={Position.Top} 
-          isConnectable={isConnectable} 
-          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
-          id="parent-source"
-        />
       </div>
       
-      {/* Enfant (bas) - Vert */}
+      {/* Bouton ajouter enfant (bas) - Vert */}
       <div 
         className={`absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 group cursor-pointer z-20 transition-opacity duration-200 ${
           showActions ? 'opacity-100' : 'opacity-0'
@@ -317,23 +303,9 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
         <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center border-0 shadow-sm hover:scale-150 transition-all duration-200">
           <PlusCircle className="w-1.5 h-1.5 text-white" />
         </div>
-        <Handle 
-          type="target" 
-          position={Position.Bottom} 
-          isConnectable={isConnectable} 
-          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
-          id="child-target"
-        />
-        <Handle 
-          type="source" 
-          position={Position.Bottom} 
-          isConnectable={isConnectable} 
-          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
-          id="child-source"
-        />
       </div>
       
-      {/* Conjoint (gauche) - Rose */}
+      {/* Bouton ajouter conjoint (gauche) - Rose */}
       <div 
         className={`absolute -left-1.5 top-1/2 transform -translate-y-1/2 group cursor-pointer z-20 transition-opacity duration-200 ${
           showActions ? 'opacity-100' : 'opacity-0'
@@ -347,23 +319,9 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
         <div className="w-3 h-3 bg-pink-500 rounded-full flex items-center justify-center border-0 shadow-sm hover:scale-150 transition-all duration-200">
           <PlusCircle className="w-1.5 h-1.5 text-white" />
         </div>
-        <Handle 
-          type="target" 
-          position={Position.Left} 
-          isConnectable={isConnectable} 
-          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
-          id="spouse-left-target"
-        />
-        <Handle 
-          type="source" 
-          position={Position.Left} 
-          isConnectable={isConnectable} 
-          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
-          id="spouse-left-source"
-        />
       </div>
       
-      {/* Conjoint (droite) - Rose */}
+      {/* Bouton ajouter conjoint (droite) - Rose */}
       <div 
         className={`absolute -right-1.5 top-1/2 transform -translate-y-1/2 group cursor-pointer z-20 transition-opacity duration-200 ${
           showActions ? 'opacity-100' : 'opacity-0'
@@ -377,21 +335,65 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
         <div className="w-3 h-3 bg-pink-500 rounded-full flex items-center justify-center border-0 shadow-sm hover:scale-150 transition-all duration-200">
           <PlusCircle className="w-1.5 h-1.5 text-white" />
         </div>
-        <Handle 
-          type="target" 
-          position={Position.Right} 
-          isConnectable={isConnectable} 
-          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
-          id="spouse-right-target"
-        />
-        <Handle 
-          type="source" 
-          position={Position.Right} 
-          isConnectable={isConnectable} 
-          className="!w-3 !h-3 !bg-transparent !border-0 !top-0 !left-0"
-          id="spouse-right-source"
-        />
       </div>
+
+      {/* Handles ReactFlow invisibles pour les connexions */}
+      <Handle 
+        type="target" 
+        position={Position.Top} 
+        isConnectable={isConnectable} 
+        className="!w-1 !h-1 !bg-transparent !border-0 !opacity-0 !pointer-events-none"
+        id="parent-target"
+      />
+      <Handle 
+        type="source" 
+        position={Position.Top} 
+        isConnectable={isConnectable} 
+        className="!w-1 !h-1 !bg-transparent !border-0 !opacity-0 !pointer-events-none"
+        id="parent-source"
+      />
+      <Handle 
+        type="target" 
+        position={Position.Bottom} 
+        isConnectable={isConnectable} 
+        className="!w-1 !h-1 !bg-transparent !border-0 !opacity-0 !pointer-events-none"
+        id="child-target"
+      />
+      <Handle 
+        type="source" 
+        position={Position.Bottom} 
+        isConnectable={isConnectable} 
+        className="!w-1 !h-1 !bg-transparent !border-0 !opacity-0 !pointer-events-none"
+        id="child-source"
+      />
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        isConnectable={isConnectable} 
+        className="!w-1 !h-1 !bg-transparent !border-0 !opacity-0 !pointer-events-none"
+        id="spouse-left-target"
+      />
+      <Handle 
+        type="source" 
+        position={Position.Left} 
+        isConnectable={isConnectable} 
+        className="!w-1 !h-1 !bg-transparent !border-0 !opacity-0 !pointer-events-none"
+        id="spouse-left-source"
+      />
+      <Handle 
+        type="target" 
+        position={Position.Right} 
+        isConnectable={isConnectable} 
+        className="!w-1 !h-1 !bg-transparent !border-0 !opacity-0 !pointer-events-none"
+        id="spouse-right-target"
+      />
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        isConnectable={isConnectable} 
+        className="!w-1 !h-1 !bg-transparent !border-0 !opacity-0 !pointer-events-none"
+        id="spouse-right-source"
+      />
 
       {/* Menu d'actions au survol - Simplifié et taille très réduite */}
       <AnimatePresence>

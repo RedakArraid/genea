@@ -59,8 +59,26 @@ export const useFamilyTreeStore = create((set, get) => ({
         targetHandle: edge.targetHandle
       }));
 
+      // Ajouter les arêtes pour les enfants d'union
+      const unionChildEdges = tree.UnionChild?.map(unionChild => ({
+        id: `union-child-${unionChild.id}`,
+        source: unionChild.marriageEdgeId,
+        target: unionChild.childId,
+        type: 'straight',
+        data: {
+          type: 'union_child_connection',
+          marriageEdgeId: unionChild.marriageEdgeId,
+          isUnionChild: true
+        },
+        sourceHandle: null,
+        targetHandle: null
+      })) || [];
+
+      // Combiner les arêtes normales et les arêtes d'enfants d'union
+      const allEdges = [...edges, ...unionChildEdges];
+
       // Calculer les handles intelligents pour les arêtes sans handles
-      const smartEdges = calculateAllSmartHandles(edges, nodes);
+      const smartEdges = calculateAllSmartHandles(allEdges, nodes);
 
       set({ 
         currentTree: tree,
@@ -298,7 +316,7 @@ export const useFamilyTreeStore = create((set, get) => ({
       // Recharger l'arbre complet pour s'assurer que les nœuds et les arêtes sont à jour
       await get().fetchTreeById(get().currentTree.id);
 
-      showToast(`Nouveau lien ${relationshipData.type === 'spouse' ? 'conjugal' : 'familial'} ajouté`, "success");
+      set({ isLoading: false });
       return { success: true };
     } catch (error) {
       console.error('Erreur lors de l\'ajout de la relation:', error);

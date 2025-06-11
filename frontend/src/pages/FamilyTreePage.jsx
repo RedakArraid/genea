@@ -27,14 +27,17 @@ import GenderColorsToggle from '../components/ui/GenderColorsToggle';
 import LegendTooltip from '../components/FamilyTree/LegendTooltip';
 import { useFamilyTreeStore } from '../store/familyTreeStore';
 import { useToast } from '../hooks/useToast';
+import api from '../services/api';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import { calculateGenerationLayout, alignSpouses, calculateOptimalPosition, avoidNodeOverlap } from '../utils/familyTreeLayout';
-import { 
+import {
   findMarriageChildren, 
   calculateChildrenPositions, 
   repositionMarriageChildren,
   calculateNewChildPosition,
-  groupChildrenByMarriage 
+  repositionAfterChildAddition,
+  groupChildrenByMarriage,
+  autoRepositionMisplacedChildren
 } from '../utils/marriageChildrenUtils';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -59,6 +62,10 @@ const getEdgeStyle = (type) => {
       strokeWidth: 3
     },
     'marriage_child_connection': { 
+      stroke: '#10b981', 
+      strokeWidth: 3
+    },
+    'union_child_connection': { 
       stroke: '#10b981', 
       strokeWidth: 3
     },
@@ -132,7 +139,7 @@ const FamilyTreePage = () => {
   // Appliquer les styles aux arêtes avec les handles ET utiliser des arêtes personnalisées
   const styledEdges = edges.map(edge => {
     // Masquer complètement les arêtes d'enfants de mariage car nous utilisons nos lignes personnalisées
-    if (edge.data?.type === 'marriage_child_connection') {
+    if (edge.data?.type === 'marriage_child_connection' || edge.data?.type === 'union_child_connection') {
       return {
         ...edge,
         type: 'straight',
@@ -405,6 +412,14 @@ const FamilyTreePage = () => {
     showToast("Les générations ont été alignées automatiquement", "success");
   }, [nodes, edges, updateNodePositions, showToast]);
 
+  // Fonction pour repositionner automatiquement les enfants de mariage
+  const autoRepositionChildren = useCallback(() => {
+    if (nodes.length === 0 || edges.length === 0) return;
+    
+    autoRepositionMisplacedChildren(edges, nodes, updateNodePositions);
+    showToast("Les enfants de mariages ont été repositionnés automatiquement", "success");
+  }, [nodes, edges, updateNodePositions, showToast]);
+
   // Basculer l'aide
   const toggleHelp = useCallback(() => {
     setShowHelp(prev => !prev);
@@ -442,41 +457,41 @@ const FamilyTreePage = () => {
   }, []);
 
   // Gérer l'ajout d'une nouvelle personne
-  const handleAddPerson = useCallback((personData, parentNodeId, relationType, marriageEdgeId) => {
-    // Calculer la position optimale
-    let position = { x: 400, y: 200 };
-    
-    if (relationType === 'marriage_child' && marriageEdgeId) {
-      // Trouver l'arête de mariage
-      const marriageEdge = edges.find(e => e.id === marriageEdgeId);
-      if (marriageEdge) {
-        // Trouver les enfants existants de ce mariage
-        const existingChildren = findMarriageChildren(marriageEdgeId, nodes, edges);
-        // Calculer la position optimale pour le nouvel enfant
-        position = calculateNewChildPosition(marriageEdge, existingChildren, nodes);
+  const handleAddPerson = useCallback(async (personData, parentNodeId, relationType, marriageEdgeId) => {
+    try {
+      // Calculer la position optimale
+      let position = { x: 400, y: 200 };
+      
+      if (relationType === 'marriage_child' && marriageEdgeId) {
+        // Trouver l'arête de mariage
+        const marriageEdge = edges.find(e => e.id === marriageEdgeId);
+        if (marriageEdge) {
+          // Trouver les enfants existants de ce mariage
+          const existingChildren = findMarriageChildren(marriageEdgeId, nodes, edges);
+          // Calculer la position optimale pour le nouvel enfant
+          position = calculateNewChildPosition(marriageEdge, existingChildren, nodes);
+        }
+      } else if (relationType && parentNodeId) {
+        position = calculateOptimalPosition(nodes, parentNodeId, relationType);
+      } else if (reactFlowInstance) {
+        // Placer au centre du viewport si pas de relation
+        const { x, y, zoom } = reactFlowInstance.getViewport();
+        position = {
+          x: -x / zoom + reactFlowWrapper.current.offsetWidth / 2 / zoom,
+          y: -y / zoom + reactFlowWrapper.current.offsetHeight / 2 / zoom
+        };
       }
-    } else if (relationType && parentNodeId) {
-      position = calculateOptimalPosition(nodes, parentNodeId, relationType);
-    } else if (reactFlowInstance) {
-      // Placer au centre du viewport si pas de relation
-      const { x, y, zoom } = reactFlowInstance.getViewport();
-      position = {
-        x: -x / zoom + reactFlowWrapper.current.offsetWidth / 2 / zoom,
-        y: -y / zoom + reactFlowWrapper.current.offsetHeight / 2 / zoom
-      };
-    }
-    
-    // Éviter les chevauchements
-    position = avoidNodeOverlap(nodes, position);
-    
-    // Ajouter la personne au store
-    addPerson(treeId, {
-      ...personData,
-      position
-    }).then(({ success, person, node }) => {
-      if (success && person) {
-        showToast(`${person.firstName} ${person.lastName} a été ajouté(e) à l'arbre`, 'success');
-        
+      
+      // Éviter les chevauchements
+      position = avoidNodeOverlap(nodes, position);
+      
+      // Ajouter la personne au store
+      const result = await addPerson(treeId, {
+        ...personData,
+        position
+      });
+      
+      if (result.success && result.person) {
         // Ajouter automatiquement une relation si nécessaire
         if (relationType && parentNodeId) {
           const newEdgeId = uuidv4();
@@ -495,7 +510,7 @@ const FamilyTreePage = () => {
               relationshipData = {
                 ...relationshipData,
                 sourceId: parentNodeId,
-                targetId: person.id,
+                targetId: result.person.id,
                 type: 'parent',
                 data: { type: 'parent_child_connection' },
                 sourceHandle: 'child-source',
@@ -505,7 +520,7 @@ const FamilyTreePage = () => {
             case 'parent':
               relationshipData = {
                 ...relationshipData,
-                sourceId: person.id,
+                sourceId: result.person.id,
                 targetId: parentNodeId,
                 type: 'parent',
                 data: { type: 'parent_child_connection' },
@@ -518,7 +533,7 @@ const FamilyTreePage = () => {
               relationshipData = {
                 ...relationshipData,
                 sourceId: parentNodeId,
-                targetId: person.id,
+                targetId: result.person.id,
                 type: 'spouse',
                 data: { type: 'spouse_connection' },
                 sourceHandle: newPersonIsLeft ? 'spouse-left-source' : 'spouse-right-source',
@@ -529,49 +544,55 @@ const FamilyTreePage = () => {
               relationshipData = {
                 ...relationshipData,
                 sourceId: parentNodeId,
-                targetId: person.id,
+                targetId: result.person.id,
                 type: 'sibling',
                 data: { type: 'sibling_connection' }
               };
               break;
           }
           
-          addRelationship(relationshipData);
+          const relationResult = await addRelationship(relationshipData);
+          if (relationResult.success) {
+            showToast(`${result.person.firstName} ${result.person.lastName} et la relation ${relationType} ont été ajoutés`, 'success');
+          } else {
+            showToast(`${result.person.firstName} ${result.person.lastName} ajouté(e), mais erreur avec la relation: ${relationResult.message || 'Erreur inconnue'}`, 'warning');
+          }
         } else if (relationType === 'marriage_child' && marriageEdgeId) {
+          // Pour les enfants de mariage, utiliser la nouvelle API d'enfants d'union
           const marriageEdge = edges.find(e => e.id === marriageEdgeId);
           if (marriageEdge) {
-            addRelationship({
-              id: uuidv4(),
-              sourceId: marriageEdge.source,
-              targetId: person.id,
-              type: 'parent',
-              data: { 
-                type: 'marriage_child_connection',
-                marriageEdgeId: marriageEdgeId
-              },
-              sourceHandle: 'child-source',
-              targetHandle: 'parent-target'
-            });
-            
-            addRelationship({
-              id: uuidv4(),
-              sourceId: marriageEdge.target,
-              targetId: person.id,
-              type: 'parent',
-              data: { 
-                type: 'marriage_child_connection',
+            try {
+              const response = await api.post('/union-children', {
                 marriageEdgeId: marriageEdgeId,
-                isSecondParent: true
-              },
-              sourceHandle: 'child-source',
-              targetHandle: 'parent-target'
-            });
+                childId: result.person.id,
+                treeId: treeId
+              });
+              
+              if (response.status === 201) {
+                showToast(`Enfant d'union ${result.person.firstName} ${result.person.lastName} ajouté`, 'success');
+                
+                // Recharger l'arbre pour voir les nouvelles relations
+                await fetchTreeById(treeId);
+              }
+            } catch (error) {
+              console.error('Erreur lors de la création de l\'enfant d\'union:', error);
+              showToast(`Erreur lors de la création de la relation d'union: ${error.response?.data?.message || error.message}`, 'error');
+            }
+            
+            // Repositionner automatiquement tous les enfants de ce mariage
+            repositionAfterChildAddition(marriageEdgeId, nodes, edges, updateNodePositions);
           }
+        } else {
+          // Pas de relation à ajouter
+          showToast(`${result.person.firstName} ${result.person.lastName} a été ajouté(e) à l'arbre`, 'success');
         }
       } else {
-        showToast(person?.message || 'Erreur lors de l\'ajout de la personne', 'error');
+        showToast(result.message || 'Erreur lors de l\'ajout de la personne', 'error');
       }
-    });
+    } catch (error) {
+      console.error('Erreur dans handleAddPerson:', error);
+      showToast('Une erreur inattendue s\'est produite lors de l\'ajout', 'error');
+    }
     
     closeModals();
   }, [nodes, edges, reactFlowInstance, reactFlowWrapper, addPerson, treeId, showToast, closeModals, addRelationship]);
@@ -709,6 +730,27 @@ const FamilyTreePage = () => {
                   />
                 </svg>
                 Aligner
+              </button>
+              <button
+                onClick={autoRepositionChildren}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+                title="Repositionner automatiquement les enfants de mariages"
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                Enfants
               </button>
               <button
                 onClick={fitView}

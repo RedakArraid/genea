@@ -1,18 +1,37 @@
 /**
- * Utilitaires pour la gestion des enfants de mariage et leur positionnement
+ * Utilitaires pour la gestion des enfants de mariage et leur positionnement optimisé
  */
 
 /**
- * Trouve tous les enfants d'un couple (arête de mariage)
+ * Trouve tous les enfants d'un couple (arête de mariage) 
+ * Uniquement basé sur les relations permanentes backend
  */
 export const findMarriageChildren = (marriageEdgeId, nodes, edges) => {
   // Trouver l'arête de mariage
   const marriageEdge = edges.find(e => e.id === marriageEdgeId);
   if (!marriageEdge) return [];
 
-  // Trouver tous les enfants de ce mariage en évitant les doublons
-  const childrenMap = new Map();
-  
+  const allChildren = new Map();
+
+  // SEULE SOURCE : Relations permanentes d'enfants d'union
+  edges
+    .filter(edge => 
+      edge.data?.type === 'union_child_connection' &&
+      edge.data?.marriageEdgeId === marriageEdgeId
+    )
+    .forEach(edge => {
+      const childNode = nodes.find(n => n.id === edge.target);
+      if (childNode) {
+        allChildren.set(edge.target, { 
+          id: edge.target, 
+          edgeId: edge.id,
+          node: childNode,
+          source: 'union_relation' // Relation d'union permanente
+        });
+      }
+    });
+
+  // Compatibilité avec anciennes relations marriage_child_connection
   edges
     .filter(edge => 
       edge.data?.type === 'marriage_child_connection' &&
@@ -20,20 +39,22 @@ export const findMarriageChildren = (marriageEdgeId, nodes, edges) => {
     )
     .forEach(edge => {
       const childNode = nodes.find(n => n.id === edge.target);
-      if (childNode && !childrenMap.has(edge.target)) {
-        childrenMap.set(edge.target, { 
+      if (childNode && !allChildren.has(edge.target)) {
+        allChildren.set(edge.target, { 
           id: edge.target, 
           edgeId: edge.id,
-          node: childNode 
+          node: childNode,
+          source: 'legacy_relation' // Ancienne relation
         });
       }
     });
 
-  return Array.from(childrenMap.values());
+  console.log(`Enfants trouvés pour le mariage ${marriageEdgeId}:`, allChildren.size);
+  return Array.from(allChildren.values());
 };
 
 /**
- * Calcule les positions optimales pour les enfants d'un mariage
+ * Calcule les positions optimales pour les enfants d'un mariage selon le modèle attendu
  */
 export const calculateChildrenPositions = (marriageEdge, children, nodes) => {
   if (!marriageEdge || !children || children.length === 0) {
@@ -50,18 +71,18 @@ export const calculateChildrenPositions = (marriageEdge, children, nodes) => {
 
   // Centre du lien conjugal
   const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
-  const centerY = Math.max(sourceNode.position.y, targetNode.position.y);
+  const parentsY = Math.max(sourceNode.position.y, targetNode.position.y);
 
-  // Distance verticale standard pour les enfants
-  const verticalOffset = 250;
-  const childrenY = centerY + verticalOffset;
+  // Distance verticale standard pour les enfants (DOUBLÉE pour plus d'espace)
+  const verticalOffset = 400; // Distance du centre du mariage aux enfants (était 200)
+  const childrenY = parentsY + verticalOffset;
 
-  // Cas d'un enfant unique
+  // Cas d'un enfant unique - placé au centre
   if (children.length === 1) {
     return [{
       id: children[0].id,
       position: {
-        x: centerX,
+        x: centerX - 70, // Centrer la carte (largeur ≈ 140px)
         y: childrenY
       }
     }];
@@ -75,14 +96,14 @@ export const calculateChildrenPositions = (marriageEdge, children, nodes) => {
   return children.map((child, index) => ({
     id: child.id,
     position: {
-      x: startX + index * childSpacing,
+      x: startX + index * childSpacing - 70, // Centrer les cartes
       y: childrenY
     }
   }));
 };
 
 /**
- * Repositionne automatiquement les enfants d'un mariage
+ * Repositionne automatiquement TOUS les enfants d'un mariage selon le modèle attendu
  */
 export const repositionMarriageChildren = (marriageEdgeId, nodes, edges, updateNodePositions) => {
   // Trouver l'arête de mariage
@@ -93,7 +114,7 @@ export const repositionMarriageChildren = (marriageEdgeId, nodes, edges, updateN
   const children = findMarriageChildren(marriageEdgeId, nodes, edges);
   if (children.length === 0) return;
 
-  // Calculer les nouvelles positions
+  // Calculer les nouvelles positions optimales
   const newPositions = calculateChildrenPositions(marriageEdge, children, nodes);
 
   // Appliquer les nouvelles positions
@@ -104,11 +125,13 @@ export const repositionMarriageChildren = (marriageEdgeId, nodes, edges, updateN
     }));
     
     updateNodePositions(nodePositions);
+    console.log(`Repositionnement de ${children.length} enfant(s) du mariage ${marriageEdgeId}`);
   }
 };
 
 /**
  * Trouve la position optimale pour un nouvel enfant de mariage
+ * et repositionne automatiquement tous les enfants existants
  */
 export const calculateNewChildPosition = (marriageEdge, existingChildren, nodes) => {
   if (!marriageEdge) return { x: 400, y: 400 };
@@ -123,28 +146,41 @@ export const calculateNewChildPosition = (marriageEdge, existingChildren, nodes)
 
   // Centre du lien conjugal
   const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
-  const centerY = Math.max(sourceNode.position.y, targetNode.position.y);
-  const verticalOffset = 250;
+  const parentsY = Math.max(sourceNode.position.y, targetNode.position.y);
+  const verticalOffset = 400; // Distance doublée pour plus d'espace
+  const childrenY = parentsY + verticalOffset;
 
-  // Si c'est le premier enfant, le placer au centre
-  if (!existingChildren || existingChildren.length === 0) {
+  // Calculer la position selon le nombre total d'enfants (existants + nouveau)
+  const totalChildren = (existingChildren?.length || 0) + 1;
+  
+  if (totalChildren === 1) {
+    // Premier enfant - au centre
     return {
-      x: centerX,
-      y: centerY + verticalOffset
+      x: centerX - 70,
+      y: childrenY
     };
   }
 
-  // S'il y a déjà des enfants, calculer la nouvelle position équidistante
+  // Plusieurs enfants - calculer la position à la fin de la série
   const childSpacing = 180;
-  const totalChildren = existingChildren.length + 1; // +1 pour le nouvel enfant
   const totalWidth = (totalChildren - 1) * childSpacing;
   const startX = centerX - totalWidth / 2;
+  const newChildIndex = existingChildren?.length || 0;
 
-  // Le nouvel enfant sera placé à la fin (ou au milieu selon la logique souhaitée)
   return {
-    x: startX + existingChildren.length * childSpacing,
-    y: centerY + verticalOffset
+    x: startX + newChildIndex * childSpacing - 70,
+    y: childrenY
   };
+};
+
+/**
+ * Repositionne automatiquement tous les enfants d'un mariage après ajout d'un nouvel enfant
+ */
+export const repositionAfterChildAddition = async (marriageEdgeId, nodes, edges, updateNodePositions) => {
+  // Attendre un peu pour que le nouvel enfant soit ajouté au store
+  setTimeout(() => {
+    repositionMarriageChildren(marriageEdgeId, nodes, edges, updateNodePositions);
+  }, 100);
 };
 
 /**
@@ -153,8 +189,9 @@ export const calculateNewChildPosition = (marriageEdge, existingChildren, nodes)
 export const groupChildrenByMarriage = (edges) => {
   const marriageGroups = new Map();
 
+  // Nouvelles relations union_child_connection
   edges
-    .filter(edge => edge.data?.type === 'marriage_child_connection')
+    .filter(edge => edge.data?.type === 'union_child_connection')
     .forEach(edge => {
       const marriageId = edge.data?.marriageEdgeId;
       if (marriageId) {
@@ -168,5 +205,69 @@ export const groupChildrenByMarriage = (edges) => {
       }
     });
 
+  // Anciennes relations marriage_child_connection (compatibilité)
+  edges
+    .filter(edge => edge.data?.type === 'marriage_child_connection')
+    .forEach(edge => {
+      const marriageId = edge.data?.marriageEdgeId;
+      if (marriageId) {
+        if (!marriageGroups.has(marriageId)) {
+          marriageGroups.set(marriageId, []);
+        }
+        // Éviter les doublons
+        const existingChild = marriageGroups.get(marriageId).find(child => child.childId === edge.target);
+        if (!existingChild) {
+          marriageGroups.get(marriageId).push({
+            childId: edge.target,
+            edgeId: edge.id
+          });
+        }
+      }
+    });
+
   return marriageGroups;
+};
+
+/**
+ * Vérifie si une position est optimale selon le modèle attendu
+ */
+export const isOptimalChildPosition = (child, marriageEdge, allChildren, nodes) => {
+  const expectedPositions = calculateChildrenPositions(marriageEdge, allChildren, nodes);
+  const expectedPos = expectedPositions.find(p => p.id === child.id);
+  
+  if (!expectedPos) return false;
+  
+  const tolerance = 10; // Tolérance de 10px
+  const actualX = child.node.position.x;
+  const actualY = child.node.position.y;
+  
+  return Math.abs(actualX - expectedPos.position.x) <= tolerance &&
+         Math.abs(actualY - expectedPos.position.y) <= tolerance;
+};
+
+/**
+ * Auto-repositionne tous les enfants mal placés
+ */
+export const autoRepositionMisplacedChildren = (edges, nodes, updateNodePositions) => {
+  const marriageGroups = groupChildrenByMarriage(edges);
+  
+  marriageGroups.forEach((children, marriageEdgeId) => {
+    const marriageEdge = edges.find(e => e.id === marriageEdgeId);
+    if (!marriageEdge) return;
+    
+    const childrenWithNodes = children.map(child => {
+      const node = nodes.find(n => n.id === child.childId);
+      return node ? { id: child.childId, node } : null;
+    }).filter(Boolean);
+    
+    // Vérifier si au moins un enfant est mal placé
+    const needsRepositioning = childrenWithNodes.some(child => 
+      !isOptimalChildPosition(child, marriageEdge, childrenWithNodes, nodes)
+    );
+    
+    if (needsRepositioning) {
+      console.log(`Auto-repositionnement des enfants du mariage ${marriageEdgeId}`);
+      repositionMarriageChildren(marriageEdgeId, nodes, edges, updateNodePositions);
+    }
+  });
 };
