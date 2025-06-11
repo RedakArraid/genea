@@ -47,32 +47,35 @@ const MarriageEdge = ({
         }}
       />
       
-      {/* Point central cliquable avec icône + - TOUJOURS VISIBLE */}
-      <g>
+      {/* Point central cliquable avec icône + - TOUJOURS VISIBLE ET AU-DESSUS */}
+      <g style={{ zIndex: 1000, pointerEvents: 'auto' }}>
         <circle
           cx={centerX}
           cy={centerY}
-          r="10"
+          r="8"
           fill="#10b981"
           stroke="white"
           strokeWidth="2"
-          className="cursor-pointer hover:opacity-80 hover:scale-110 transition-all duration-200"
+          style={{ pointerEvents: 'auto', zIndex: 1001 }}
+          className="cursor-pointer hover:opacity-80 hover:scale-125 transition-all duration-200"
           onClick={(e) => {
             e.stopPropagation();
-            if (onAddChild) {
-              onAddChild(id);
+            e.preventDefault();
+            if (data?.onAddChild) {
+              data.onAddChild(id);
             }
           }}
         />
         <text
           x={centerX}
-          y={centerY + 1}
+          y={centerY + 0.5}
           textAnchor="middle"
           dominantBaseline="middle"
           fill="white"
-          fontSize="12"
+          fontSize="10"
           fontWeight="bold"
-          className="cursor-pointer pointer-events-none select-none"
+          style={{ pointerEvents: 'none' }}
+          className="select-none"
         >
           +
         </text>
@@ -95,9 +98,8 @@ const MarriageEdge = ({
       {children.length === 1 ? (
         // Un seul enfant - ligne en T
         children.map((child, index) => {
-          const verticalLineLength = 120; // DOUBLÉ : était 60px
+          const verticalLineLength = 120;
           const branchY = centerY + verticalLineLength;
-          // Distance entre la ligne horizontale et l'enfant (+80px total)
           const childDistanceFromLine = 180;
           const finalChildY = branchY + childDistanceFromLine;
           
@@ -159,7 +161,7 @@ const MarriageEdge = ({
       ) : children.length > 1 ? (
         // Plusieurs enfants - système de distribution en T
         (() => {
-          const verticalLineLength = 120; // DOUBLÉ : était 60px
+          const verticalLineLength = 120;
           const distributionY = centerY + verticalLineLength;
           
           // Calculer les positions X des enfants pour la ligne horizontale
@@ -203,7 +205,6 @@ const MarriageEdge = ({
               
               {/* Lignes verticales vers chaque enfant */}
               {children.map((child, index) => {
-                // Distance entre la ligne horizontale et l'enfant (+80px total)
                 const childDistanceFromLine = 180;
                 const finalChildY = distributionY + childDistanceFromLine;
                 

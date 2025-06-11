@@ -224,26 +224,15 @@ const FamilyTreePage = () => {
   // Gestion de la connexion entre nœuds avec handles intelligents - VERSION CORRIGÉE
   const onConnect = useCallback(
     (params) => {
-      console.log('Tentative de connexion:', params);
-      
       // Détecter le type de relation en fonction des handles utilisés
       const sourceNode = nodes.find(n => n.id === params.source);
       const targetNode = nodes.find(n => n.id === params.target);
       
       if (sourceNode && targetNode) {
-        console.log('Nœuds trouvés:', {
-          source: sourceNode.data,
-          target: targetNode.data,
-          sourceHandle: params.sourceHandle,
-          targetHandle: params.targetHandle
-        });
-        
         // Déterminer le type de relation basé sur les handles utilisés
         const isSpouseConnection = 
           (params.sourceHandle && params.sourceHandle.includes('spouse')) ||
           (params.targetHandle && params.targetHandle.includes('spouse'));
-        
-        console.log('Type de connexion détectée:', isSpouseConnection ? 'Conjugale' : 'Familiale');
         
         let connectionParams = { ...params };
         
@@ -256,12 +245,6 @@ const FamilyTreePage = () => {
             sourceHandle: sourceIsLeft ? 'spouse-right-source' : 'spouse-left-source',
             targetHandle: sourceIsLeft ? 'spouse-left-target' : 'spouse-right-target'
           };
-          
-          console.log('Handles conjugaux configurés:', {
-            sourceIsLeft,
-            sourceHandle: connectionParams.sourceHandle,
-            targetHandle: connectionParams.targetHandle
-          });
         }
         
         const relationshipType = isSpouseConnection ? 'spouse' : 'parent';
@@ -405,32 +388,18 @@ const FamilyTreePage = () => {
     }
     
     // DEBUG : Analyser les arêtes disponibles
-    console.log('=== DEBUG ALIGNEMENT ===');
-    console.log('Nœuds:', nodes.map(n => ({ id: n.id, name: n.data?.firstName || n.id })));
-    console.log('Arêtes:');
-    edges.forEach(edge => {
-      console.log(`  ${edge.source} → ${edge.target} (type: ${edge.data?.type})`);
-    });
     
     try {
-      console.log('Début alignement avec', nodes.length, 'nœuds');
-      
       // Utiliser l'alignement de debug d'abord - AVEC LES ARÊGE BRUTES
       let alignedNodes;
       try {
         // IMPORTANT: Utiliser 'edges' brutes, pas 'styledEdges'
-        console.log('Utilisation des arêtes brutes pour l\'alignement');
         alignedNodes = debugAlignment(nodes, edges); // PAS styledEdges !
-        console.log('Alignement DEBUG réussi:', alignedNodes.length);
       } catch (debugError) {
-        console.warn('Alignement DEBUG échoué, fallback sur intelligent:', debugError.message);
         try {
           alignedNodes = smartGenerationAlignment(nodes, edges);
-          console.log('Alignement intelligent réussi:', alignedNodes.length);
         } catch (smartError) {
-          console.warn('Alignement intelligent échoué, fallback sur simple:', smartError.message);
           alignedNodes = simpleGenerationAlignment(nodes, edges);
-          console.log('Alignement simple réussi:', alignedNodes.length);
         }
       }
       
@@ -442,15 +411,11 @@ const FamilyTreePage = () => {
           !isNaN(node.position.x) && 
           !isNaN(node.position.y);
         
-        if (!hasValidPosition) {
-          console.warn('Nœud avec position invalide:', node.id, node.position);
-        }
-        
         return hasValidPosition;
       });
       
       if (validNodes.length !== alignedNodes.length) {
-        console.warn(`${alignedNodes.length - validNodes.length} nœuds ignorés car positions invalides`);
+        // Quelques nœuds ignorés
       }
       
       if (validNodes.length === 0) {
@@ -460,7 +425,6 @@ const FamilyTreePage = () => {
       
       // Skip alignSpouses pour le moment - ça pourrait causer des problèmes
       const finalNodes = validNodes; // alignSpouses(validNodes, edges);
-      console.log('Nœuds finaux:', finalNodes.length);
       
       // Double vérification des positions finales
       const safeNodes = finalNodes.filter(node => {
@@ -485,17 +449,10 @@ const FamilyTreePage = () => {
         }
       }));
       
-      console.log('Positions finales à appliquer:');
-      nodePositions.forEach(pos => {
-        const nodeName = nodes.find(n => n.id === pos.id)?.data?.firstName || pos.id;
-        console.log(`  ${nodeName}: x=${pos.position.x}, y=${pos.position.y}`);
-      });
-      
       updateNodePositions(nodePositions);
       showToast(`${nodePositions.length} générations alignées automatiquement`, "success");
       
     } catch (error) {
-      console.error('Erreur lors de l\'alignement:', error);
       showToast("Erreur lors de l'alignement automatique", "error");
     }
   }, [nodes, edges, updateNodePositions, showToast]);

@@ -49,7 +49,6 @@ export const findMarriageChildren = (marriageEdgeId, nodes, edges) => {
       }
     });
 
-  console.log(`Enfants trouvés pour le mariage ${marriageEdgeId}:`, allChildren.size);
   return Array.from(allChildren.values());
 };
 
@@ -126,7 +125,6 @@ export const repositionMarriageChildren = (marriageEdgeId, nodes, edges, updateN
     }));
     
     updateNodePositions(nodePositions);
-    console.log(`Repositionnement de ${children.length} enfant(s) du mariage ${marriageEdgeId}`);
   }
 };
 
@@ -270,7 +268,6 @@ export const autoRepositionMisplacedChildren = (edges, nodes, updateNodePosition
     );
     
     if (needsRepositioning) {
-      console.log(`Auto-repositionnement des enfants du mariage ${marriageEdgeId}`);
       repositionMarriageChildren(marriageEdgeId, nodes, edges, updateNodePositions);
     }
   });
