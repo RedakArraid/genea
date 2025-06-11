@@ -89,7 +89,7 @@ export const calculateChildrenPositions = (marriageEdge, children, nodes) => {
   }
 
   // Cas de plusieurs enfants - distribution équidistante
-  const childSpacing = 180; // Espacement entre enfants
+  const childSpacing = 180; // Espacement entre enfants (RESTAURÉ)
   const totalWidth = (children.length - 1) * childSpacing;
   const startX = centerX - totalWidth / 2;
 
@@ -162,7 +162,7 @@ export const calculateNewChildPosition = (marriageEdge, existingChildren, nodes)
   }
 
   // Plusieurs enfants - calculer la position à la fin de la série
-  const childSpacing = 180;
+  const childSpacing = 180; // Espacement entre enfants (RESTAURÉ)
   const totalWidth = (totalChildren - 1) * childSpacing;
   const startX = centerX - totalWidth / 2;
   const newChildIndex = existingChildren?.length || 0;

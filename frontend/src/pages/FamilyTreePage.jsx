@@ -30,6 +30,8 @@ import { useToast } from '../hooks/useToast';
 import api from '../services/api';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import { calculateGenerationLayout, alignSpouses, calculateOptimalPosition, avoidNodeOverlap } from '../utils/familyTreeLayout';
+import { simpleGenerationAlignment, smartGenerationAlignment } from '../utils/simpleAlignment';
+import { debugAlignment } from '../utils/debugAlignment';
 import {
   findMarriageChildren, 
   calculateChildrenPositions, 
@@ -395,21 +397,107 @@ const FamilyTreePage = () => {
     setIsAddModalOpen(true);
   }, []);
 
-  // Fonction d'alignement automatique
+  // Fonction d'alignement automatique SÉCURISÉE avec DEBUG
   const autoAlignGenerations = useCallback(() => {
-    if (nodes.length === 0) return;
+    if (nodes.length === 0) {
+      showToast("Aucun nœud à aligner", "warning");
+      return;
+    }
     
-    const alignedNodes = calculateGenerationLayout(nodes, edges);
-    const finalNodes = alignSpouses(alignedNodes, edges);
+    // DEBUG : Analyser les arêtes disponibles
+    console.log('=== DEBUG ALIGNEMENT ===');
+    console.log('Nœuds:', nodes.map(n => ({ id: n.id, name: n.data?.firstName || n.id })));
+    console.log('Arêtes:');
+    edges.forEach(edge => {
+      console.log(`  ${edge.source} → ${edge.target} (type: ${edge.data?.type})`);
+    });
     
-    // Mettre à jour les positions
-    const nodePositions = finalNodes.map(node => ({
-      id: node.id,
-      position: node.position
-    }));
-    
-    updateNodePositions(nodePositions);
-    showToast("Les générations ont été alignées automatiquement", "success");
+    try {
+      console.log('Début alignement avec', nodes.length, 'nœuds');
+      
+      // Utiliser l'alignement de debug d'abord - AVEC LES ARÊGE BRUTES
+      let alignedNodes;
+      try {
+        // IMPORTANT: Utiliser 'edges' brutes, pas 'styledEdges'
+        console.log('Utilisation des arêtes brutes pour l\'alignement');
+        alignedNodes = debugAlignment(nodes, edges); // PAS styledEdges !
+        console.log('Alignement DEBUG réussi:', alignedNodes.length);
+      } catch (debugError) {
+        console.warn('Alignement DEBUG échoué, fallback sur intelligent:', debugError.message);
+        try {
+          alignedNodes = smartGenerationAlignment(nodes, edges);
+          console.log('Alignement intelligent réussi:', alignedNodes.length);
+        } catch (smartError) {
+          console.warn('Alignement intelligent échoué, fallback sur simple:', smartError.message);
+          alignedNodes = simpleGenerationAlignment(nodes, edges);
+          console.log('Alignement simple réussi:', alignedNodes.length);
+        }
+      }
+      
+      // Vérifier que tous les nœuds ont des positions valides
+      const validNodes = alignedNodes.filter(node => {
+        const hasValidPosition = node.position && 
+          typeof node.position.x === 'number' && 
+          typeof node.position.y === 'number' &&
+          !isNaN(node.position.x) && 
+          !isNaN(node.position.y);
+        
+        if (!hasValidPosition) {
+          console.warn('Nœud avec position invalide:', node.id, node.position);
+        }
+        
+        return hasValidPosition;
+      });
+      
+      if (validNodes.length !== alignedNodes.length) {
+        console.warn(`${alignedNodes.length - validNodes.length} nœuds ignorés car positions invalides`);
+      }
+      
+      if (validNodes.length === 0) {
+        showToast("Impossible d'aligner: aucune position valide calculée", "error");
+        return;
+      }
+      
+      // Skip alignSpouses pour le moment - ça pourrait causer des problèmes
+      const finalNodes = validNodes; // alignSpouses(validNodes, edges);
+      console.log('Nœuds finaux:', finalNodes.length);
+      
+      // Double vérification des positions finales
+      const safeNodes = finalNodes.filter(node => {
+        return node.position && 
+          typeof node.position.x === 'number' && 
+          typeof node.position.y === 'number' &&
+          !isNaN(node.position.x) && 
+          !isNaN(node.position.y);
+      });
+      
+      if (safeNodes.length === 0) {
+        showToast("Erreur lors de l'alignement des conjoints", "error");
+        return;
+      }
+      
+      // Mettre à jour les positions
+      const nodePositions = safeNodes.map(node => ({
+        id: node.id,
+        position: {
+          x: Math.round(node.position.x), // Arrondir pour éviter les décimales
+          y: Math.round(node.position.y)
+        }
+      }));
+      
+      console.log('Positions finales à appliquer:');
+      nodePositions.forEach(pos => {
+        const nodeName = nodes.find(n => n.id === pos.id)?.data?.firstName || pos.id;
+        console.log(`  ${nodeName}: x=${pos.position.x}, y=${pos.position.y}`);
+      });
+      
+      updateNodePositions(nodePositions);
+      showToast(`${nodePositions.length} générations alignées automatiquement`, "success");
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'alignement:', error);
+      showToast("Erreur lors de l'alignement automatique", "error");
+    }
   }, [nodes, edges, updateNodePositions, showToast]);
 
   // Fonction pour repositionner automatiquement les enfants de mariage

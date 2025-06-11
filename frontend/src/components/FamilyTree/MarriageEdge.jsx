@@ -97,6 +97,9 @@ const MarriageEdge = ({
         children.map((child, index) => {
           const verticalLineLength = 120; // DOUBLÉ : était 60px
           const branchY = centerY + verticalLineLength;
+          // Distance fixe de 200px entre la ligne horizontale et l'enfant
+          const childDistanceFromLine = 200;
+          const finalChildY = branchY + childDistanceFromLine;
           
           return (
             <g key={`child-${index}`}>
@@ -127,7 +130,7 @@ const MarriageEdge = ({
                 x1={child.x}
                 y1={branchY}
                 x2={child.x}
-                y2={child.y}
+                y2={finalChildY}
                 stroke="#10b981"
                 strokeWidth="2"
                 strokeLinecap="round"
@@ -200,6 +203,10 @@ const MarriageEdge = ({
               
               {/* Lignes verticales vers chaque enfant */}
               {children.map((child, index) => {
+                // Distance fixe de 200px entre la ligne horizontale et l'enfant
+                const childDistanceFromLine = 200;
+                const finalChildY = distributionY + childDistanceFromLine;
+                
                 return (
                   <g key={`child-${index}`}>
                     {/* Ligne verticale de la barre horizontale vers l'enfant */}
@@ -207,7 +214,7 @@ const MarriageEdge = ({
                       x1={child.x}
                       y1={distributionY}
                       x2={child.x}
-                      y2={child.y}
+                      y2={finalChildY}
                       stroke="#10b981"
                       strokeWidth="2"
                       strokeLinecap="round"
