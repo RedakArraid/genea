@@ -214,31 +214,91 @@ export const debugAlignment = (nodes, edges) => {
     console.log(`  Génération ${level}: ${names.join(', ')}`);
   });
 
-  // Créer les positions finales
+  // Créer les positions finales avec gestion spéciale des enfants d'union
   const alignedNodes = [];
   const sortedLevels = Array.from(levelGroups.keys()).sort((a, b) => a - b);
   
+  // Traiter chaque niveau
   sortedLevels.forEach((level, levelIndex) => {
     const levelNodeIds = levelGroups.get(level);
     const levelNodes = levelNodeIds.map(id => nodes.find(n => n.id === id)).filter(Boolean);
-    const y = 150 + levelIndex * 400; // 400px entre générations
     
-    console.log(`🎯 Positionnement génération ${level} à y=${y}`);
-    
-    // Positionnement horizontal simple
-    const spacing = 200; // Distance horizontale restaurée
-    const totalWidth = Math.max(0, (levelNodes.length - 1) * spacing);
-    const startX = 400 - totalWidth / 2;
-    
-    levelNodes.forEach((node, nodeIndex) => {
-      const x = startX + nodeIndex * spacing;
-      console.log(`   ${node.data?.firstName || node.id}: x=${x}, y=${y}`);
+    if (level === 0) {
+      // Génération 0 (parents) - positionnement normal
+      const y = 150;
+      console.log(`🎯 Positionnement génération ${level} (parents) à y=${y}`);
       
-      alignedNodes.push({
-        ...node,
-        position: { x, y }
+      const spacing = 200;
+      const totalWidth = Math.max(0, (levelNodes.length - 1) * spacing);
+      const startX = 400 - totalWidth / 2;
+      
+      levelNodes.forEach((node, nodeIndex) => {
+        const x = startX + nodeIndex * spacing;
+        console.log(`   ${node.data?.firstName || node.id}: x=${x}, y=${y}`);
+        
+        alignedNodes.push({
+          ...node,
+          position: { x, y }
+        });
       });
-    });
+    } else {
+      // Générations suivantes - vérifier s'il y a des enfants d'union
+      console.log(`🎯 Positionnement génération ${level} (enfants)`);
+      
+      levelNodes.forEach(node => {
+        let positioned = false;
+        
+        // Vérifier si c'est un enfant d'union
+        const unionEdge = edges.find(edge => 
+          edge.data?.type === 'union_child_connection' && 
+          edge.target === node.id
+        );
+        
+        if (unionEdge) {
+          // C'est un enfant d'union - calculer position selon le mariage
+          const marriageEdge = edges.find(e => e.id === unionEdge.source);
+          if (marriageEdge) {
+            const sourceNode = nodes.find(n => n.id === marriageEdge.source);
+            const targetNode = nodes.find(n => n.id === marriageEdge.target);
+            
+            if (sourceNode && targetNode) {
+              const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
+              const centerY = (sourceNode.position.y + targetNode.position.y) / 2;
+              
+              // Position au bout de la ligne verte (+80px total)
+              const verticalLineLength = 120;
+              const childDistanceFromLine = 180;
+              const childY = centerY + verticalLineLength + childDistanceFromLine;
+              
+              console.log(`   ${node.data?.firstName || node.id} (enfant d'union): x=${node.position.x}, y=${childY}`);
+              
+              alignedNodes.push({
+                ...node,
+                position: { 
+                  x: node.position.x, // Garder position X actuelle
+                  y: childY // Position au bout de la ligne verte
+                }
+              });
+              positioned = true;
+            }
+          }
+        }
+        
+        if (!positioned) {
+          // Enfant normal - positionnement générique
+          const y = 150 + levelIndex * 220;
+          console.log(`   ${node.data?.firstName || node.id} (enfant normal): x=${node.position.x}, y=${y}`);
+          
+          alignedNodes.push({
+            ...node,
+            position: { 
+              x: node.position.x,
+              y: y
+            }
+          });
+        }
+      });
+    }
   });
 
   console.log('🎉 DEBUG ALIGNMENT terminé:', alignedNodes.length, 'nœuds');

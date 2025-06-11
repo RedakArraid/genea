@@ -69,13 +69,14 @@ export const calculateChildrenPositions = (marriageEdge, children, nodes) => {
     return [];
   }
 
-  // Centre du lien conjugal
+  // Calculer la position selon la logique de MarriageEdge.jsx
   const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
-  const parentsY = Math.max(sourceNode.position.y, targetNode.position.y);
-
-  // Distance verticale standard pour les enfants (DOUBLÉE pour plus d'espace)
-  const verticalOffset = 400; // Distance du centre du mariage aux enfants (était 200)
-  const childrenY = parentsY + verticalOffset;
+  const centerY = (sourceNode.position.y + targetNode.position.y) / 2;
+  
+  // Distance cohérente avec MarriageEdge.jsx
+  const verticalLineLength = 120; // Ligne du centre vers ligne horizontale
+  const childDistanceFromLine = 180; // Distance ligne horizontale vers enfant (+80px total)
+  const childrenY = centerY + verticalLineLength + childDistanceFromLine; // = centerY + 300
 
   // Cas d'un enfant unique - placé au centre
   if (children.length === 1) {
@@ -144,11 +145,14 @@ export const calculateNewChildPosition = (marriageEdge, existingChildren, nodes)
     return { x: 400, y: 400 };
   }
 
-  // Centre du lien conjugal
+  // Calculer la position selon la logique de MarriageEdge.jsx
   const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
-  const parentsY = Math.max(sourceNode.position.y, targetNode.position.y);
-  const verticalOffset = 400; // Distance doublée pour plus d'espace
-  const childrenY = parentsY + verticalOffset;
+  const centerY = (sourceNode.position.y + targetNode.position.y) / 2;
+  
+  // Distance cohérente avec MarriageEdge.jsx
+  const verticalLineLength = 120; // Ligne du centre vers ligne horizontale
+  const childDistanceFromLine = 180; // Distance ligne horizontale vers enfant (+80px total)
+  const childrenY = centerY + verticalLineLength + childDistanceFromLine; // = centerY + 300
 
   // Calculer la position selon le nombre total d'enfants (existants + nouveau)
   const totalChildren = (existingChildren?.length || 0) + 1;

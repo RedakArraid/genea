@@ -97,8 +97,8 @@ const MarriageEdge = ({
         children.map((child, index) => {
           const verticalLineLength = 120; // DOUBLÉ : était 60px
           const branchY = centerY + verticalLineLength;
-          // Distance fixe de 200px entre la ligne horizontale et l'enfant
-          const childDistanceFromLine = 200;
+          // Distance entre la ligne horizontale et l'enfant (+80px total)
+          const childDistanceFromLine = 180;
           const finalChildY = branchY + childDistanceFromLine;
           
           return (
@@ -203,8 +203,8 @@ const MarriageEdge = ({
               
               {/* Lignes verticales vers chaque enfant */}
               {children.map((child, index) => {
-                // Distance fixe de 200px entre la ligne horizontale et l'enfant
-                const childDistanceFromLine = 200;
+                // Distance entre la ligne horizontale et l'enfant (+80px total)
+                const childDistanceFromLine = 180;
                 const finalChildY = distributionY + childDistanceFromLine;
                 
                 return (
