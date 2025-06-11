@@ -21,7 +21,11 @@ const EditPersonModal = ({
     gender: 'male',
     occupation: '',
     biography: '',
-    photoUrl: ''
+    photoUrl: '',
+    fatherFirstName: '',
+    fatherLastName: '',
+    motherFirstName: '',
+    motherLastName: ''
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -39,7 +43,11 @@ const EditPersonModal = ({
         gender: nodeData.gender || 'male',
         occupation: nodeData.occupation || '',
         biography: nodeData.biography || '',
-        photoUrl: photoUrl
+        photoUrl: photoUrl,
+        fatherFirstName: nodeData.fatherFirstName || '',
+        fatherLastName: nodeData.fatherLastName || '',
+        motherFirstName: nodeData.motherFirstName || '',
+        motherLastName: nodeData.motherLastName || ''
       });
       
       // Si une photo existe déjà, l'afficher en prévisualisation
@@ -364,40 +372,68 @@ const EditPersonModal = ({
               />
             </div>
             
-            {/* Section pour ajouter des parents */}
-            <div className="border-t border-gray-200 pt-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-3">Relations familiales</h3>
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => onAddParent?.(nodeId, 'parent')}
-                  className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Ajouter un parent
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onAddParent?.(nodeId, 'spouse')}
-                  className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                  Ajouter un conjoint
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onAddParent?.(nodeId, 'child')}
-                  className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  Ajouter un enfant
-                </button>
+            {/* Section Parents */}
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Parents</h3>
+              
+              {/* Père */}
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <div>
+                  <label htmlFor="fatherFirstName" className="block text-sm font-medium text-gray-700">
+                    Prénom du père
+                  </label>
+                  <input
+                    id="fatherFirstName"
+                    name="fatherFirstName"
+                    type="text"
+                    value={formData.fatherFirstName || ''}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="fatherLastName" className="block text-sm font-medium text-gray-700">
+                    Nom du père
+                  </label>
+                  <input
+                    id="fatherLastName"
+                    name="fatherLastName"
+                    type="text"
+                    value={formData.fatherLastName || ''}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  />
+                </div>
+              </div>
+              
+              {/* Mère */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="motherFirstName" className="block text-sm font-medium text-gray-700">
+                    Prénom de la mère
+                  </label>
+                  <input
+                    id="motherFirstName"
+                    name="motherFirstName"
+                    type="text"
+                    value={formData.motherFirstName || ''}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="motherLastName" className="block text-sm font-medium text-gray-700">
+                    Nom de la mère
+                  </label>
+                  <input
+                    id="motherLastName"
+                    name="motherLastName"
+                    type="text"
+                    value={formData.motherLastName || ''}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  />
+                </div>
               </div>
             </div>
           </div>

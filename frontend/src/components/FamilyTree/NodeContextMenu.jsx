@@ -39,8 +39,6 @@ const NodeContextMenu = ({ x, y, node, onClose, onAddPerson, onEditPerson, onDel
       transition={{ duration: 0.2 }}
       onClick={stopPropagation}
     >
-
-      
       <div className="context-menu-item" onClick={handleEditPerson}>
         <Edit3 size={16} />
         <span>Modifier</span>

@@ -19,6 +19,7 @@ const personRoutes = require('./routes/person.routes');
 const relationshipRoutes = require('./routes/relationship.routes');
 const nodePositionRoutes = require('./routes/nodePosition.routes');
 const edgeRoutes = require('./routes/edge.routes');
+const unionChildRoutes = require('./routes/unionChild.routes');
 
 // Configuration des variables d'environnement
 dotenv.config();
@@ -113,6 +114,7 @@ app.use('/api/persons', personRoutes);
 app.use('/api/relationships', relationshipRoutes);
 app.use('/api/node-positions', nodePositionRoutes);
 app.use('/api/edges', edgeRoutes);
+app.use('/api/union-children', unionChildRoutes);
 
 // Middleware de gestion des erreurs
 app.use((err, req, res, next) => {

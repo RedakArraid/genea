@@ -33,6 +33,7 @@ model FamilyTree {
   User         User           @relation(fields: [ownerId], references: [id])
   NodePosition NodePosition[]
   Person       Person[]
+  UnionChild   UnionChild[]
 }
 
 model NodePosition {
@@ -63,6 +64,7 @@ model Person {
   FamilyTree                                 FamilyTree     @relation(fields: [treeId], references: [id], onDelete: Cascade)
   Relationship_Relationship_sourceIdToPerson Relationship[] @relation("Relationship_sourceIdToPerson")
   Relationship_Relationship_targetIdToPerson Relationship[] @relation("Relationship_targetIdToPerson")
+  UnionChild                                 UnionChild[]
 }
 
 model Relationship {
@@ -74,6 +76,19 @@ model Relationship {
   updatedAt                            DateTime @updatedAt
   Person_Relationship_sourceIdToPerson Person   @relation("Relationship_sourceIdToPerson", fields: [sourceId], references: [id], onDelete: Cascade)
   Person_Relationship_targetIdToPerson Person   @relation("Relationship_targetIdToPerson", fields: [targetId], references: [id], onDelete: Cascade)
+}
+
+model UnionChild {
+  id            String     @id @default(uuid())
+  marriageEdgeId String    // ID de l'arête de mariage
+  childId       String     // ID de l'enfant
+  treeId        String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  FamilyTree    FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  Child         Person     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  
+  @@unique([marriageEdgeId, childId])
 }
 
 model User {

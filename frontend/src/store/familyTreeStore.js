@@ -37,9 +37,6 @@ export const useFamilyTreeStore = create((set, get) => ({
     try {
       const response = await api.get(`/family-trees/${treeId}`);
       const { tree } = response.data;
-      
-      console.log('🌳 ARBRE RÉCUPÉRÉ DU BACKEND:', tree);
-      console.log('🌳 Arêtes dans l\'arbre:', tree.Edge?.length || 0);
 
       // Transformer les données pour ReactFlow
       const nodes = tree.Person.map(person => ({
@@ -52,30 +49,36 @@ export const useFamilyTreeStore = create((set, get) => ({
         }
       }));
 
-      const edges = tree.Edge.map(edge => {
-        console.log('🔗 ARÊTE RÉCUPÉRÉE:', {
-          id: edge.id,
-          type: edge.type,
-          dataType: edge.data?.type,
-          marriageEdgeId: edge.data?.marriageEdgeId
-        });
-        return {
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-          type: edge.type,
-          data: edge.data,
-          sourceHandle: edge.sourceHandle,
-          targetHandle: edge.targetHandle
-        };
-      });
+      const edges = tree.Edge.map(edge => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: edge.type,
+        data: edge.data,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle
+      }));
+
+      // Ajouter les arêtes pour les enfants d'union
+      const unionChildEdges = tree.UnionChild?.map(unionChild => ({
+        id: `union-child-${unionChild.id}`,
+        source: unionChild.marriageEdgeId,
+        target: unionChild.childId,
+        type: 'straight',
+        data: {
+          type: 'union_child_connection',
+          marriageEdgeId: unionChild.marriageEdgeId,
+          isUnionChild: true
+        },
+        sourceHandle: null,
+        targetHandle: null
+      })) || [];
+
+      // Combiner les arêtes normales et les arêtes d'enfants d'union
+      const allEdges = [...edges, ...unionChildEdges];
 
       // Calculer les handles intelligents pour les arêtes sans handles
-      const smartEdges = calculateAllSmartHandles(edges, nodes);
-      
-      console.log('🔗 ARÊTES FINALES POUR REACTFLOW:', smartEdges.length);
-      const marriageChildEdges = smartEdges.filter(e => e.data?.type === 'marriage_child_connection');
-      console.log('🔗 Arêtes marriage_child_connection finales:', marriageChildEdges.length);
+      const smartEdges = calculateAllSmartHandles(allEdges, nodes);
 
       set({ 
         currentTree: tree,
@@ -313,7 +316,7 @@ export const useFamilyTreeStore = create((set, get) => ({
       // Recharger l'arbre complet pour s'assurer que les nœuds et les arêtes sont à jour
       await get().fetchTreeById(get().currentTree.id);
 
-      showToast(`Nouveau lien ${relationshipData.type === 'spouse' ? 'conjugal' : 'familial'} ajouté`, "success");
+      set({ isLoading: false });
       return { success: true };
     } catch (error) {
       console.error('Erreur lors de l\'ajout de la relation:', error);

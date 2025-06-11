@@ -43,6 +43,26 @@ exports.getTreeById = async (req, res, next) => {
       return res.status(404).json({ message: 'Arbre généalogique non trouvé' });
     }
     
+    // TEMPORAIRE: Ignorer UnionChild jusqu'à ce que Prisma soit corrigé
+    // Récupérer les UnionChild séparément (avec gestion d'erreur)
+    let unionChildren = [];
+    /*
+    try {
+      if (prisma.unionChild) {
+        unionChildren = await prisma.unionChild.findMany({
+          where: { treeId: id },
+          include: { Child: true }
+        });
+      }
+    } catch (error) {
+      console.warn('Table UnionChild non accessible, sera ignorée:', error.message);
+      unionChildren = [];
+    }
+    */
+    
+    // Ajouter les UnionChild à l'objet tree (vide pour l'instant)
+    tree.UnionChild = unionChildren;
+    
     // Récupérer les relations pour les personnes de cet arbre
     const personIds = tree.Person.map(person => person.id);
     const relationships = await prisma.relationship.findMany({

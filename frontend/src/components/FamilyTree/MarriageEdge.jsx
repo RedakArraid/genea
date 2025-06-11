@@ -1,9 +1,8 @@
 import React from 'react';
 import { getSmoothStepPath, BaseEdge } from 'reactflow';
-import { Plus } from 'lucide-react';
 
 /**
- * Arête personnalisée pour les mariages avec gestion des enfants
+ * Arête personnalisée pour les mariages avec gestion optimisée des enfants
  */
 const MarriageEdge = ({
   id,
@@ -15,7 +14,7 @@ const MarriageEdge = ({
   targetPosition,
   data,
   markerEnd,
-  onAddChild // Prop pour gérer l'ajout d'enfant
+  onAddChild
 }) => {
   // Créer le chemin de l'arête
   const [edgePath] = getSmoothStepPath({
@@ -36,78 +35,122 @@ const MarriageEdge = ({
   const children = data?.children || [];
 
   return (
-    <>
+    <g>
       {/* Ligne de mariage principale */}
       <BaseEdge
         path={edgePath}
         markerEnd={markerEnd}
         style={{
           stroke: '#e11d48',
-          strokeWidth: 3,
+          strokeWidth: 4,
           strokeDasharray: '8,4'
         }}
       />
       
-      {/* Bouton HTML pour ajouter des enfants */}
-      <foreignObject
-        x={centerX - 8}
-        y={centerY - 8}
-        width={16}
-        height={16}
-        style={{ pointerEvents: 'all' }}
-      >
-        <button
-          className="w-4 h-4 bg-red-500 border-2 border-white rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-110 z-50"
+      {/* Point central cliquable avec icône + - TOUJOURS VISIBLE ET AU-DESSUS */}
+      <g style={{ zIndex: 1000, pointerEvents: 'auto' }}>
+        <circle
+          cx={centerX}
+          cy={centerY}
+          r="8"
+          fill="#10b981"
+          stroke="white"
+          strokeWidth="2"
+          style={{ pointerEvents: 'auto', zIndex: 1001 }}
+          className="cursor-pointer hover:opacity-80 hover:scale-125 transition-all duration-200"
           onClick={(e) => {
-            e.preventDefault();
             e.stopPropagation();
-            if (onAddChild) {
-              const sourceId = data?.sourceId || null;
-              const targetId = data?.targetId || null;
-              onAddChild(id, sourceId, targetId);
+            e.preventDefault();
+            if (data?.onAddChild) {
+              data.onAddChild(id);
             }
           }}
-          title="Ajouter un enfant à l'union"
+        />
+        <text
+          x={centerX}
+          y={centerY + 0.5}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="white"
+          fontSize="10"
+          fontWeight="bold"
+          style={{ pointerEvents: 'none' }}
+          className="select-none"
         >
-          <Plus className="w-2 h-2 text-white" strokeWidth={3} />
-        </button>
-      </foreignObject>
+          +
+        </text>
+      </g>
       
-      {/* Nombre d'enfants (optionnel) */}
+      {/* Nombre d'enfants */}
       {children.length > 0 && (
         <text
-          x={centerX + 12}
-          y={centerY - 8}
-          fill="#666"
+          x={centerX + 15}
+          y={centerY - 5}
+          fill="#10b981"
           fontSize="10"
-          fontWeight="normal"
+          fontWeight="bold"
         >
           {children.length}
         </text>
       )}
       
-      {/* Lignes vers les enfants */}
+      {/* Lignes vers les enfants - Nouvelle logique */}
       {children.length === 1 ? (
-        // Un seul enfant - ligne directe
+        // Un seul enfant - ligne en T
         children.map((child, index) => {
+          const verticalLineLength = 120;
+          const branchY = centerY + verticalLineLength;
+          const childDistanceFromLine = 180;
+          const finalChildY = branchY + childDistanceFromLine;
+          
           return (
             <g key={`child-${index}`}>
-              {/* Ligne directe vers l'enfant unique */}
+              {/* Ligne verticale du mariage vers le bas */}
               <line
                 x1={centerX}
                 y1={centerY}
-                x2={child.x}
-                y2={child.y}
+                x2={centerX}
+                y2={branchY}
                 stroke="#10b981"
                 strokeWidth="2"
                 strokeLinecap="round"
               />
               
-              {/* Petit cercle sur l'enfant */}
+              {/* Ligne horizontale vers l'enfant */}
+              <line
+                x1={centerX}
+                y1={branchY}
+                x2={child.x}
+                y2={branchY}
+                stroke="#10b981"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              
+              {/* Ligne verticale vers l'enfant */}
+              <line
+                x1={child.x}
+                y1={branchY}
+                x2={child.x}
+                y2={finalChildY}
+                stroke="#10b981"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              
+              {/* Points de connexion */}
+              <circle
+                cx={centerX}
+                cy={branchY}
+                r="2"
+                fill="#10b981"
+                stroke="white"
+                strokeWidth="1"
+              />
               <circle
                 cx={child.x}
-                cy={child.y}
-                r="3"
+                cy={branchY}
+                r="2"
                 fill="#10b981"
                 stroke="white"
                 strokeWidth="1"
@@ -116,19 +159,19 @@ const MarriageEdge = ({
           );
         })
       ) : children.length > 1 ? (
-        // Plusieurs enfants - système de distribution
+        // Plusieurs enfants - système de distribution en T
         (() => {
-          const verticalLineLength = 120; // Rallongé de 80 à 120
+          const verticalLineLength = 120;
           const distributionY = centerY + verticalLineLength;
           
           // Calculer les positions X des enfants pour la ligne horizontale
           const sortedChildren = [...children].sort((a, b) => a.x - b.x);
-          const leftmostX = sortedChildren[0].x;
-          const rightmostX = sortedChildren[sortedChildren.length - 1].x;
+          const leftmostX = Math.min(...children.map(c => c.x));
+          const rightmostX = Math.max(...children.map(c => c.x));
           
           return (
             <g>
-              {/* Ligne verticale du centre vers le bas */}
+              {/* Ligne verticale du centre du mariage vers le bas */}
               <line
                 x1={centerX}
                 y1={centerY}
@@ -150,8 +193,21 @@ const MarriageEdge = ({
                 strokeLinecap="round"
               />
               
+              {/* Point central */}
+              <circle
+                cx={centerX}
+                cy={distributionY}
+                r="3"
+                fill="#10b981"
+                stroke="white"
+                strokeWidth="1"
+              />
+              
               {/* Lignes verticales vers chaque enfant */}
               {children.map((child, index) => {
+                const childDistanceFromLine = 180;
+                const finalChildY = distributionY + childDistanceFromLine;
+                
                 return (
                   <g key={`child-${index}`}>
                     {/* Ligne verticale de la barre horizontale vers l'enfant */}
@@ -159,20 +215,10 @@ const MarriageEdge = ({
                       x1={child.x}
                       y1={distributionY}
                       x2={child.x}
-                      y2={child.y}
+                      y2={finalChildY}
                       stroke="#10b981"
                       strokeWidth="2"
                       strokeLinecap="round"
-                    />
-                    
-                    {/* Petit cercle sur l'enfant */}
-                    <circle
-                      cx={child.x}
-                      cy={child.y}
-                      r="3"
-                      fill="#10b981"
-                      stroke="white"
-                      strokeWidth="1"
                     />
                     
                     {/* Point d'intersection sur la ligne horizontale */}
@@ -191,7 +237,7 @@ const MarriageEdge = ({
           );
         })()
       ) : null}
-    </>
+    </g>
   );
 };
 
