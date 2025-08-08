@@ -32,12 +32,9 @@ exports.register = async (req, res, next) => {
     }
     
     // Hachage du mot de passe
-    console.log('🔐 Hachage du mot de passe...');
     const hashedPassword = await bcrypt.hash(password, 12);
-    console.log('✅ Mot de passe haché');
 
     // Création de l'utilisateur
-    console.log('👤 Création de l\'utilisateur...');
     const newUser = await prisma.User.create({
       data: {
         name,
@@ -45,7 +42,6 @@ exports.register = async (req, res, next) => {
         password: hashedPassword
       }
     });
-    console.log('✅ Utilisateur créé avec ID:', newUser.id);
     
     // Génération du token JWT
     const token = jwt.sign(
