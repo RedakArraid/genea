@@ -59,6 +59,18 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('dev'));
 
+// Middleware de logging global pour debug
+app.use((req, res, next) => {
+  console.log('🌐 REQUÊTE REÇUE:', {
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    body: req.body,
+    timestamp: new Date().toISOString()
+  });
+  next();
+});
+
 // Routes de base
 app.get('/', (req, res) => {
   res.json({ message: 'Bienvenue sur l\'API GeneaIA' });
