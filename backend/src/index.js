@@ -111,19 +111,14 @@ app.get('/api/debug', (req, res) => {
 });
 
 
-// Enregistrement des routes avec logging
-console.log('📍 Enregistrement des routes API...');
-app.use('/api/auth', (req, res, next) => {
-  console.log('🔐 Route AUTH appelée:', req.method, req.path);
-  next();
-}, authRoutes);
+// Enregistrement des routes
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/family-trees', familyTreeRoutes);
 app.use('/api/persons', personRoutes);
 app.use('/api/relationships', relationshipRoutes);
 app.use('/api/node-positions', nodePositionRoutes);
 app.use('/api/edges', edgeRoutes);
-console.log('✅ Routes enregistrées');
 
 // Middleware de gestion des erreurs
 app.use((err, req, res, next) => {
@@ -154,11 +149,9 @@ app.use((err, req, res, next) => {
 prisma.$connect()
   .then(() => {
     console.log('✅ Connexion à la base de données réussie');
-    console.log('🔗 DATABASE_URL:', process.env.DATABASE_URL ? 'configurée' : 'NON CONFIGURÉE');
   })
   .catch(err => {
     console.error('❌ Erreur de connexion à la base de données:', err.message);
-    console.error('🔗 DATABASE_URL:', process.env.DATABASE_URL || 'NON DÉFINIE');
   });
 
 // Démarrage du serveur
