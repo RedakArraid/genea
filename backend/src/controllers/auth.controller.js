@@ -59,8 +59,7 @@ exports.register = async (req, res, next) => {
       token
     });
   } catch (error) {
-    console.error('❌ Erreur lors de l\'inscription:', error);
-    console.error('📋 Stack trace:', error.stack);
+    console.error('Erreur lors de l\'inscription:', error.message);
     next(error);
   }
 };
