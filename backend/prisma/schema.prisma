@@ -14,7 +14,7 @@ model Edge {
   type         String?
   sourceHandle String?
   targetHandle String?
-  data         Json?
+  data         String?
   treeId       String
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
