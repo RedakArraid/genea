@@ -51,15 +51,24 @@ async function findUserByEmail(email) {
  */
 exports.register = async (req, res, next) => {
   try {
+    console.log('🔵 Début inscription - Body reçu:', {
+      name: req.body.name,
+      email: req.body.email,
+      passwordLength: req.body.password?.length
+    });
+
     // Validation des données
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('🔴 Erreurs de validation:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { name, email, password } = req.body;
+    console.log('✅ Données validées avec succès');
 
     // Vérification que l'email n'est pas déjà utilisé
+    console.log('🔍 Vérification email existant:', email);
     let existingUser = null;
 
     try {
@@ -67,19 +76,26 @@ exports.register = async (req, res, next) => {
       existingUser = await prisma.User.findUnique({
         where: { email }
       });
+      console.log('✅ Vérification Prisma réussie');
     } catch (prismaError) {
+      console.log('⚠️ Prisma échoué, utilisation fallback:', prismaError.message);
       // Fallback en cas d'erreur Prisma
       existingUser = await findUserByEmail(email);
+      console.log('✅ Vérification fallback terminée');
     }
 
     if (existingUser) {
+      console.log('🔴 Email déjà utilisé:', email);
       return res.status(409).json({ message: 'Cet email est déjà utilisé' });
     }
 
     // Hachage du mot de passe
+    console.log('🔐 Hachage du mot de passe...');
     const hashedPassword = await bcrypt.hash(password, 12);
+    console.log('✅ Mot de passe haché avec succès');
 
     // Création de l'utilisateur
+    console.log('👤 Création de l\'utilisateur...');
     let newUser = null;
 
     try {
@@ -91,13 +107,16 @@ exports.register = async (req, res, next) => {
           password: hashedPassword
         }
       });
+      console.log('✅ Utilisateur créé via Prisma:', newUser.id);
     } catch (prismaError) {
+      console.log('⚠️ Prisma échoué pour création, utilisation fallback:', prismaError.message);
       // Fallback en cas d'erreur Prisma
       newUser = await createUserDirect({
         name,
         email,
         password: hashedPassword
       });
+      console.log('✅ Utilisateur créé via fallback:', newUser.id);
     }
     
     // Génération du token JWT
