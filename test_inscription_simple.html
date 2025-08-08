@@ -62,6 +62,7 @@
         <button onclick="testHealthCheck()">Test Health Check</button>
         <button onclick="testValidation()">Test Validation</button>
         <button onclick="testDuplicateEmail()">Test Email Dupliqué</button>
+        <button onclick="testLoginAfterRegister()">Test Login après Inscription</button>
     </div>
 
     <div id="result" class="result" style="display: none;"></div>
@@ -225,6 +226,76 @@
                 }
             } catch (error) {
                 showResult(`<h4>❌ Erreur de Réseau</h4><pre>${error.message}</pre>`, false);
+            }
+        }
+
+        async function testLoginAfterRegister() {
+            // Générer des données uniques
+            const timestamp = Date.now();
+            const testData = {
+                name: `Test User ${timestamp}`,
+                email: `test${timestamp}@example.com`,
+                password: 'password123'
+            };
+
+            try {
+                // 1. D'abord s'inscrire
+                console.log('Étape 1: Inscription...');
+                const registerResponse = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                const registerData = await registerResponse.json();
+
+                if (!registerResponse.ok) {
+                    showResult(`
+                        <h4>❌ Inscription Échouée (Prérequis pour le test de login)</h4>
+                        <p><strong>Status:</strong> ${registerResponse.status}</p>
+                        <pre>${JSON.stringify(registerData, null, 2)}</pre>
+                    `, false);
+                    return;
+                }
+
+                // Attendre un peu
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // 2. Ensuite se connecter
+                console.log('Étape 2: Connexion...');
+                const loginResponse = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: testData.email,
+                        password: testData.password
+                    })
+                });
+                const loginData = await loginResponse.json();
+
+                if (loginResponse.ok) {
+                    showResult(`
+                        <h4>✅ Test Inscription + Login Réussi!</h4>
+                        <p><strong>Inscription:</strong> ${registerResponse.status} ✅</p>
+                        <p><strong>Login:</strong> ${loginResponse.status} ✅</p>
+                        <p><strong>Données utilisées:</strong></p>
+                        <pre>${JSON.stringify(testData, null, 2)}</pre>
+                        <p><strong>Token reçu:</strong></p>
+                        <pre>Login Token: ${loginData.token ? 'Présent' : 'Manquant'}</pre>
+                        <p><strong>Utilisateur:</strong></p>
+                        <pre>${JSON.stringify(loginData.user, null, 2)}</pre>
+                    `, true);
+                } else {
+                    showResult(`
+                        <h4>❌ Login Échoué après Inscription Réussie</h4>
+                        <p><strong>Inscription:</strong> ${registerResponse.status} ✅</p>
+                        <p><strong>Login:</strong> ${loginResponse.status} ❌</p>
+                        <p><strong>Erreur de login:</strong></p>
+                        <pre>${JSON.stringify(loginData, null, 2)}</pre>
+                    `, false);
+                }
+
+            } catch (error) {
+                showResult(`<h4>❌ Erreur lors du test complet</h4><pre>${error.message}</pre>`, false);
             }
         }
 
