@@ -22,16 +22,27 @@ async function createUserDirect(userData) {
     updatedAt: new Date().toISOString()
   };
 
+  // Stocker l'utilisateur dans notre store temporaire
+  tempUserStore.set(newUser.id, newUser);
+
   // Simuler un délai de base de données
   await new Promise(resolve => setTimeout(resolve, 100));
+
+  console.log(`✅ Utilisateur créé en fallback - Email: ${userData.email}, ID: ${newUser.id}`);
 
   return newUser;
 }
 
+// Store temporaire pour les utilisateurs (en mémoire - pour les tests uniquement)
+const tempUserStore = new Map();
+
 async function findUserByEmail(email) {
-  // Simulation de recherche d'utilisateur
-  // En production, ceci devrait interroger une vraie base de données
-  // Pour le test, on retourne null (utilisateur n'existe pas)
+  // Simulation de recherche d'utilisateur dans notre store temporaire
+  for (const [userId, user] of tempUserStore.entries()) {
+    if (user.email === email) {
+      return user;
+    }
+  }
   return null;
 }
 
