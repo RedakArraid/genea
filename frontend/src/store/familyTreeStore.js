@@ -297,11 +297,13 @@ export const useFamilyTreeStore = create((set, get) => ({
         id: newRelationship.id,
         source: newRelationship.sourceId,
         target: newRelationship.targetId,
-        type: 'straight',
+        type: relationshipData.data?.type === 'spouse_connection' ? 'marriageEdge' : 'straight',
         data: relationshipData.data,
         sourceHandle: relationshipData.sourceHandle,
         targetHandle: relationshipData.targetHandle
       };
+      
+      console.log('Nouvelle arête créée:', newEdge);
 
       // Enregistrer l'arête avec les handles
       await api.post(`/edges`, {
@@ -318,6 +320,7 @@ export const useFamilyTreeStore = create((set, get) => ({
         edges: [...state.edges, newEdge],
         isLoading: false 
       }));
+      console.log('Arêtes après ajout:', get().edges);
       return { success: true };
     } catch (error) {
       console.error('Erreur lors de l\'ajout de la relation:', error);

@@ -3,49 +3,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 /**
  * Composant d'aide pour expliquer les fonctionnalités de l'arbre généalogique
+ * Maintenant géré par LegendTooltip
  */
 const HelpTooltip = ({ isOpen, onToggle }) => {
   const toggleHelp = () => onToggle();
 
   return (
-    <div className="fixed top-4 right-4 z-20">
-      {/* Bouton d'aide */}
-      <button
-        onClick={toggleHelp}
-        className="w-10 h-10 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center"
-        title="Aide (Ctrl+H ou ?)"
-      >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      </button>
-
+    <div className="fixed bottom-6 left-6 z-20">
       {/* Panel d'aide */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, x: 20 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 0.8, x: 20 }}
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-12 right-0 w-80 bg-white rounded-lg shadow-xl border border-gray-200 p-4 max-h-96 overflow-y-auto"
+            className="absolute bottom-16 left-0 w-80 bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-4 max-h-96 overflow-y-auto"
           >
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-900">Guide d'utilisation</h3>
               <button
                 onClick={toggleHelp}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 ✕
               </button>
@@ -99,42 +78,41 @@ const HelpTooltip = ({ isOpen, onToggle }) => {
                 </ul>
               </div>
 
-              {/* Modification */}
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2 flex items-center">
-                  <svg className="w-4 h-4 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  Modifier une personne
-                </h4>
-                <ul className="space-y-1 pl-6">
-                  <li>• Clic droit puis "Modifier"</li>
-                  <li>• Ou double-clic sur la personne</li>
-                </ul>
-              </div>
-
               {/* Raccourcis clavier */}
               <div>
                 <h4 className="font-medium text-gray-900 mb-2 flex items-center">
-                  <svg className="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2z" />
+                  <svg className="w-4 h-4 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Raccourcis clavier
                 </h4>
-                <ul className="space-y-1 pl-6">
-                  <li>• <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">Ctrl+N</kbd> ou <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">+</kbd> : Ajouter une personne</li>
-                  <li>• <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">Ctrl+H</kbd> ou <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">?</kbd> : Aide</li>
-                  <li>• <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">F</kbd> ou <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">Ctrl+0</kbd> : Ajuster la vue</li>
-                </ul>
+                <div className="grid grid-cols-2 gap-2 pl-6">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Ajouter personne</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Ctrl+N</kbd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Ajuster vue</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">F</kbd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Aide</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">?</kbd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Supprimer</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Del</kbd>
+                  </div>
+                </div>
               </div>
 
               {/* Conseils */}
-              <div className="bg-blue-50 rounded-lg p-3">
-                <h4 className="font-medium text-blue-900 mb-2">💡 Conseils</h4>
-                <ul className="space-y-1 text-blue-800 text-xs">
-                  <li>• Commencez par vous ajouter au centre</li>
-                  <li>• Ajoutez ensuite vos parents et enfants</li>
-                  <li>• Utilisez la minimap pour naviguer dans les grands arbres</li>
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-3 border border-green-100">
+                <h4 className="font-medium text-green-900 mb-2 text-xs">💡 Conseils</h4>
+                <ul className="text-green-800 text-xs space-y-1">
+                  <li>• Utilisez les points colorés pour créer des connexions</li>
+                  <li>• Les lignes pointillées indiquent les mariages</li>
+                  <li>• Les enfants d'union apparaissent sous la ligne de mariage</li>
                   <li>• Sauvegardez régulièrement votre travail</li>
                 </ul>
               </div>

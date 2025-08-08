@@ -54,7 +54,12 @@ const MobileNavigation = ({ reactFlowInstance, nodes, currentTree }) => {
   }, [reactFlowInstance]);
 
   const handleFitView = useCallback(() => {
-    reactFlowInstance?.fitView({ duration: 300, padding: 0.1 });
+    reactFlowInstance?.fitView({ 
+      duration: 300, 
+      padding: 0.1,
+      minZoom: 0.5,
+      maxZoom: 2
+    });
   }, [reactFlowInstance]);
 
   // Styles de base
