@@ -14,27 +14,37 @@ const prisma = require('../lib/prisma');
  */
 exports.register = async (req, res, next) => {
   try {
+    console.log('🚀 DEBUT INSCRIPTION - Body:', req.body);
+
     // Validation des données
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ ERREURS VALIDATION:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { name, email, password } = req.body;
+    console.log('✅ DONNEES EXTRAITES:', { name, email, passwordLength: password?.length });
 
     // Vérification que l'email n'est pas déjà utilisé
+    console.log('🔍 VERIFICATION EMAIL:', email);
     const existingUser = await prisma.User.findUnique({
       where: { email }
     });
+    console.log('📊 UTILISATEUR EXISTANT:', !!existingUser);
 
     if (existingUser) {
+      console.log('❌ EMAIL DEJA UTILISE');
       return res.status(409).json({ message: 'Cet email est déjà utilisé' });
     }
-    
+
     // Hachage du mot de passe
+    console.log('🔐 HACHAGE MOT DE PASSE...');
     const hashedPassword = await bcrypt.hash(password, 12);
+    console.log('✅ MOT DE PASSE HACHE');
 
     // Création de l'utilisateur
+    console.log('👤 CREATION UTILISATEUR...');
     const newUser = await prisma.User.create({
       data: {
         name,
@@ -42,6 +52,7 @@ exports.register = async (req, res, next) => {
         password: hashedPassword
       }
     });
+    console.log('✅ UTILISATEUR CREE:', newUser.id);
     
     // Génération du token JWT
     const token = jwt.sign(
@@ -59,7 +70,12 @@ exports.register = async (req, res, next) => {
       token
     });
   } catch (error) {
-    console.error('Erreur lors de l\'inscription:', error.message);
+    console.error('❌ ERREUR INSCRIPTION:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack
+    });
     next(error);
   }
 };
