@@ -6,16 +6,15 @@ services:
     image: postgres:15-alpine
     container_name: geneaia-db-local
     environment:
-      POSTGRES_DB: genea
-      POSTGRES_USER: kader
-      POSTGRES_PASSWORD: kader
+      POSTGRES_DB: geneaia_local
+      POSTGRES_USER: geneaia_user
+      POSTGRES_PASSWORD: geneaia_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/prisma/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kader -d genea"]
+      test: ["CMD-SHELL", "pg_isready -U geneaia_user -d geneaia_local"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,11 +24,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: development
+      target: production
     container_name: geneaia-backend-local
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgresql://kader:kader@postgres:5432/genea?schema=public
+      - DATABASE_URL=postgresql://geneaia_user:geneaia_password@postgres:5432/geneaia_local?schema=public
       - JWT_SECRET=dev-secret-key-for-local-development-only
       - CORS_ORIGIN=http://localhost:5173
     volumes:

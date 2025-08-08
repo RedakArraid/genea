@@ -131,6 +131,10 @@ const FamilyTreePage = () => {
 
   // Appliquer les styles aux arêtes avec les handles ET utiliser des arêtes personnalisées
   const styledEdges = edges.map(edge => {
+    // Debug: vérifier les arêtes de mariage
+    if (edge.data?.type === 'spouse_connection') {
+      console.log('Arête de mariage trouvée:', edge.id, 'type:', edge.type, 'data:', edge.data);
+    }
     // Masquer complètement les arêtes d'enfants de mariage car nous utilisons nos lignes personnalisées
     if (edge.data?.type === 'marriage_child_connection') {
       return {
@@ -162,10 +166,18 @@ const FamilyTreePage = () => {
       
       return {
         ...edge,
-        type: 'marriageEdge',
+        type: 'marriageEdge', // Forcer l'utilisation du composant personnalisé
         data: {
           ...edge.data,
-          children: childrenWithPositions
+          children: childrenWithPositions,
+          onAddChild: (edgeId) => {
+            console.log('Bouton d\'ajout d\'enfant cliqué pour l\'arête:', edgeId);
+            setSelectedMarriageEdge(edgeId);
+            setRelationType('marriage_child');
+            setSelectedNode(null);
+            setIsAddModalOpen(true);
+            console.log('Modal d\'ajout d\'enfant ouvert');
+          }
         },
         sourceHandle: edge.sourceHandle,
         targetHandle: edge.targetHandle

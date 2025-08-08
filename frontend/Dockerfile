@@ -13,7 +13,7 @@ RUN npm ci
 COPY . .
 
 # Variables d'environnement pour le build
-ARG VITE_API_URL=http://168.231.86.179:3001/api
+ARG VITE_API_URL=http://168.231.86.179:8080/api
 ENV VITE_API_URL=$VITE_API_URL
 
 # Build de l'application

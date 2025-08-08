@@ -41,15 +41,21 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    // En production, utiliser CORS_ORIGIN du .env ou permettre localhost
+    // En production, utiliser CORS_ORIGIN du .env
     const allowedOrigins = [
       process.env.CORS_ORIGIN,
-      'http://localhost:3001',
-      'http://localhost:8080',
-      'http://localhost:5173'
+      'http://localhost:5173',  // Frontend dev
+      'http://localhost:8080',  // Production frontend
+      'http://168.231.86.179:3010', // Staging frontend
+      'http://168.231.86.179:8080'  // Production frontend (serveur)
     ].filter(Boolean);
     
-    callback(null, allowedOrigins.includes(origin) || true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS: Origine non autorisée: ${origin}`);
+      callback(new Error(`Non autorisé par CORS: ${origin}`));
+    }
   },
   credentials: true
 };

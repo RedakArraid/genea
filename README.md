@@ -4,18 +4,33 @@ Application web moderne pour créer et gérer des arbres généalogiques avec de
 
 ## ⚡ Démarrage rapide
 
-### Développement local
+### Développement local (recommandé)
 ```bash
 # Cloner le projet
 git clone https://github.com/RedakArraid/genea.git
 cd genea
 
-# Lancer l'environnement de développement
+# Démarrage automatique (recommandé)
+./start-dev.sh
+
+# OU manuellement
 docker-compose up -d
+# Puis initialiser la base de données
+docker exec geneaia-backend-local npx prisma migrate deploy
 
 # URLs locales
 Frontend: http://localhost:5173
 Backend:  http://localhost:3001/api
+Health:   http://localhost:3001/health
+```
+
+### Arrêt de l'environnement
+```bash
+# Arrêt automatique avec options
+./stop-dev.sh
+
+# OU manuellement
+docker-compose down
 ```
 
 ### Configuration CI/CD
@@ -46,6 +61,7 @@ Backend:  http://localhost:3001/api
 
 ## 📖 Documentation
 
+- **[Guide de développement détaillé](README-DEV.md)** - Instructions complètes pour les développeurs
 - **[Guide CI/CD complet](README-CICD.md)** - Configuration et déploiement
 - **Frontend** : `frontend/README.md`
 - **Backend** : `backend/README.md`
@@ -81,13 +97,22 @@ git push origin main
 # Logs en développement
 docker-compose logs -f
 
+# Logs d'un service spécifique
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
 # Reset de la base de données
 docker-compose down -v
 docker-compose up -d
+docker exec geneaia-backend-local npx prisma migrate deploy
 
 # Tests
-cd backend && npm test
-cd frontend && npm test
+docker exec geneaia-backend-local npm test
+docker exec geneaia-frontend-local npm test
+
+# Reconstruire les images
+docker-compose build --no-cache
+docker-compose up -d
 ```
 
 ## 🤝 Contribution

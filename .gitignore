@@ -11,9 +11,11 @@ frontend/build/
 # Fichiers d'environnement (secrets)
 .env
 .env.local
+.env.staging
 .env.production
 backend/.env
 frontend/.env
+*.env.backup
 
 # Logs
 logs/
@@ -48,6 +50,21 @@ backend/prisma/dev.db
 # Uploads temporaires
 uploads/
 temp/
+backend/uploads/
+
+# Docker
+.dockerignore
+
+# Tests
+coverage/
+.nyc_output/
+jest_coverage/
+
+# Backup files
+*.backup
+*.bak
+*.sql.backup
+docker-compose.yml.backup.*
 
 # Archives de déploiement (générées dynamiquement)
 *.tar.gz

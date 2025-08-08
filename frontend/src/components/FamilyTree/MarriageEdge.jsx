@@ -15,6 +15,8 @@ const MarriageEdge = ({
   data,
   markerEnd
 }) => {
+  // Debug: vérifier les données reçues
+  console.log('MarriageEdge render - id:', id, 'data:', data);
   // Créer le chemin de l'arête
   const [edgePath] = getSmoothStepPath({
     sourceX,
@@ -26,7 +28,7 @@ const MarriageEdge = ({
     borderRadius: 0 // Lignes droites
   });
 
-  // Centre du lien pour les enfants
+  // Centre du lien pour les enfants - point exact sur la ligne d'union
   const centerX = (sourceX + targetX) / 2;
   const centerY = (sourceY + targetY) / 2;
 
@@ -46,20 +48,83 @@ const MarriageEdge = ({
         }}
       />
       
-      {/* Point central plus petit */}
-      <circle
-        cx={centerX}
-        cy={centerY}
-        r="4"
-        fill="#e11d48"
-        stroke="white"
-        strokeWidth="1"
-      />
+      {/* Bouton d'ajout d'enfant au centre - version plus petite */}
+      <g>
+        {/* Cercle de fond plus petit */}
+        <circle
+          cx={centerX}
+          cy={centerY}
+          r="5"
+          fill="#e11d48"
+          stroke="white"
+          strokeWidth="1.5"
+          style={{ 
+            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+            cursor: 'pointer'
+          }}
+        />
+        
+        {/* Icône plus (+) plus petite */}
+        <text
+          x={centerX}
+          y={centerY + 1}
+          textAnchor="middle"
+          fill="white"
+          fontSize="8"
+          fontWeight="bold"
+          style={{ pointerEvents: 'none' }}
+        >
+          +
+        </text>
+        
+        {/* Zone cliquable invisible avec événements multiples */}
+        <circle
+          cx={centerX}
+          cy={centerY}
+          r="8"
+          fill="transparent"
+          stroke="transparent"
+          style={{ cursor: 'pointer' }}
+          onMouseDown={(e) => {
+            console.log('MouseDown détecté sur le bouton d\'ajout d\'enfant');
+            e.stopPropagation();
+            e.preventDefault();
+            if (data?.onAddChild) {
+              console.log('Fonction onAddChild trouvée, appel...');
+              data.onAddChild(id);
+            } else {
+              console.log('Fonction onAddChild non trouvée dans data:', data);
+            }
+          }}
+          onClick={(e) => {
+            console.log('Click détecté sur le bouton d\'ajout d\'enfant');
+            e.stopPropagation();
+            e.preventDefault();
+            if (data?.onAddChild) {
+              console.log('Fonction onAddChild trouvée, appel...');
+              data.onAddChild(id);
+            } else {
+              console.log('Fonction onAddChild non trouvée dans data:', data);
+            }
+          }}
+          onPointerDown={(e) => {
+            console.log('PointerDown détecté sur le bouton d\'ajout d\'enfant');
+            e.stopPropagation();
+            e.preventDefault();
+            if (data?.onAddChild) {
+              console.log('Fonction onAddChild trouvée, appel...');
+              data.onAddChild(id);
+            } else {
+              console.log('Fonction onAddChild non trouvée dans data:', data);
+            }
+          }}
+        />
+      </g>
       
       {/* Texte de debug plus discret */}
       <text
-        x={centerX + 10}
-        y={centerY - 10}
+        x={centerX + 15}
+        y={centerY - 5}
         fill="#666"
         fontSize="10"
         fontWeight="normal"
@@ -67,13 +132,13 @@ const MarriageEdge = ({
         {children.length}
       </text>
       
-      {/* Lignes vers les enfants */}
+      {/* Lignes vers les enfants - partant du centre exact de la ligne d'union */}
       {children.length === 1 ? (
-        // Un seul enfant - ligne directe
+        // Un seul enfant - ligne directe du centre
         children.map((child, index) => {
           return (
             <g key={`child-${index}`}>
-              {/* Ligne directe vers l'enfant unique */}
+              {/* Ligne directe du centre vers l'enfant unique */}
               <line
                 x1={centerX}
                 y1={centerY}
@@ -97,9 +162,9 @@ const MarriageEdge = ({
           );
         })
       ) : children.length > 1 ? (
-        // Plusieurs enfants - système de distribution
+        // Plusieurs enfants - système de distribution depuis le centre
         (() => {
-          const verticalLineLength = 120; // Rallongé de 80 à 120
+          const verticalLineLength = 120;
           const distributionY = centerY + verticalLineLength;
           
           // Calculer les positions X des enfants pour la ligne horizontale
@@ -109,7 +174,7 @@ const MarriageEdge = ({
           
           return (
             <g>
-              {/* Ligne verticale du centre vers le bas */}
+              {/* Ligne verticale du centre exact vers le bas */}
               <line
                 x1={centerX}
                 y1={centerY}

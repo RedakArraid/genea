@@ -1,4 +1,8 @@
-// Health check simple pour le backend
+/**
+ * Script de vérification de santé pour le backend GeneaIA
+ * Utilisé par Docker pour vérifier que l'application fonctionne correctement
+ */
+
 const http = require('http');
 
 const options = {
@@ -9,24 +13,27 @@ const options = {
   timeout: 5000
 };
 
-const req = http.request(options, (res) => {
+const healthCheck = http.request(options, (res) => {
+  console.log(`Health check status: ${res.statusCode}`);
+  
   if (res.statusCode === 200) {
+    console.log('✅ Backend is healthy');
     process.exit(0);
   } else {
-    console.error(`Health check failed with status: ${res.statusCode}`);
+    console.log('❌ Backend is unhealthy');
     process.exit(1);
   }
 });
 
-req.on('error', (err) => {
-  console.error(`Health check failed: ${err.message}`);
+healthCheck.on('error', (err) => {
+  console.log('❌ Health check failed:', err.message);
   process.exit(1);
 });
 
-req.on('timeout', () => {
-  console.error('Health check timed out');
-  req.destroy();
+healthCheck.on('timeout', () => {
+  console.log('❌ Health check timed out');
+  healthCheck.destroy();
   process.exit(1);
 });
 
-req.end();
+healthCheck.end();

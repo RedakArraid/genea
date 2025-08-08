@@ -48,7 +48,7 @@ export const calculateChildrenPositions = (marriageEdge, children, nodes) => {
     return [];
   }
 
-  // Centre du lien conjugal
+  // Centre exact du lien conjugal
   const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
   const centerY = Math.max(sourceNode.position.y, targetNode.position.y);
 
@@ -121,7 +121,7 @@ export const calculateNewChildPosition = (marriageEdge, existingChildren, nodes)
     return { x: 400, y: 400 };
   }
 
-  // Centre du lien conjugal
+  // Centre exact du lien conjugal
   const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
   const centerY = Math.max(sourceNode.position.y, targetNode.position.y);
   const verticalOffset = 250;
