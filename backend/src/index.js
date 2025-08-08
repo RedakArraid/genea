@@ -155,12 +155,11 @@ prisma.$connect()
   });
 
 // Démarrage du serveur
-const HOST = process.env.HOST || '0.0.0.0'; // Écouter sur toutes les interfaces
+const HOST = process.env.HOST || '0.0.0.0';
 app.listen(PORT, HOST, () => {
-  console.log(`Serveur démarré sur ${HOST}:${PORT}`);
-  console.log(`URL locale: http://localhost:${PORT}`);
-  if (HOST === '0.0.0.0') {
-    console.log(`Accessible via IP publique sur le port ${PORT}`);
+  console.log(`🚀 Serveur GeneaIA démarré sur ${HOST}:${PORT}`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`📱 Interface locale: http://localhost:${PORT}`);
   }
 });
 
