@@ -98,6 +98,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Route de test pour l'inscription (pour déboguer)
+app.post('/api/test-inscription', (req, res) => {
+  console.log('🧪 TEST INSCRIPTION - Données reçues:', req.body);
+  res.status(200).json({
+    status: 'test-ok',
+    message: 'Test inscription reçu',
+    receivedData: req.body,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Route de debug (à supprimer en production)
 app.get('/api/debug', (req, res) => {
   res.status(200).json({
