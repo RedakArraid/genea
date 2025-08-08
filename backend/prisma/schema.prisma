@@ -61,8 +61,8 @@ model Person {
   updatedAt                                  DateTime       @updatedAt
   treeId                                     String
   FamilyTree                                 FamilyTree     @relation(fields: [treeId], references: [id], onDelete: Cascade)
-  Relationship_Relationship_sourceIdToPerson Relationship[] @relation("Relationship_sourceIdToPerson")
-  Relationship_Relationship_targetIdToPerson Relationship[] @relation("Relationship_targetIdToPerson")
+  sourceRelationships Relationship[] @relation("Relationship_sourceIdToPerson")
+  targetRelationships Relationship[] @relation("Relationship_targetIdToPerson")
 }
 
 model Relationship {
@@ -72,8 +72,8 @@ model Relationship {
   targetId                             String
   createdAt                            DateTime @default(now())
   updatedAt                            DateTime @updatedAt
-  Person_Relationship_sourceIdToPerson Person   @relation("Relationship_sourceIdToPerson", fields: [sourceId], references: [id], onDelete: Cascade)
-  Person_Relationship_targetIdToPerson Person   @relation("Relationship_targetIdToPerson", fields: [targetId], references: [id], onDelete: Cascade)
+  sourcePerson Person @relation("Relationship_sourceIdToPerson", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetPerson Person @relation("Relationship_targetIdToPerson", fields: [targetId], references: [id], onDelete: Cascade)
 }
 
 model User {
@@ -81,7 +81,7 @@ model User {
   email      String       @unique
   password   String
   name       String?
-  createdAt  DateTime?    @default(now())
-  updatedAt  DateTime?    @default(now())
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
   FamilyTree FamilyTree[]
 }
