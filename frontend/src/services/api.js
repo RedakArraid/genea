@@ -1,8 +1,18 @@
 import axios from 'axios';
 
 // Création d'une instance axios avec une configuration par défaut
+// Utilise une URL relative en production, localhost en développement
+const getBaseURL = () => {
+  // Si on est en production (URL contient fly.dev), utiliser l'URL relative
+  if (window.location.hostname.includes('fly.dev')) {
+    return '/api';
+  }
+  // Sinon utiliser la variable d'environnement ou localhost
+  return import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
