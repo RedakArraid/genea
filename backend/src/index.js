@@ -105,6 +105,18 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Route de debug (à supprimer en production)
+app.get('/api/debug', (req, res) => {
+  res.status(200).json({
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      DATABASE_URL: process.env.DATABASE_URL ? 'CONFIGURÉE' : 'NON CONFIGURÉE',
+      JWT_SECRET: process.env.JWT_SECRET ? 'CONFIGURÉ' : 'NON CONFIGURÉ',
+      CORS_ORIGIN: process.env.CORS_ORIGIN
+    }
+  });
+});
+
 // Enregistrement des routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
