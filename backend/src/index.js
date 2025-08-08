@@ -140,15 +140,26 @@ app.use('/api/edges', edgeRoutes);
 
 // Middleware de gestion des erreurs
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  
+  console.error('🚨 ERREUR INTERCEPTÉE:', {
+    message: err.message,
+    stack: err.stack,
+    statusCode: err.statusCode,
+    url: req.url,
+    method: req.method,
+    body: req.body,
+    timestamp: new Date().toISOString()
+  });
+
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Une erreur est survenue sur le serveur';
-  
+
   res.status(statusCode).json({
     status: 'error',
     message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(process.env.NODE_ENV === 'development' && {
+      stack: err.stack,
+      details: err.toString()
+    })
   });
 });
 
