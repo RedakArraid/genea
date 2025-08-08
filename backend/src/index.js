@@ -129,14 +129,19 @@ app.get('/api/debug', (req, res) => {
   });
 });
 
-// Enregistrement des routes
-app.use('/api/auth', authRoutes);
+// Enregistrement des routes avec logging
+console.log('📍 Enregistrement des routes API...');
+app.use('/api/auth', (req, res, next) => {
+  console.log('🔐 Route AUTH appelée:', req.method, req.path);
+  next();
+}, authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/family-trees', familyTreeRoutes);
 app.use('/api/persons', personRoutes);
 app.use('/api/relationships', relationshipRoutes);
 app.use('/api/node-positions', nodePositionRoutes);
 app.use('/api/edges', edgeRoutes);
+console.log('✅ Routes enregistrées');
 
 // Middleware de gestion des erreurs
 app.use((err, req, res, next) => {
