@@ -49,23 +49,25 @@ export const useFamilyTreeStore = create((set, get) => ({
         }
       }));
 
-      const edges = tree.Edge.map(edge => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        type: edge.type,
-        data: edge.data,
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle
-      }));
+      const edges = tree.Edge?.map(edge => {
+        // Supprimer complètement les handles pour éviter les erreurs ReactFlow
+        const { sourceHandle, targetHandle, ...edgeWithoutHandles } = edge;
+        return {
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          type: edge.type,
+          data: edge.data
+          // Pas de handles - ReactFlow gère les connexions sans handles
+        };
+      }) || [];
+      
 
-      // Calculer les handles intelligents pour les arêtes sans handles
-      const smartEdges = calculateAllSmartHandles(edges, nodes);
 
       set({ 
         currentTree: tree,
         nodes,
-        edges: smartEdges,
+        edges,
         isLoading: false 
       });
     } catch (error) {
@@ -292,26 +294,23 @@ export const useFamilyTreeStore = create((set, get) => ({
       const response = await api.post('/relationships', relationshipData);
       const newRelationship = response.data.relationship;
       
-      // Création de l'arête pour ReactFlow
+      // Création de l'arête pour ReactFlow (sans handles)
       const newEdge = {
         id: newRelationship.id,
         source: newRelationship.sourceId,
         target: newRelationship.targetId,
         type: relationshipData.data?.type === 'spouse_connection' ? 'marriageEdge' : 'straight',
-        data: relationshipData.data,
-        sourceHandle: relationshipData.sourceHandle,
-        targetHandle: relationshipData.targetHandle
+        data: relationshipData.data
+        // Pas de handles - ReactFlow gère les connexions sans handles
       };
       
       console.log('Nouvelle arête créée:', newEdge);
 
-      // Enregistrer l'arête avec les handles
+      // Enregistrer l'arête sans handles
       await api.post(`/edges`, {
         source: newEdge.source,
         target: newEdge.target,
         type: newEdge.type,
-        sourceHandle: newEdge.sourceHandle,
-        targetHandle: newEdge.targetHandle,
         data: newEdge.data,
         treeId: get().currentTree.id
       });

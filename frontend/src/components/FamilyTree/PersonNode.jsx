@@ -130,6 +130,16 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
     return marriageEdges.length > 0;
   }, [id, edges]);
 
+  // Vérifier si cette personne a déjà des parents
+  const hasParent = useCallback(() => {
+    const parentEdges = edges.filter(edge => 
+      edge.target === id && 
+      edge.data?.type === 'parent_child_connection'
+    );
+    
+    return parentEdges.length > 0;
+  }, [id, edges]);
+
   // Fonctions pour gérer les actions du menu
   const handleActionClick = useCallback((event, actionType) => {
     event.preventDefault();
@@ -360,72 +370,8 @@ const PersonNode = ({ data, isConnectable, selected, id, onAddPerson, onEditPers
           )}
         </AnimatePresence>
 
-        {/* Points de connexion modernes */}
-        {/* Parent (haut) */}
-        <Handle 
-          type="target" 
-          position={Position.Top} 
-          isConnectable={isConnectable} 
-          className="!w-4 !h-4 !bg-gradient-to-r !from-blue-500 !to-blue-600 !border-2 !border-white !top-[-8px] hover:!scale-125 transition-transform shadow-lg"
-          id="parent-target"
-        />
-        <Handle 
-          type="source" 
-          position={Position.Top} 
-          isConnectable={isConnectable} 
-          className="!w-4 !h-4 !bg-gradient-to-r !from-blue-500 !to-blue-600 !border-2 !border-white !top-[-8px] hover:!scale-125 transition-transform shadow-lg"
-          id="parent-source"
-        />
-        
-        {/* Enfant (bas) */}
-        <Handle 
-          type="target" 
-          position={Position.Bottom} 
-          isConnectable={isConnectable} 
-          className="!w-4 !h-4 !bg-gradient-to-r !from-green-500 !to-green-600 !border-2 !border-white !bottom-[-8px] hover:!scale-125 transition-transform shadow-lg"
-          id="child-target"
-        />
-        <Handle 
-          type="source" 
-          position={Position.Bottom} 
-          isConnectable={isConnectable} 
-          className="!w-4 !h-4 !bg-gradient-to-r !from-green-500 !to-green-600 !border-2 !border-white !bottom-[-8px] hover:!scale-125 transition-transform shadow-lg"
-          id="child-source"
-        />
-        
-        {/* Conjoint (gauche et droite) */}
-        <Handle 
-          type="target" 
-          position={Position.Left} 
-          isConnectable={isConnectable} 
-          className="!w-5 !h-5 !bg-gradient-to-r !from-pink-500 !to-pink-600 !border-2 !border-white !left-[-10px] hover:!scale-125 transition-transform shadow-lg"
-          id="spouse-left-target"
-          style={{ zIndex: 10 }}
-        />
-        <Handle 
-          type="source" 
-          position={Position.Left} 
-          isConnectable={isConnectable} 
-          className="!w-5 !h-5 !bg-gradient-to-r !from-pink-500 !to-pink-600 !border-2 !border-white !left-[-10px] hover:!scale-125 transition-transform shadow-lg"
-          id="spouse-left-source"
-          style={{ zIndex: 10 }}
-        />
-        <Handle 
-          type="target" 
-          position={Position.Right} 
-          isConnectable={isConnectable} 
-          className="!w-5 !h-5 !bg-gradient-to-r !from-pink-500 !to-pink-600 !border-2 !border-white !right-[-10px] hover:!scale-125 transition-transform shadow-lg"
-          id="spouse-right-target"
-          style={{ zIndex: 10 }}
-        />
-        <Handle 
-          type="source" 
-          position={Position.Right} 
-          isConnectable={isConnectable} 
-          className="!w-5 !h-5 !bg-gradient-to-r !from-pink-500 !to-pink-600 !border-2 !border-white !right-[-10px] hover:!scale-125 transition-transform shadow-lg"
-          id="spouse-right-source"
-          style={{ zIndex: 10 }}
-        />
+        {/* Interface sans handles - utilisation du menu contextuel uniquement */}
+        {/* Les connexions se font via le menu d'actions flottant */}
 
         {/* Menu d'actions flottant moderne */}
         <AnimatePresence>

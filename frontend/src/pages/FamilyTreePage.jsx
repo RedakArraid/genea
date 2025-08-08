@@ -107,6 +107,7 @@ const FamilyTreePage = () => {
     currentTree,
     nodes,
     edges,
+    trees,
     isLoading,
     error,
     fetchTreeById,
@@ -129,25 +130,32 @@ const FamilyTreePage = () => {
     return () => resetState();
   }, [treeId, fetchTreeById, resetState]);
 
-  // Appliquer les styles aux arêtes avec les handles ET utiliser des arêtes personnalisées
+
+
+  // Appliquer les styles aux arêtes SANS handles
   const styledEdges = edges.map(edge => {
-    console.log('Traitement de l\'arête:', edge.id, 'type:', edge.type, 'data:', edge.data);
-    // Debug: vérifier les arêtes de mariage
-    if (edge.data?.type === 'spouse_connection') {
-      console.log('Arête de mariage trouvée:', edge.id, 'type:', edge.type, 'data:', edge.data);
-    }
+    // Supprimer complètement les handles pour éviter les erreurs ReactFlow
+    const { sourceHandle, targetHandle, ...edgeWithoutHandles } = edge;
+    
+    // Créer un nouvel objet sans aucune propriété de handle
+    const cleanEdge = {
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      type: edge.type,
+      data: edge.data
+    };
+    
     // Masquer complètement les arêtes d'enfants de mariage car nous utilisons nos lignes personnalisées
     if (edge.data?.type === 'marriage_child_connection') {
       return {
-        ...edge,
+        ...cleanEdge,
         type: 'straight',
         style: { 
           strokeWidth: 0, 
           stroke: 'transparent', 
           opacity: 0 
         },
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle,
         hidden: true // Cacher complètement
       };
     }
@@ -167,7 +175,7 @@ const FamilyTreePage = () => {
       }).filter(Boolean);
       
       return {
-        ...edge,
+        ...cleanEdge,
         type: 'marriageEdge', // Forcer l'utilisation du composant personnalisé
         data: {
           ...edge.data,
@@ -180,19 +188,15 @@ const FamilyTreePage = () => {
             setIsAddModalOpen(true);
             console.log('Modal d\'ajout d\'enfant ouvert');
           }
-        },
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle
+        }
       };
     }
     
     // Styles normaux pour les autres arêtes
     return {
-      ...edge,
+      ...cleanEdge,
       type: 'straight',
-      style: getEdgeStyle(edge.data?.type || 'parent_child_connection'),
-      sourceHandle: edge.sourceHandle,
-      targetHandle: edge.targetHandle
+      style: getEdgeStyle(edge.data?.type || 'parent_child_connection')
     };
   });
 
@@ -226,114 +230,19 @@ const FamilyTreePage = () => {
     [styledEdges]
   );
 
-  // Gestion de la connexion entre nœuds avec handles intelligents - VERSION CORRIGÉE
+  // Connexions désactivées - utilisation du menu contextuel uniquement
+  // Connexions désactivées - utilisation du menu contextuel uniquement
   const onConnect = useCallback(
     (params) => {
-      console.log('Tentative de connexion:', params);
-      
-      // Détecter le type de relation en fonction des handles utilisés
-      const sourceNode = nodes.find(n => n.id === params.source);
-      const targetNode = nodes.find(n => n.id === params.target);
-      
-      if (sourceNode && targetNode) {
-        console.log('Nœuds trouvés:', {
-          source: sourceNode.data,
-          target: targetNode.data,
-          sourceHandle: params.sourceHandle,
-          targetHandle: params.targetHandle
-        });
-        
-        // Déterminer le type de relation basé sur les handles utilisés
-        const isSpouseConnection = 
-          (params.sourceHandle && params.sourceHandle.includes('spouse')) ||
-          (params.targetHandle && params.targetHandle.includes('spouse'));
-        
-        console.log('Type de connexion détectée:', isSpouseConnection ? 'Conjugale' : 'Familiale');
-        
-        // Vérifier si une relation existe déjà entre ces deux nœuds
-        const existingEdge = edges.find(
-          edge => 
-            (edge.source === params.source && edge.target === params.target) ||
-            (edge.source === params.target && edge.target === params.source)
-        );
-        
-        if (existingEdge) {
-          console.log('Relation déjà existante entre ces nœuds, ignorée');
-          showToast('Cette relation existe déjà', 'warning');
-          return;
-        }
-        
-        // Pour les relations de type spouse, vérifier s'il existe déjà une relation spouse
-        if (isSpouseConnection) {
-          const existingSpouseEdge = edges.find(
-            edge => 
-              edge.data?.type === 'spouse_connection' &&
-              ((edge.source === params.source && edge.target === params.target) ||
-               (edge.source === params.target && edge.target === params.source))
-          );
-          
-          if (existingSpouseEdge) {
-            console.log('Relation conjugale déjà existante, ignorée');
-            showToast('Ces personnes sont déjà en union', 'warning');
-            return;
-          }
-        }
-        
-        let connectionParams = { ...params };
-        
-        if (isSpouseConnection) {
-          // Assurer que les handles conjugaux corrects sont utilisés
-          const sourceIsLeft = sourceNode.position.x < targetNode.position.x;
-          
-          connectionParams = {
-            ...params,
-            sourceHandle: sourceIsLeft ? 'spouse-right-source' : 'spouse-left-source',
-            targetHandle: sourceIsLeft ? 'spouse-left-target' : 'spouse-right-target'
-          };
-          
-          console.log('Handles conjugaux configurés:', {
-            sourceIsLeft,
-            sourceHandle: connectionParams.sourceHandle,
-            targetHandle: connectionParams.targetHandle
-          });
-        }
-        
-        const relationshipType = isSpouseConnection ? 'spouse' : 'parent';
-        const edgeType = isSpouseConnection ? 'spouse_connection' : 'parent_child_connection';
-        
-        // Créer un ID unique pour la nouvelle relation
-        const newEdgeId = uuidv4();
-        
-        // Déterminer les handles pour les connexions parent-enfant
-        let handles = {};
-        if (!isSpouseConnection) {
-          // Pour les relations parent-enfant, forcer l'utilisation des handles corrects
-          handles = {
-            sourceHandle: 'child-source',
-            targetHandle: 'parent-target'
-          };
-        } else {
-          handles = {
-            sourceHandle: connectionParams.sourceHandle,
-            targetHandle: connectionParams.targetHandle
-          };
-        }
-        
-        // Ajouter la relation au store
-        addRelationship({
-          id: newEdgeId,
-          sourceId: params.source,
-          targetId: params.target,
-          type: relationshipType,
-          data: { type: edgeType },
-          ...handles
-        });
-        
-        showToast(`Nouveau lien ${isSpouseConnection ? 'conjugal' : 'familial'} ajouté`, "success");
-      }
+      // Désactivé - les connexions se font via le menu contextuel
+      console.log('Connexions désactivées - utilisez le menu contextuel');
+      showToast('Utilisez le menu contextuel pour ajouter des relations', 'info');
     },
-    [nodes, edges, addRelationship, showToast]
+    [showToast]
   );
+
+  // Forcer ReactFlow à ne pas utiliser de handles
+  const connectionMode = 'loose';
 
   // Gestion du clic droit sur un nœud
   const onNodeContextMenu = useCallback(
@@ -521,9 +430,12 @@ const FamilyTreePage = () => {
     addPerson(treeId, {
       ...personData,
       position
-    }).then(({ success, person, node }) => {
+    }).then(async ({ success, person, node }) => {
       if (success && person) {
         showToast(`${person.firstName} ${person.lastName} a été ajouté(e) à l'arbre`, 'success');
+        
+        // Attendre un peu pour s'assurer que la personne est bien intégrée dans le state
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         // Ajouter automatiquement une relation si nécessaire
         if (relationType && parentNodeId) {
@@ -556,9 +468,7 @@ const FamilyTreePage = () => {
                   sourceId: parentNodeId,
                   targetId: person.id,
                   type: 'parent',
-                  data: { type: 'parent_child_connection' },
-                  sourceHandle: 'child-source',
-                  targetHandle: 'parent-target'
+                  data: { type: 'parent_child_connection' }
                 };
                 break;
               case 'parent':
@@ -567,24 +477,19 @@ const FamilyTreePage = () => {
                   sourceId: person.id,
                   targetId: parentNodeId,
                   type: 'parent',
-                  data: { type: 'parent_child_connection' },
-                  sourceHandle: 'child-source',
-                  targetHandle: 'parent-target'
+                  data: { type: 'parent_child_connection' }
                 };
                 break;
                           case 'spouse':
-              const newPersonIsLeft = position.x < parentNode.position.x;
-              relationshipData = {
-                ...relationshipData,
-                sourceId: parentNodeId,
-                targetId: person.id,
-                type: 'spouse',
-                data: { type: 'spouse_connection' },
-                sourceHandle: newPersonIsLeft ? 'spouse-left-source' : 'spouse-right-source',
-                targetHandle: newPersonIsLeft ? 'spouse-right-target' : 'spouse-left-target'
-              };
-              console.log('Création de relation spouse:', relationshipData);
-              break;
+                relationshipData = {
+                  ...relationshipData,
+                  sourceId: parentNodeId,
+                  targetId: person.id,
+                  type: 'spouse',
+                  data: { type: 'spouse_connection' }
+                };
+                console.log('Création de relation spouse:', relationshipData);
+                break;
               case 'sibling':
                 relationshipData = {
                   ...relationshipData,
@@ -596,7 +501,7 @@ const FamilyTreePage = () => {
                 break;
             }
             
-            addRelationship(relationshipData);
+            await addRelationship(relationshipData);
           }
         } else if (relationType === 'marriage_child' && marriageEdgeId) {
           const marriageEdge = edges.find(e => e.id === marriageEdgeId);
@@ -609,9 +514,7 @@ const FamilyTreePage = () => {
               data: { 
                 type: 'marriage_child_connection',
                 marriageEdgeId: marriageEdgeId
-              },
-              sourceHandle: 'child-source',
-              targetHandle: 'parent-target'
+              }
             });
             
             addRelationship({
@@ -623,9 +526,7 @@ const FamilyTreePage = () => {
                 type: 'marriage_child_connection',
                 marriageEdgeId: marriageEdgeId,
                 isSecondParent: true
-              },
-              sourceHandle: 'child-source',
-              targetHandle: 'parent-target'
+              }
             });
           }
         }
@@ -750,6 +651,7 @@ const FamilyTreePage = () => {
                 </svg>
                 Ajouter une personne
               </button>
+
               <button
                 onClick={autoAlignGenerations}
                 className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
