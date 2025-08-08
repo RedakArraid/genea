@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Inscription Simple</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 50px auto; 
+            padding: 20px; 
+        }
+        .form-group { margin: 15px 0; }
+        input, button { 
+            padding: 10px; 
+            margin: 5px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+        }
+        button { 
+            background: #007bff; 
+            color: white; 
+            cursor: pointer; 
+        }
+        button:hover { background: #0056b3; }
+        .result { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            background: #f8f9fa; 
+        }
+        .success { border-color: #28a745; background: #d4edda; }
+        .error { border-color: #dc3545; background: #f8d7da; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test d'Inscription GeneaIA</h1>
+    
+    <div class="form-group">
+        <h3>Formulaire de Test</h3>
+        <form id="testForm">
+            <div class="form-group">
+                <label>Nom:</label><br>
+                <input type="text" id="name" value="Test User" required>
+            </div>
+            <div class="form-group">
+                <label>Email:</label><br>
+                <input type="email" id="email" value="test@example.com" required>
+            </div>
+            <div class="form-group">
+                <label>Mot de passe:</label><br>
+                <input type="password" id="password" value="password123" required>
+            </div>
+            <button type="button" onclick="testInscription()">Tester Inscription</button>
+            <button type="button" onclick="generateRandomEmail()">Générer Email Aléatoire</button>
+        </form>
+    </div>
+
+    <div class="form-group">
+        <h3>Tests Rapides</h3>
+        <button onclick="testHealthCheck()">Test Health Check</button>
+        <button onclick="testValidation()">Test Validation</button>
+        <button onclick="testDuplicateEmail()">Test Email Dupliqué</button>
+        <button onclick="testLoginAfterRegister()">Test Login après Inscription</button>
+    </div>
+
+    <div id="result" class="result" style="display: none;"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3002/api';
+
+        function showResult(content, isSuccess = true) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = isSuccess ? 'result success' : 'result error';
+            resultDiv.innerHTML = content;
+            resultDiv.style.display = 'block';
+        }
+
+        function generateRandomEmail() {
+            const timestamp = Date.now();
+            document.getElementById('email').value = `test${timestamp}@example.com`;
+        }
+
+        async function testHealthCheck() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`<h4>✅ Health Check Réussi</h4><pre>${JSON.stringify(data, null, 2)}</pre>`, true);
+                } else {
+                    showResult(`<h4>❌ Health Check Échoué</h4><pre>Status: ${response.status}\n${JSON.stringify(data, null, 2)}</pre>`, false);
+                }
+            } catch (error) {
+                showResult(`<h4>❌ Erreur de Connexion</h4><pre>${error.message}</pre>`, false);
+            }
+        }
+
+        async function testInscription() {
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const userData = { name, email, password };
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult(`
+                        <h4>✅ Inscription Réussie!</h4>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Données envoyées:</strong></p>
+                        <pre>${JSON.stringify(userData, null, 2)}</pre>
+                        <p><strong>Réponse:</strong></p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `, true);
+                } else {
+                    showResult(`
+                        <h4>❌ Inscription Échouée</h4>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Données envoyées:</strong></p>
+                        <pre>${JSON.stringify(userData, null, 2)}</pre>
+                        <p><strong>Erreur:</strong></p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `, false);
+                }
+            } catch (error) {
+                showResult(`<h4>❌ Erreur de Réseau</h4><pre>${error.message}</pre>`, false);
+            }
+        }
+
+        async function testValidation() {
+            const invalidData = {
+                name: '',
+                email: 'email-invalide',
+                password: '123'
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(invalidData)
+                });
+
+                const data = await response.json();
+
+                if (response.status === 400) {
+                    showResult(`
+                        <h4>✅ Validation Fonctionne</h4>
+                        <p>Les erreurs de validation sont correctement détectées.</p>
+                        <p><strong>Données invalides envoyées:</strong></p>
+                        <pre>${JSON.stringify(invalidData, null, 2)}</pre>
+                        <p><strong>Erreurs détectées:</strong></p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `, true);
+                } else {
+                    showResult(`
+                        <h4>⚠️ Validation Inattendue</h4>
+                        <p><strong>Status:</strong> ${response.status} (attendu: 400)</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `, false);
+                }
+            } catch (error) {
+                showResult(`<h4>❌ Erreur de Réseau</h4><pre>${error.message}</pre>`, false);
+            }
+        }
+
+        async function testDuplicateEmail() {
+            const duplicateData = {
+                name: 'Test Duplicate',
+                email: 'duplicate@test.com',
+                password: 'password123'
+            };
+
+            try {
+                // Premier appel
+                console.log('Premier appel...');
+                const response1 = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(duplicateData)
+                });
+                const data1 = await response1.json();
+
+                // Attendre un peu
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Deuxième appel avec le même email
+                console.log('Deuxième appel...');
+                const response2 = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(duplicateData)
+                });
+                const data2 = await response2.json();
+
+                if (response2.status === 409) {
+                    showResult(`
+                        <h4>✅ Détection Email Dupliqué Fonctionne</h4>
+                        <p><strong>Premier appel:</strong> ${response1.status}</p>
+                        <p><strong>Deuxième appel:</strong> ${response2.status} (409 = Conflit)</p>
+                        <p><strong>Message d'erreur:</strong></p>
+                        <pre>${JSON.stringify(data2, null, 2)}</pre>
+                    `, true);
+                } else {
+                    showResult(`
+                        <h4>⚠️ Détection Email Dupliqué Échouée</h4>
+                        <p><strong>Premier appel:</strong> ${response1.status}</p>
+                        <p><strong>Deuxième appel:</strong> ${response2.status} (attendu: 409)</p>
+                        <p><strong>Réponse:</strong></p>
+                        <pre>${JSON.stringify(data2, null, 2)}</pre>
+                    `, false);
+                }
+            } catch (error) {
+                showResult(`<h4>❌ Erreur de Réseau</h4><pre>${error.message}</pre>`, false);
+            }
+        }
+
+        async function testLoginAfterRegister() {
+            // Générer des données uniques
+            const timestamp = Date.now();
+            const testData = {
+                name: `Test User ${timestamp}`,
+                email: `test${timestamp}@example.com`,
+                password: 'password123'
+            };
+
+            try {
+                // 1. D'abord s'inscrire
+                console.log('Étape 1: Inscription...');
+                const registerResponse = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                const registerData = await registerResponse.json();
+
+                if (!registerResponse.ok) {
+                    showResult(`
+                        <h4>❌ Inscription Échouée (Prérequis pour le test de login)</h4>
+                        <p><strong>Status:</strong> ${registerResponse.status}</p>
+                        <pre>${JSON.stringify(registerData, null, 2)}</pre>
+                    `, false);
+                    return;
+                }
+
+                // Attendre un peu
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // 2. Ensuite se connecter
+                console.log('Étape 2: Connexion...');
+                const loginResponse = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: testData.email,
+                        password: testData.password
+                    })
+                });
+                const loginData = await loginResponse.json();
+
+                if (loginResponse.ok) {
+                    showResult(`
+                        <h4>✅ Test Inscription + Login Réussi!</h4>
+                        <p><strong>Inscription:</strong> ${registerResponse.status} ✅</p>
+                        <p><strong>Login:</strong> ${loginResponse.status} ✅</p>
+                        <p><strong>Données utilisées:</strong></p>
+                        <pre>${JSON.stringify(testData, null, 2)}</pre>
+                        <p><strong>Token reçu:</strong></p>
+                        <pre>Login Token: ${loginData.token ? 'Présent' : 'Manquant'}</pre>
+                        <p><strong>Utilisateur:</strong></p>
+                        <pre>${JSON.stringify(loginData.user, null, 2)}</pre>
+                    `, true);
+                } else {
+                    showResult(`
+                        <h4>❌ Login Échoué après Inscription Réussie</h4>
+                        <p><strong>Inscription:</strong> ${registerResponse.status} ✅</p>
+                        <p><strong>Login:</strong> ${loginResponse.status} ❌</p>
+                        <p><strong>Erreur de login:</strong></p>
+                        <pre>${JSON.stringify(loginData, null, 2)}</pre>
+                    `, false);
+                }
+
+            } catch (error) {
+                showResult(`<h4>❌ Erreur lors du test complet</h4><pre>${error.message}</pre>`, false);
+            }
+        }
+
+        // Test automatique au chargement
+        window.onload = function() {
+            console.log('🧪 Page de test chargée');
+            generateRandomEmail(); // Générer un email aléatoire au démarrage
+        };
+    </script>
+</body>
+</html>

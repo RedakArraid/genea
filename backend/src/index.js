@@ -30,34 +30,27 @@ const PORT = process.env.PORT || 3001;
 // Prisma est maintenant importé depuis le module central
 
 // Configuration des middlewares
-// CORS configuré pour accepter les connexions publiques
+// CORS configuré pour le développement (permissif)
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Permettre les requêtes sans origin (mobile apps, etc.)
-    if (!origin) return callback(null, true);
-    
-    // En développement, permettre tout
-    if (process.env.NODE_ENV === 'development') {
-      return callback(null, true);
-    }
-    
-    // En production, utiliser CORS_ORIGIN du .env ou permettre localhost
-    const allowedOrigins = [
-      process.env.CORS_ORIGIN,
-      'http://localhost:3001',
-      'http://localhost:8080',
-      'http://localhost:5173'
-    ].filter(Boolean);
-    
-    callback(null, allowedOrigins.includes(origin) || true);
-  },
-  credentials: true
+  origin: true, // Permet toutes les origines en développement
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('dev'));
+
+// Middleware de logging simplifié (production-ready)
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`${req.method} ${req.url}`);
+  }
+  next();
+});
 
 // Routes de base
 app.get('/', (req, res) => {
@@ -105,6 +98,41 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Route de test pour l'inscription (pour déboguer)
+app.post('/api/test-inscription', (req, res) => {
+  console.log('🧪 TEST INSCRIPTION - Données reçues:', req.body);
+  res.status(200).json({
+    status: 'test-ok',
+    message: 'Test inscription reçu',
+    receivedData: req.body,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Route de debug pour voir les utilisateurs en mémoire
+app.get('/api/debug/users', (req, res) => {
+  // Importer le store depuis le contrôleur (temporaire)
+  const authController = require('./controllers/auth.controller');
+  res.status(200).json({
+    message: 'Utilisateurs en mémoire',
+    count: 'Store non accessible directement - voir logs backend',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Route de debug (à supprimer en production)
+app.get('/api/debug', (req, res) => {
+  res.status(200).json({
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      DATABASE_URL: process.env.DATABASE_URL ? 'CONFIGURÉE' : 'NON CONFIGURÉE',
+      JWT_SECRET: process.env.JWT_SECRET ? 'CONFIGURÉ' : 'NON CONFIGURÉ',
+      CORS_ORIGIN: process.env.CORS_ORIGIN
+    }
+  });
+});
+
+
 // Enregistrement des routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -116,25 +144,44 @@ app.use('/api/edges', edgeRoutes);
 
 // Middleware de gestion des erreurs
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  
+  console.error('🚨 ERREUR INTERCEPTÉE:', {
+    message: err.message,
+    stack: err.stack,
+    statusCode: err.statusCode,
+    url: req.url,
+    method: req.method,
+    body: req.body,
+    timestamp: new Date().toISOString()
+  });
+
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Une erreur est survenue sur le serveur';
-  
+
   res.status(statusCode).json({
     status: 'error',
     message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(process.env.NODE_ENV === 'development' && {
+      stack: err.stack,
+      details: err.toString()
+    })
   });
 });
 
+// Test de connexion à la base de données
+prisma.$connect()
+  .then(() => {
+    console.log('✅ Connexion à la base de données réussie');
+  })
+  .catch(err => {
+    console.error('❌ Erreur de connexion à la base de données:', err.message);
+  });
+
 // Démarrage du serveur
-const HOST = process.env.HOST || '0.0.0.0'; // Écouter sur toutes les interfaces
+const HOST = process.env.HOST || '0.0.0.0';
 app.listen(PORT, HOST, () => {
-  console.log(`Serveur démarré sur ${HOST}:${PORT}`);
-  console.log(`URL locale: http://localhost:${PORT}`);
-  if (HOST === '0.0.0.0') {
-    console.log(`Accessible via IP publique sur le port ${PORT}`);
+  console.log(`🚀 Serveur GeneaIA démarré sur ${HOST}:${PORT}`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`📱 Interface locale: http://localhost:${PORT}`);
   }
 });
 

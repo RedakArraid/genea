@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 // Création d'une instance axios avec une configuration par défaut
+// Utilise toujours /api - Vite proxy vers localhost:3001 en dev
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
