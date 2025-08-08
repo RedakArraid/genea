@@ -44,15 +44,11 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('dev'));
 
-// Middleware de logging global pour debug
+// Middleware de logging simplifié (production-ready)
 app.use((req, res, next) => {
-  console.log('🌐 REQUÊTE REÇUE:', {
-    method: req.method,
-    url: req.url,
-    headers: req.headers,
-    body: req.body,
-    timestamp: new Date().toISOString()
-  });
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`${req.method} ${req.url}`);
+  }
   next();
 });
 
@@ -114,16 +110,6 @@ app.get('/api/debug', (req, res) => {
   });
 });
 
-// Route de test pour l'inscription (debug)
-app.post('/api/test-register', (req, res) => {
-  console.log('🧪 TEST REGISTER - Body reçu:', req.body);
-  res.status(200).json({
-    status: 'success',
-    message: 'Test d\'inscription réussi',
-    receivedData: req.body,
-    timestamp: new Date().toISOString()
-  });
-});
 
 // Enregistrement des routes avec logging
 console.log('📍 Enregistrement des routes API...');
