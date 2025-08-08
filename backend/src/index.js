@@ -128,6 +128,17 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Test de connexion à la base de données
+prisma.$connect()
+  .then(() => {
+    console.log('✅ Connexion à la base de données réussie');
+    console.log('🔗 DATABASE_URL:', process.env.DATABASE_URL ? 'configurée' : 'NON CONFIGURÉE');
+  })
+  .catch(err => {
+    console.error('❌ Erreur de connexion à la base de données:', err.message);
+    console.error('🔗 DATABASE_URL:', process.env.DATABASE_URL || 'NON DÉFINIE');
+  });
+
 // Démarrage du serveur
 const HOST = process.env.HOST || '0.0.0.0'; // Écouter sur toutes les interfaces
 app.listen(PORT, HOST, () => {
