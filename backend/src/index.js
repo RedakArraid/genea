@@ -30,28 +30,13 @@ const PORT = process.env.PORT || 3001;
 // Prisma est maintenant importé depuis le module central
 
 // Configuration des middlewares
-// CORS configuré pour accepter les connexions publiques
+// CORS configuré pour le développement (permissif)
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Permettre les requêtes sans origin (mobile apps, etc.)
-    if (!origin) return callback(null, true);
-    
-    // En développement, permettre tout
-    if (process.env.NODE_ENV === 'development') {
-      return callback(null, true);
-    }
-    
-    // En production, utiliser CORS_ORIGIN du .env ou permettre localhost
-    const allowedOrigins = [
-      process.env.CORS_ORIGIN,
-      'http://localhost:3001',
-      'http://localhost:8080',
-      'http://localhost:5173'
-    ].filter(Boolean);
-    
-    callback(null, allowedOrigins.includes(origin) || true);
-  },
-  credentials: true
+  origin: true, // Permet toutes les origines en développement
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
