@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ajouter Utilisateur Khadara</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 600px; 
+            margin: 50px auto; 
+            padding: 20px; 
+        }
+        .user-info { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+        }
+        button { 
+            background: #28a745; 
+            color: white; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px;
+        }
+        button:hover { background: #218838; }
+        .result { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border-radius: 4px; 
+        }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>👤 Ajouter Utilisateur : Khadara Diarrassouba</h1>
+    
+    <div class="user-info">
+        <h3>Informations de l'utilisateur à créer :</h3>
+        <p><strong>Nom :</strong> Khadara Diarrassouba</p>
+        <p><strong>Email :</strong> kader.diarrassouba9@gmail.com</p>
+        <p><strong>Mot de passe :</strong> Password123</p>
+    </div>
+
+    <button onclick="ajouterUtilisateur()">🚀 Créer l'Utilisateur</button>
+    <button onclick="verifierUtilisateur()">🔍 Vérifier si l'Utilisateur Existe</button>
+
+    <div id="result"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3002/api';
+        
+        const userData = {
+            name: 'Khadara Diarrassouba',
+            email: 'kader.diarrassouba9@gmail.com',
+            password: 'Password123'
+        };
+
+        function showResult(content, isSuccess = true) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = isSuccess ? 'result success' : 'result error';
+            resultDiv.innerHTML = content;
+        }
+
+        async function ajouterUtilisateur() {
+            showResult('<p>⏳ Création de l\'utilisateur en cours...</p>', true);
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult(`
+                        <h4>✅ Utilisateur Créé avec Succès!</h4>
+                        <p><strong>ID Utilisateur :</strong> ${data.user.id}</p>
+                        <p><strong>Nom :</strong> ${data.user.name}</p>
+                        <p><strong>Email :</strong> ${data.user.email}</p>
+                        <p><strong>Date de création :</strong> ${data.user.createdAt}</p>
+                        <p><strong>Token JWT généré :</strong> ✅</p>
+                        <details>
+                            <summary>Voir détails complets</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `, true);
+                } else if (response.status === 409) {
+                    showResult(`
+                        <h4>⚠️ Utilisateur Déjà Existant</h4>
+                        <p>L'email <strong>${userData.email}</strong> est déjà utilisé.</p>
+                        <p>Cliquez sur "Vérifier si l'Utilisateur Existe" pour plus d'infos.</p>
+                        <details>
+                            <summary>Voir réponse serveur</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `, false);
+                } else {
+                    showResult(`
+                        <h4>❌ Erreur lors de la Création</h4>
+                        <p><strong>Status :</strong> ${response.status}</p>
+                        <p><strong>Message :</strong> ${data.message || 'Erreur inconnue'}</p>
+                        <details>
+                            <summary>Voir détails de l'erreur</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `, false);
+                }
+            } catch (error) {
+                showResult(`
+                    <h4>❌ Erreur de Connexion</h4>
+                    <p>Impossible de se connecter au serveur.</p>
+                    <p><strong>Erreur :</strong> ${error.message}</p>
+                `, false);
+            }
+        }
+
+        async function verifierUtilisateur() {
+            showResult('<p>⏳ Vérification en cours...</p>', true);
+
+            try {
+                // Tenter de se connecter avec les credentials
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: userData.email,
+                        password: userData.password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult(`
+                        <h4>✅ Utilisateur Trouvé et Connexion Réussie</h4>
+                        <p>L'utilisateur <strong>${userData.name}</strong> existe déjà dans la base de données.</p>
+                        <p><strong>ID Utilisateur :</strong> ${data.user.id}</p>
+                        <p><strong>Email :</strong> ${data.user.email}</p>
+                        <p><strong>Nom :</strong> ${data.user.name}</p>
+                        <p><strong>Token JWT :</strong> ✅ Valide</p>
+                        <details>
+                            <summary>Voir détails utilisateur</summary>
+                            <pre>${JSON.stringify(data.user, null, 2)}</pre>
+                        </details>
+                    `, true);
+                } else if (response.status === 401) {
+                    showResult(`
+                        <h4>❌ Utilisateur Non Trouvé ou Mot de Passe Incorrect</h4>
+                        <p>L'email <strong>${userData.email}</strong> n'existe pas ou le mot de passe est incorrect.</p>
+                        <p>Vous pouvez créer l'utilisateur en cliquant sur "Créer l'Utilisateur".</p>
+                    `, false);
+                } else {
+                    showResult(`
+                        <h4>❌ Erreur lors de la Vérification</h4>
+                        <p><strong>Status :</strong> ${response.status}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `, false);
+                }
+            } catch (error) {
+                showResult(`
+                    <h4>❌ Erreur de Connexion</h4>
+                    <p>Impossible de se connecter au serveur pour la vérification.</p>
+                    <p><strong>Erreur :</strong> ${error.message}</p>
+                `, false);
+            }
+        }
+
+        // Vérification automatique au chargement
+        window.onload = function() {
+            console.log('📋 Page de création utilisateur chargée');
+            console.log('👤 Utilisateur à créer :', userData.name);
+        };
+    </script>
+</body>
+</html>
