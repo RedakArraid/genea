@@ -154,10 +154,19 @@ exports.login = async (req, res, next) => {
     const { email, password } = req.body;
     
     // Recherche de l'utilisateur
-    const user = await prisma.User.findUnique({
-      where: { email }
-    });
-    
+    let user = null;
+
+    try {
+      // Tentative avec Prisma
+      user = await prisma.User.findUnique({
+        where: { email }
+      });
+    } catch (prismaError) {
+      console.log('⚠️ Prisma échoué pour login, utilisation fallback:', prismaError.message);
+      // Fallback en cas d'erreur Prisma
+      user = await findUserByEmail(email);
+    }
+
     if (!user) {
       return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
     }
