@@ -31,7 +31,7 @@ exports.register = async (req, res, next) => {
     const existingUser = await prisma.User.findUnique({
       where: { email }
     });
-    console.log('📧 Utilisateur existant trouvé:', !!existingUser);
+    console.log('��� Utilisateur existant trouvé:', !!existingUser);
 
     if (existingUser) {
       console.log('❌ Email déjà utilisé');
@@ -70,6 +70,8 @@ exports.register = async (req, res, next) => {
       token
     });
   } catch (error) {
+    console.error('❌ Erreur lors de l\'inscription:', error);
+    console.error('📋 Stack trace:', error.stack);
     next(error);
   }
 };
