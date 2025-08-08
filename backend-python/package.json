@@ -1,0 +1,17 @@
+{
+  "name": "geneaia-backend-python",
+  "version": "2.0.0",
+  "description": "Backend API Python pour GeneaIA application",
+  "scripts": {
+    "start": "python -m app.main",
+    "dev": "uvicorn app.main:app --host 0.0.0.0 --port 3001 --reload",
+    "db:init": "alembic init alembic",
+    "db:migrate": "alembic revision --autogenerate -m",
+    "db:upgrade": "alembic upgrade head",
+    "db:downgrade": "alembic downgrade -1",
+    "install": "pip install -r requirements.txt",
+    "test": "echo 'Tests not configured yet' && exit 0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
