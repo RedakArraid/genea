@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test État Application</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 50px auto; 
+            padding: 20px; 
+        }
+        .status { 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            border: 1px solid; 
+        }
+        .success { background: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; color: #856404; }
+        button { 
+            background: #007bff; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test État Application GeneaIA</h1>
+    
+    <div id="results"></div>
+    
+    <button onclick="testAll()">🧪 Tester Tout</button>
+    <button onclick="testFrontend()">🎨 Test Frontend</button>
+    <button onclick="testBackend()">⚙️ Test Backend</button>
+    <button onclick="testProxy()">🔄 Test Proxy</button>
+    <button onclick="testAuth()">🔐 Test Auth</button>
+
+    <script>
+        const results = document.getElementById('results');
+
+        function addResult(title, success, message, details = '') {
+            const div = document.createElement('div');
+            div.className = `status ${success ? 'success' : 'error'}`;
+            div.innerHTML = `
+                <h4>${success ? '✅' : '❌'} ${title}</h4>
+                <p>${message}</p>
+                ${details ? `<details><summary>Détails</summary><pre>${details}</pre></details>` : ''}
+            `;
+            results.appendChild(div);
+        }
+
+        async function testFrontend() {
+            try {
+                const response = await fetch('http://localhost:5173/');
+                if (response.ok) {
+                    addResult('Frontend', true, 'Frontend Vite accessible sur http://localhost:5173/');
+                } else {
+                    addResult('Frontend', false, `Frontend répond avec status ${response.status}`);
+                }
+            } catch (error) {
+                addResult('Frontend', false, 'Frontend non accessible', error.message);
+            }
+        }
+
+        async function testBackend() {
+            try {
+                const response = await fetch('http://localhost:3002/api/health');
+                const data = await response.json();
+                if (response.ok) {
+                    addResult('Backend', true, `Backend API accessible sur port 3002 (uptime: ${data.uptime}s)`, JSON.stringify(data, null, 2));
+                } else {
+                    addResult('Backend', false, `Backend répond avec status ${response.status}`);
+                }
+            } catch (error) {
+                addResult('Backend', false, 'Backend non accessible', error.message);
+            }
+        }
+
+        async function testProxy() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                if (response.ok) {
+                    addResult('Proxy', true, 'Proxy frontend → backend fonctionne parfaitement', JSON.stringify(data, null, 2));
+                } else {
+                    addResult('Proxy', false, `Proxy répond avec status ${response.status}`);
+                }
+            } catch (error) {
+                addResult('Proxy', false, 'Proxy non fonctionnel', error.message);
+            }
+        }
+
+        async function testAuth() {
+            try {
+                // Test login avec l'utilisateur Khadara que nous avons créé
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'kader.diarrassouba9@gmail.com',
+                        password: 'Password123'
+                    })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    addResult('Authentification', true, `Login réussi pour ${data.user.name}`, `Token: ${data.token ? 'Généré' : 'Manquant'}\nUser: ${JSON.stringify(data.user, null, 2)}`);
+                } else {
+                    addResult('Authentification', false, `Login échoué: ${data.message}`, JSON.stringify(data, null, 2));
+                }
+            } catch (error) {
+                addResult('Authentification', false, 'Erreur de test auth', error.message);
+            }
+        }
+
+        async function testAll() {
+            results.innerHTML = '<h3>🔄 Tests en cours...</h3>';
+            await testFrontend();
+            await testBackend();
+            await testProxy();
+            await testAuth();
+            
+            const successCount = results.querySelectorAll('.success').length;
+            const errorCount = results.querySelectorAll('.error').length;
+            
+            const summary = document.createElement('div');
+            summary.className = `status ${errorCount === 0 ? 'success' : 'warning'}`;
+            summary.innerHTML = `
+                <h3>📊 Résumé des Tests</h3>
+                <p><strong>Réussis:</strong> ${successCount} | <strong>Échecs:</strong> ${errorCount}</p>
+                <p><strong>État Global:</strong> ${errorCount === 0 ? '✅ Application Fonctionnelle' : '⚠️ Problèmes Détectés'}</p>
+            `;
+            results.insertBefore(summary, results.firstChild);
+        }
+
+        // Test automatique au chargement
+        window.onload = () => {
+            console.log('🧪 Page de test chargée');
+            testAll();
+        };
+    </script>
+</body>
+</html>
