@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -14,7 +14,7 @@ model Edge {
   type         String?
   sourceHandle String?
   targetHandle String?
-  data         String?
+  data         Json?
   treeId       String
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
