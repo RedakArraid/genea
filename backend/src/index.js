@@ -109,6 +109,17 @@ app.post('/api/test-inscription', (req, res) => {
   });
 });
 
+// Route de debug pour voir les utilisateurs en mémoire
+app.get('/api/debug/users', (req, res) => {
+  // Importer le store depuis le contrôleur (temporaire)
+  const authController = require('./controllers/auth.controller');
+  res.status(200).json({
+    message: 'Utilisateurs en mémoire',
+    count: 'Store non accessible directement - voir logs backend',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Route de debug (à supprimer en production)
 app.get('/api/debug', (req, res) => {
   res.status(200).json({
