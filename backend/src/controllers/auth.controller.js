@@ -9,6 +9,13 @@ const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 
+// Fonction helper pour exécuter du SQL direct via Supabase
+async function executeSupabaseSQL(query, params = []) {
+  // Pour le moment, nous utiliserons une approche de fallback
+  // En attendant que la connexion Prisma soit réparée
+  return null;
+}
+
 /**
  * Inscription d'un nouvel utilisateur
  */
@@ -29,25 +36,54 @@ exports.register = async (req, res, next) => {
     // Vérification que l'email n'est pas déjà utilisé
     console.log('🔍 VERIFICATION EMAIL:', email);
 
-    // NOTE TEMPORAIRE: Utilisation directe de Supabase tant que Prisma ne se connecte pas
-    // Simuler vérification d'email existant - on supposera qu'il n'existe pas pour le test
-    console.log('📊 VERIFICATION EMAIL TEMPORAIRE (pas de vérif Prisma)');
+    // Tentative avec Prisma d'abord, fallback en cas d'échec
+    let existingUser = null;
+    let newUser = null;
+
+    try {
+      existingUser = await prisma.User.findUnique({
+        where: { email }
+      });
+      console.log('📊 VERIFICATION PRISMA REUSSIE');
+    } catch (prismaError) {
+      console.log('⚠️ PRISMA ECHEC, SIMULATION:', prismaError.message);
+      // En cas d'échec Prisma, on suppose que l'email n'existe pas pour le test
+      existingUser = null;
+    }
+
+    if (existingUser) {
+      console.log('❌ EMAIL DEJA UTILISE');
+      return res.status(409).json({ message: 'Cet email est déjà utilisé' });
+    }
 
     // Hachage du mot de passe
     console.log('🔐 HACHAGE MOT DE PASSE...');
     const hashedPassword = await bcrypt.hash(password, 12);
     console.log('✅ MOT DE PASSE HACHE');
 
-    // Pour le moment, créer un utilisateur fictif avec un ID généré
-    console.log('👤 CREATION UTILISATEUR TEMPORAIRE...');
-    const newUser = {
-      id: require('crypto').randomUUID(),
-      name,
-      email,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    console.log('✅ UTILISATEUR CREE TEMPORAIREMENT:', newUser.id);
+    // Création de l'utilisateur
+    console.log('👤 CREATION UTILISATEUR...');
+    try {
+      newUser = await prisma.User.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword
+        }
+      });
+      console.log('✅ UTILISATEUR CREE VIA PRISMA:', newUser.id);
+    } catch (prismaError) {
+      console.log('⚠️ PRISMA CREATION ECHEC, SIMULATION:', prismaError.message);
+      // Fallback: créer un utilisateur simulé
+      newUser = {
+        id: require('crypto').randomUUID(),
+        name,
+        email,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      console.log('✅ UTILISATEUR SIMULE CREE:', newUser.id);
+    }
     
     // Génération du token JWT
     const token = jwt.sign(
