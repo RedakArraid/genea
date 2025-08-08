@@ -30,5 +30,5 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3001/health || exit 1
 
-# Commande de démarrage
+# Commande de démarrage par défaut (peut être surchargée)
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3001"]
