@@ -204,22 +204,40 @@ exports.login = async (req, res, next) => {
 exports.getMe = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    
-    const user = await prisma.User.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-        updatedAt: true
+
+    let user = null;
+
+    try {
+      // Tentative avec Prisma
+      user = await prisma.User.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+    } catch (prismaError) {
+      console.log('⚠️ Prisma échoué pour getMe, utilisation fallback:', prismaError.message);
+      // Fallback avec notre store temporaire
+      const fullUser = tempUserStore.get(userId);
+      if (fullUser) {
+        user = {
+          id: fullUser.id,
+          email: fullUser.email,
+          name: fullUser.name,
+          createdAt: fullUser.createdAt,
+          updatedAt: fullUser.updatedAt
+        };
       }
-    });
-    
+    }
+
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
-    
+
     res.status(200).json({ user });
   } catch (error) {
     next(error);
