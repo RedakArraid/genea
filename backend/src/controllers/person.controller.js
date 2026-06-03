@@ -82,9 +82,9 @@ exports.createPerson = async (req, res, next) => {
       data: {
         firstName,
         lastName,
-        birthDate: (birthDate && birthDate.trim()) ? new Date(birthDate) : null,
+        birthDate: birthDate ? new Date(birthDate) : null,
         birthPlace,
-        deathDate: (deathDate && deathDate.trim()) ? new Date(deathDate) : null,
+        deathDate: deathDate ? new Date(deathDate) : null,
         occupation,
         biography,
         gender,
@@ -141,9 +141,9 @@ exports.updatePerson = async (req, res, next) => {
     
     if (firstName !== undefined) updateData.firstName = firstName;
     if (lastName !== undefined) updateData.lastName = lastName;
-    if (birthDate !== undefined) updateData.birthDate = (birthDate && birthDate.trim()) ? new Date(birthDate) : null;
+    if (birthDate !== undefined) updateData.birthDate = birthDate ? new Date(birthDate) : null;
     if (birthPlace !== undefined) updateData.birthPlace = birthPlace;
-    if (deathDate !== undefined) updateData.deathDate = (deathDate && deathDate.trim()) ? new Date(deathDate) : null;
+    if (deathDate !== undefined) updateData.deathDate = deathDate ? new Date(deathDate) : null;
     if (occupation !== undefined) updateData.occupation = occupation;
     if (biography !== undefined) updateData.biography = biography;
     if (gender !== undefined) updateData.gender = gender;
