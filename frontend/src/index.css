@@ -19,6 +19,7 @@ html, body { margin: 0; padding: 0; height: 100%; }
   --text-on-accent: #ffffff;
   --accent: #4f46e5;
   --accent-soft: #e0e7ff;
+  --topbar-h: 52px;
   --positive: #059669;
   --warning: #d97706;
   --danger: #dc2626;
@@ -69,6 +70,7 @@ html[data-theme="dark"] {
   --text-on-accent: #ffffff;
   --accent: #6366f1;
   --accent-soft: #312e81;
+  --topbar-h: 52px;
   --link-parent: rgba(165,180,252,0.28);
   --link-spouse: #a78bfa;
   --link-child: rgba(165,180,252,0.28);
