@@ -10,6 +10,7 @@ const AddPersonModal = ({
   onClose, 
   onSubmit, 
   parentNodeId: initialParentNodeId, 
+  parentNode2Id: initialParent2NodeId,
   relationType: initialRelationType,
   marriageEdgeId,
   treeName,
@@ -36,6 +37,7 @@ const AddPersonModal = ({
   const [hasRelation, setHasRelation] = useState(false);
   const [relType, setRelType] = useState('child'); // child, parent, spouse
   const [relToId, setRelToId] = useState('');
+  const [relTo2Id, setRelTo2Id] = useState('');
 
   // Réinitialiser le formulaire à chaque ouverture
   useEffect(() => {
@@ -59,13 +61,15 @@ const AddPersonModal = ({
         setHasRelation(true);
         setRelType(initialRelationType);
         setRelToId(initialParentNodeId);
+        setRelTo2Id(initialParent2NodeId || '');
       } else {
         setHasRelation(false);
         setRelType('child');
         setRelToId(people[0]?.id || '');
+        setRelTo2Id('');
       }
     }
-  }, [isOpen, initialParentNodeId, initialRelationType, people]);
+  }, [isOpen, initialParentNodeId, initialParent2NodeId, initialRelationType, people]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -129,8 +133,10 @@ const AddPersonModal = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (hasRelation && relToId) {
-      onSubmit(formData, relToId, relType, marriageEdgeId);
+    if (initialRelationType && initialParentNodeId) {
+      onSubmit(formData, initialParentNodeId, initialRelationType, initialParent2NodeId || null);
+    } else if (hasRelation && relToId) {
+      onSubmit(formData, relToId, relType, relTo2Id || null);
     } else {
       onSubmit(formData, null, null, null);
     }
@@ -227,24 +233,22 @@ const AddPersonModal = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Année de naissance</label>
+              <label className="block text-sm font-medium text-gray-700">Date de naissance</label>
               <input
                 name="birthDate"
-                type="number"
+                type="date"
                 value={formData.birthDate}
                 onChange={handleChange}
-                placeholder="Ex: 1950"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Année de décès</label>
+              <label className="block text-sm font-medium text-gray-700">Date de décès</label>
               <input
                 name="deathDate"
-                type="number"
+                type="date"
                 value={formData.deathDate}
                 onChange={handleChange}
-                placeholder="Laissez vide si en vie"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
               />
             </div>
@@ -307,6 +311,35 @@ const AddPersonModal = ({
                       ))}
                     </select>
                   </div>
+
+                  {relType === 'child' && relToId && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase">Second parent (Optionnel)</label>
+                      <select
+                        value={relTo2Id}
+                        onChange={e => setRelTo2Id(e.target.value)}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                      >
+                        <option value="">Sélectionnez un second parent...</option>
+                        {people.find(p => p.id === relToId)?.spouseIds?.length > 0 && (
+                          <optgroup label="Conjoint·es recommandés">
+                            {people.filter(p => (people.find(x => x.id === relToId)?.spouseIds || []).includes(p.id)).map(p => (
+                              <option key={p.id} value={p.id}>
+                                {p.given} {p.sur !== '—' ? p.sur : ''} ({p.born || '?'})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <optgroup label="Autres membres">
+                          {people.filter(p => p.id !== relToId && !(people.find(x => x.id === relToId)?.spouseIds || []).includes(p.id)).map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.given} {p.sur !== '—' ? p.sur : ''} ({p.born || '?'})
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -325,17 +325,34 @@ export default function TreeCanvas({
             const growing = !!growKey;
             const delay = growing ? (c.kind === 'spouse' ? 100 : 280 + (i % 8) * 60) : 0;
             return (
-              <path
-                key={`${growKey || 0}-conn-${i}`}
-                className={[
-                  'conn', c.kind,
-                  dim ? 'dim' : '',
-                  hi ? 'highlight' : '',
-                  growing ? 'growing' : '',
-                ].filter(Boolean).join(' ')}
-                d={c.path}
-                style={{ '--len': 600, animationDelay: `${delay}ms` }}
-              />
+              <g key={`conn-group-${i}`}>
+                <path
+                  key={`${growKey || 0}-conn-${i}`}
+                  className={[
+                    'conn', c.kind,
+                    dim ? 'dim' : '',
+                    hi ? 'highlight' : '',
+                    growing ? 'growing' : '',
+                  ].filter(Boolean).join(' ')}
+                  d={c.path}
+                  style={{ '--len': 600, animationDelay: `${delay}ms` }}
+                />
+                {c.kind === 'spouse' && c.midX && c.midY && (
+                  <g
+                    className="union-node"
+                    transform={`translate(${c.midX}, ${c.midY})`}
+                    style={{ cursor: 'pointer' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenAdd && onOpenAdd(c.ids[0], 'child', c.ids[1]);
+                    }}
+                    title="Ajouter un enfant à cette union"
+                  >
+                    <circle r="9" fill="var(--accent)" stroke="var(--surface)" strokeWidth="1.5" />
+                    <path d="M-3 0 H3 M0 -3 V3" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                  </g>
+                )}
+              </g>
             );
           })}
         </svg>

@@ -27,7 +27,7 @@ const I18N = {
   }
 };
 
-export default function SidePanel({ person, people, lang = 'fr', onClose, onSelect, onEdit, onAddRelation, onDelete }) {
+export default function SidePanel({ person, people, currentTree, lang = 'fr', onClose, onSelect, onEdit, onAddRelation, onDelete, onDeleteRelation }) {
   if (!person) return <div className="sidepanel"></div>;
 
   const t = I18N[lang]?.person || I18N.fr.person;
@@ -62,7 +62,39 @@ export default function SidePanel({ person, people, lang = 'fr', onClose, onSele
     "--tone-fg": tone.fg,
   };
 
-  const RelChip = ({ p }) => {
+  const findRelationshipId = (relativeId, typeOfRel) => {
+    if (!currentTree || !currentTree.Relationship) return null;
+    const rels = currentTree.Relationship;
+    
+    if (typeOfRel === 'spouse') {
+      const match = rels.find(r => 
+        r.type === 'spouse' && 
+        ((r.sourceId === person.id && r.targetId === relativeId) || 
+         (r.sourceId === relativeId && r.targetId === person.id))
+      );
+      return match?.id;
+    }
+    
+    if (typeOfRel === 'parent') {
+      const match = rels.find(r => 
+        (r.type === 'parent' && r.sourceId === relativeId && r.targetId === person.id) ||
+        (r.type === 'child' && r.sourceId === person.id && r.targetId === relativeId)
+      );
+      return match?.id;
+    }
+    
+    if (typeOfRel === 'child') {
+      const match = rels.find(r => 
+        (r.type === 'parent' && r.sourceId === person.id && r.targetId === relativeId) ||
+        (r.type === 'child' && r.sourceId === relativeId && r.targetId === person.id)
+      );
+      return match?.id;
+    }
+    
+    return null;
+  };
+
+  const RelChip = ({ p, relType }) => {
     if (!p) return null;
     const ini = (p.given || "?").slice(0, 1).toUpperCase() + 
       (p.sur && p.sur !== "—" ? p.sur.slice(0, 1).toUpperCase() : "");
@@ -72,12 +104,46 @@ export default function SidePanel({ person, people, lang = 'fr', onClose, onSele
       "--tone-fg": tv.fg,
     };
     const ls = p.died ? `${p.born}–${p.died}` : p.born || '?';
+    const relId = relType ? findRelationshipId(p.id, relType) : null;
+
+    const handleDelete = (e) => {
+      e.stopPropagation();
+      if (onDeleteRelation && relId) {
+        onDeleteRelation(relId);
+      }
+    };
+
     return (
-      <button className="relchip" onClick={() => onSelect(p.id)}>
-        <span className="micro" style={relToneVar}>{ini}</span>
-        <span>{p.given}{p.sur && p.sur !== "—" ? ` ${p.sur}` : ""}</span>
-        <span className="lifespan">· {ls}</span>
-      </button>
+      <div className="relchip-wrapper" style={{ display: 'inline-flex', alignItems: 'center', marginRight: '6px', marginBottom: '6px' }}>
+        <button className="relchip" onClick={() => onSelect(p.id)} style={{ marginRight: 0 }}>
+          <span className="micro" style={relToneVar}>{ini}</span>
+          <span>{p.given}{p.sur && p.sur !== "—" ? ` ${p.sur}` : ""}</span>
+          <span className="lifespan">· {ls}</span>
+        </button>
+        {relId && onDeleteRelation && (
+          <button 
+            onClick={handleDelete}
+            title="Supprimer cette liaison"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#ef4444',
+              cursor: 'pointer',
+              marginLeft: '4px',
+              padding: '2px 4px',
+              fontSize: '11px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '4px'
+            }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fee2e2'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            ✕
+          </button>
+        )}
+      </div>
     );
   };
 
@@ -132,7 +198,7 @@ export default function SidePanel({ person, people, lang = 'fr', onClose, onSele
         <div className="sp-section">
           <div className="sp-label">{t.parents}</div>
           {parents.length ? (
-            <div>{parents.map(p => <RelChip key={p.id} p={p}/>)}</div>
+            <div>{parents.map(p => <RelChip key={p.id} p={p} relType="parent"/>)}</div>
           ) : (
             <div style={{ fontSize: 12, color: "var(--text-3)" }}>{t.noParent}</div>
           )}
@@ -141,7 +207,7 @@ export default function SidePanel({ person, people, lang = 'fr', onClose, onSele
         <div className="sp-section">
           <div className="sp-label">{t.spouse}</div>
           {spouses.length ? (
-            <div>{spouses.map(p => <RelChip key={p.id} p={p}/>)}</div>
+            <div>{spouses.map(p => <RelChip key={p.id} p={p} relType="spouse"/>)}</div>
           ) : (
             <div style={{ fontSize: 12, color: "var(--text-3)" }}>{t.noSpouse}</div>
           )}
@@ -150,7 +216,7 @@ export default function SidePanel({ person, people, lang = 'fr', onClose, onSele
         <div className="sp-section">
           <div className="sp-label">{t.children} ({children.length})</div>
           {children.length ? (
-            <div>{children.map(p => <RelChip key={p.id} p={p}/>)}</div>
+            <div>{children.map(p => <RelChip key={p.id} p={p} relType="child"/>)}</div>
           ) : (
             <div style={{ fontSize: 12, color: "var(--text-3)" }}>{t.noChildren}</div>
           )}

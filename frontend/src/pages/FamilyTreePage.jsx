@@ -52,6 +52,14 @@ export default function FamilyTreePage() {
   // Personne en cours d'édition/liaison
   const [editingPersonData, setEditingPersonData] = useState(null);
 
+  // Données de relation pré-remplies pour l'ajout
+  const [addPersonRelData, setAddPersonRelData] = useState({ parentId: null, parent2Id: null, relType: null });
+
+  const handleOpenAddModal = (parentId = null, relType = null, parent2Id = null) => {
+    setAddPersonRelData({ parentId, parent2Id, relType });
+    setIsAddOpen(true);
+  };
+
   // Tweaks d'affichage par défaut
   const [tweaks, setTweaks] = useState({
     theme: 'light',
@@ -182,16 +190,16 @@ export default function FamilyTreePage() {
   };
 
   // Ajouter une personne
-  const handleAddPerson = async (formData, relToId, relType) => {
+  const handleAddPerson = async (formData, relToId, relType, relToId2) => {
     // Calculer une position par défaut décalée
     const position = { x: 300, y: 200 };
 
     const result = await addPerson(treeId, {
       firstName: formData.firstName,
       lastName: formData.lastName,
-      birthDate: formData.birthDate ? new Date(formData.birthDate, 0, 1) : null,
+      birthDate: formData.birthDate ? new Date(formData.birthDate) : null,
       birthPlace: formData.birthPlace,
-      deathDate: formData.deathDate ? new Date(formData.deathDate, 0, 1) : null,
+      deathDate: formData.deathDate ? new Date(formData.deathDate) : null,
       gender: formData.gender,
       biography: formData.biography,
       photoUrl: formData.photoUrl,
@@ -204,6 +212,13 @@ export default function FamilyTreePage() {
           sourceId: relType === 'parent' ? result.person.id : relToId,
           targetId: relType === 'parent' ? relToId : result.person.id,
           type: relType === 'spouse' ? 'spouse' : 'parent',
+        });
+      }
+      if (relToId2 && relType === 'child') {
+        await addRelationship({
+          sourceId: relToId2,
+          targetId: result.person.id,
+          type: 'parent',
         });
       }
       showToast(`${result.person.firstName} a été ajouté(e) avec succès.`, 'success');
@@ -316,6 +331,18 @@ export default function FamilyTreePage() {
     );
   }
 
+  const handleDeleteRelation = async (relId) => {
+    if (window.confirm("Supprimer ce lien de parenté ?")) {
+      const res = await deleteRelationship(relId);
+      if (res.success) {
+        showToast("Lien de parenté supprimé.", "success");
+        fetchTreeById(treeId);
+      } else {
+        showToast(res.message || "Erreur lors de la suppression du lien", "error");
+      }
+    }
+  };
+
   return (
     <div style={{ display: 'flex', width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
       
@@ -330,7 +357,7 @@ export default function FamilyTreePage() {
         hoverId={hoverId}
         onHover={setHoverId}
         growKey={growKey}
-        onOpenAdd={() => setIsAddOpen(true)}
+        onOpenAdd={handleOpenAddModal}
         onOpenShare={() => setIsShareOpen(true)}
         onOpenTweaks={() => setIsTweaksOpen(!isTweaksOpen)}
         onSetTweak={handleSetTweak}
@@ -343,6 +370,7 @@ export default function FamilyTreePage() {
         <SidePanel
           person={selectedPerson}
           people={people}
+          currentTree={currentTree}
           onClose={() => setSelectedId(null)}
           onSelect={(id) => {
             setSelectedId(id);
@@ -351,16 +379,23 @@ export default function FamilyTreePage() {
           onEdit={handleEditPerson}
           onAddRelation={handleAddRelation}
           onDelete={handleDeletePerson}
+          onDeleteRelation={handleDeleteRelation}
         />
       )}
 
       {/* Modal Ajout Personne */}
       <AddPersonModal
         isOpen={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
+        onClose={() => {
+          setIsAddOpen(false);
+          setAddPersonRelData({ parentId: null, parent2Id: null, relType: null });
+        }}
         onSubmit={handleAddPerson}
         treeName={currentTree.name}
         people={people}
+        parentNodeId={addPersonRelData.parentId}
+        parentNode2Id={addPersonRelData.parent2Id}
+        relationType={addPersonRelData.relType}
       />
 
       {/* Modal Modification Personne */}
