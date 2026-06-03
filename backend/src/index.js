@@ -40,6 +40,13 @@ app.get('/', (req, res) => {
   res.json({ message: 'Bienvenue sur l\'API GeneaIA' });
 });
 
+const healthResponse = (req, res) => {
+  res.json({ status: 'ok', service: 'geneaia-backend' });
+};
+
+app.get('/health', healthResponse);
+app.get('/api/health', healthResponse);
+
 // Enregistrement des routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
