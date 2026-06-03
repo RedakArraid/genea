@@ -27,7 +27,22 @@ const I18N = {
   }
 };
 
-export default function SidePanel({ person, people, currentTree, lang = 'fr', onClose, onSelect, onEdit, onAddRelation, onDelete, onDeleteRelation }) {
+const formatDate = (dateStr) => {
+  if (!dateStr) return null;
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return null;
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  } catch (e) {
+    return null;
+  }
+};
+
+export default function SidePanel({ person, people, currentTree, lang = 'fr', onClose, onSelect, onEdit, onAddRelation, onAddChildRelation, onDelete, onDeleteRelation }) {
   if (!person) return <div className="sidepanel"></div>;
 
   const t = I18N[lang]?.person || I18N.fr.person;
@@ -113,6 +128,13 @@ export default function SidePanel({ person, people, currentTree, lang = 'fr', on
       }
     };
 
+    const handleAddChildWithSpouse = (e) => {
+      e.stopPropagation();
+      if (onAddChildRelation) {
+        onAddChildRelation(person.id, 'child', p.id);
+      }
+    };
+
     return (
       <div className="relchip-wrapper" style={{ display: 'inline-flex', alignItems: 'center', marginRight: '6px', marginBottom: '6px' }}>
         <button className="relchip" onClick={() => onSelect(p.id)} style={{ marginRight: 0 }}>
@@ -120,6 +142,29 @@ export default function SidePanel({ person, people, currentTree, lang = 'fr', on
           <span>{p.given}{p.sur && p.sur !== "—" ? ` ${p.sur}` : ""}</span>
           <span className="lifespan">· {ls}</span>
         </button>
+        {relType === 'spouse' && onAddChildRelation && (
+          <button 
+            onClick={handleAddChildWithSpouse}
+            title="Ajouter un enfant à ce couple"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#7c3aed',
+              cursor: 'pointer',
+              marginLeft: '4px',
+              padding: '2px 4px',
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '4px'
+            }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f3e8ff'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            👶
+          </button>
+        )}
         {relId && onDeleteRelation && (
           <button 
             onClick={handleDelete}
@@ -177,11 +222,11 @@ export default function SidePanel({ person, people, currentTree, lang = 'fr', on
           <div className="sp-label">Informations</div>
           <div className="sp-facts">
             <div className="k">Naissance</div>
-            <div className="v">{person.born || '?'} {person.place ? `· ${person.place}` : ''}</div>
-            {person.died && (
+            <div className="v">{formatDate(person.birthDate) || person.born || '?'} {person.place ? `· ${person.place}` : ''}</div>
+            {(person.deathDate || person.died) && (
               <>
                 <div className="k">Décès</div>
-                <div className="v">{person.died}</div>
+                <div className="v">{formatDate(person.deathDate) || person.died}</div>
               </>
             )}
             <div className="k">Génération</div>
@@ -196,7 +241,12 @@ export default function SidePanel({ person, people, currentTree, lang = 'fr', on
         </div>
 
         <div className="sp-section">
-          <div className="sp-label">{t.parents}</div>
+          <div className="sp-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{t.parents}</span>
+            {onAddChildRelation && (
+              <button className="btn-add-rel" onClick={() => onAddChildRelation(person.id, 'parent')}>+ Ajouter</button>
+            )}
+          </div>
           {parents.length ? (
             <div>{parents.map(p => <RelChip key={p.id} p={p} relType="parent"/>)}</div>
           ) : (
@@ -205,7 +255,12 @@ export default function SidePanel({ person, people, currentTree, lang = 'fr', on
         </div>
 
         <div className="sp-section">
-          <div className="sp-label">{t.spouse}</div>
+          <div className="sp-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{t.spouse}</span>
+            {onAddChildRelation && (
+              <button className="btn-add-rel" onClick={() => onAddChildRelation(person.id, 'spouse')}>+ Ajouter</button>
+            )}
+          </div>
           {spouses.length ? (
             <div>{spouses.map(p => <RelChip key={p.id} p={p} relType="spouse"/>)}</div>
           ) : (
@@ -214,7 +269,12 @@ export default function SidePanel({ person, people, currentTree, lang = 'fr', on
         </div>
 
         <div className="sp-section">
-          <div className="sp-label">{t.children} ({children.length})</div>
+          <div className="sp-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{t.children} ({children.length})</span>
+            {onAddChildRelation && (
+              <button className="btn-add-rel" onClick={() => onAddChildRelation(person.id, 'child')}>+ Ajouter</button>
+            )}
+          </div>
           {children.length ? (
             <div>{children.map(p => <RelChip key={p.id} p={p} relType="child"/>)}</div>
           ) : (

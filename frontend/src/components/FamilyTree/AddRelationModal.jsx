@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 export default function AddRelationModal({ isOpen, onClose, person, people = [], onSubmit }) {
   const [relType, setRelType] = useState('spouse');
   const [targetId, setTargetId] = useState('');
+  const [target2Id, setTarget2Id] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -10,6 +11,7 @@ export default function AddRelationModal({ isOpen, onClose, person, people = [],
       // Sélectionner par défaut la première personne qui n'est pas le sujet
       const firstOther = people.find(p => p.id !== person?.id);
       setTargetId(firstOther?.id || '');
+      setTarget2Id('');
     }
   }, [isOpen, person, people]);
 
@@ -21,7 +23,7 @@ export default function AddRelationModal({ isOpen, onClose, person, people = [],
     
     // relType: parent (person est le parent de targetId), child (person est l'enfant de targetId), spouse, sibling
     // On appelle onSubmit avec le type de relation et la personne cible
-    onSubmit(person.id, targetId, relType);
+    onSubmit(person.id, targetId, relType, relType === 'child' ? (target2Id || null) : null);
   };
 
   const otherPeople = people.filter(p => p.id !== person.id);
@@ -66,6 +68,35 @@ export default function AddRelationModal({ isOpen, onClose, person, people = [],
                 ))}
               </select>
             </div>
+
+            {relType === 'child' && targetId && (
+              <div className="field">
+                <label>Second parent (Optionnel)</label>
+                <select
+                  value={target2Id}
+                  onChange={e => setTarget2Id(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
+                >
+                  <option value="">Sélectionnez un second parent...</option>
+                  {people.find(p => p.id === targetId)?.spouseIds?.length > 0 && (
+                    <optgroup label="Conjoint·es recommandés">
+                      {people.filter(p => (people.find(x => x.id === targetId)?.spouseIds || []).includes(p.id)).map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.given} {p.sur !== '—' ? p.sur : ''} ({p.born || '?'})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="Autres membres">
+                    {people.filter(p => p.id !== person.id && p.id !== targetId && !(people.find(x => x.id === targetId)?.spouseIds || []).includes(p.id)).map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.given} {p.sur !== '—' ? p.sur : ''} ({p.born || '?'})
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="foot">

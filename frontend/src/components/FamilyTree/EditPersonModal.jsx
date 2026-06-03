@@ -9,7 +9,11 @@ const EditPersonModal = ({
   onClose, 
   onSubmit, 
   nodeData,
-  nodeId
+  nodeId,
+  people = [],
+  currentTree,
+  onAddRelationship,
+  onDeleteRelationship
 }) => {
   // État du formulaire
   const [formData, setFormData] = useState({
@@ -25,6 +29,71 @@ const EditPersonModal = ({
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+
+  // Gestion locale de l'ajout de relation
+  const [newRelType, setNewRelType] = useState('spouse');
+  const [newRelTargetId, setNewRelTargetId] = useState('');
+  const [newRelTarget2Id, setNewRelTarget2Id] = useState('');
+  const [isAddingRel, setIsAddingRel] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && people.length > 0) {
+      const other = people.find(p => p.id !== nodeId);
+      setNewRelTargetId(other?.id || '');
+      setNewRelTarget2Id('');
+      setNewRelType('spouse');
+      setIsAddingRel(false);
+    }
+  }, [isOpen, people, nodeId]);
+
+  const byId = Object.fromEntries(people.map(p => [p.id, p]));
+  const currentPerson = people.find(p => p.id === nodeId);
+  
+  const parents = currentPerson ? (currentPerson.parentIds || []).map(id => byId[id]).filter(Boolean) : [];
+  const spouses = currentPerson ? (currentPerson.spouseIds || []).map(id => byId[id]).filter(Boolean) : [];
+  const children = currentPerson ? people.filter(p => (p.parentIds || []).includes(nodeId)) : [];
+
+  const findRelationshipId = (relativeId, typeOfRel) => {
+    if (!currentTree || !currentTree.Relationship) return null;
+    const rels = currentTree.Relationship;
+    
+    if (typeOfRel === 'spouse') {
+      const match = rels.find(r => 
+        r.type === 'spouse' && 
+        ((r.sourceId === nodeId && r.targetId === relativeId) || 
+         (r.sourceId === relativeId && r.targetId === nodeId))
+      );
+      return match?.id;
+    }
+    
+    if (typeOfRel === 'parent') {
+      const match = rels.find(r => 
+        (r.type === 'parent' && r.sourceId === relativeId && r.targetId === nodeId) ||
+        (r.type === 'child' && r.sourceId === nodeId && r.targetId === relativeId)
+      );
+      return match?.id;
+    }
+    
+    if (typeOfRel === 'child') {
+      const match = rels.find(r => 
+        (r.type === 'parent' && r.sourceId === nodeId && r.targetId === relativeId) ||
+        (r.type === 'child' && r.sourceId === relativeId && r.targetId === nodeId)
+      );
+      return match?.id;
+    }
+    
+    return null;
+  };
+
+  const handleAddRelSubmit = async (e) => {
+    e.preventDefault();
+    if (!newRelTargetId || !onAddRelationship) return;
+    
+    await onAddRelationship(nodeId, newRelTargetId, newRelType, newRelType === 'child' ? (newRelTarget2Id || null) : null);
+    
+    setIsAddingRel(false);
+    setNewRelTarget2Id('');
+  };
 
   // Initialiser le formulaire avec les données existantes
   useEffect(() => {
@@ -362,6 +431,189 @@ const EditPersonModal = ({
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
               />
+            </div>
+
+            {/* Gestion des liaisons */}
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Gestion des liaisons</h3>
+              
+              {/* Liste des relations actuelles */}
+              <div className="space-y-3 bg-gray-50 p-3 rounded-md mb-4 text-xs">
+                {/* Parents */}
+                <div>
+                  <span className="font-semibold text-gray-600 block mb-1">Parents :</span>
+                  {parents.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {parents.map(p => {
+                        const relId = findRelationshipId(p.id, 'parent');
+                        return (
+                          <div key={p.id} className="bg-white border rounded px-2 py-1 flex items-center gap-1 shadow-sm">
+                            <span>{p.given} {p.sur !== '—' ? p.sur : ''}</span>
+                            {relId && onDeleteRelationship && (
+                              <button
+                                type="button"
+                                onClick={() => onDeleteRelationship(relId)}
+                                className="text-red-500 hover:text-red-700 font-bold ml-1"
+                                title="Supprimer la liaison"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 italic">Aucun parent renseigné</span>
+                  )}
+                </div>
+
+                {/* Conjoints */}
+                <div>
+                  <span className="font-semibold text-gray-600 block mb-1">Conjoint·es :</span>
+                  {spouses.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {spouses.map(p => {
+                        const relId = findRelationshipId(p.id, 'spouse');
+                        return (
+                          <div key={p.id} className="bg-white border rounded px-2 py-1 flex items-center gap-1 shadow-sm">
+                            <span>{p.given} {p.sur !== '—' ? p.sur : ''}</span>
+                            {relId && onDeleteRelationship && (
+                              <button
+                                type="button"
+                                onClick={() => onDeleteRelationship(relId)}
+                                className="text-red-500 hover:text-red-700 font-bold ml-1"
+                                title="Supprimer la liaison"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 italic">Aucun conjoint renseigné</span>
+                  )}
+                </div>
+
+                {/* Enfants */}
+                <div>
+                  <span className="font-semibold text-gray-600 block mb-1">Enfants :</span>
+                  {children.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {children.map(p => {
+                        const relId = findRelationshipId(p.id, 'child');
+                        return (
+                          <div key={p.id} className="bg-white border rounded px-2 py-1 flex items-center gap-1 shadow-sm">
+                            <span>{p.given} {p.sur !== '—' ? p.sur : ''}</span>
+                            {relId && onDeleteRelationship && (
+                              <button
+                                type="button"
+                                onClick={() => onDeleteRelationship(relId)}
+                                className="text-red-500 hover:text-red-700 font-bold ml-1"
+                                title="Supprimer la liaison"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 italic">Aucun enfant renseigné</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Bouton pour afficher le formulaire d'ajout */}
+              {!isAddingRel ? (
+                <button
+                  type="button"
+                  onClick={() => setIsAddingRel(true)}
+                  className="w-full text-center py-2 border border-dashed border-gray-300 rounded text-sm text-primary hover:bg-gray-50 font-medium"
+                >
+                  + Ajouter une liaison
+                </button>
+              ) : (
+                <div className="bg-gray-100 p-3 rounded-md border space-y-3">
+                  <div className="flex justify-between items-center border-b pb-1">
+                    <span className="font-semibold text-sm text-gray-700">Nouvelle liaison</span>
+                    <button type="button" onClick={() => setIsAddingRel(false)} className="text-gray-400 hover:text-gray-600 text-xs">Annuler</button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500">Relation</label>
+                      <select
+                        value={newRelType}
+                        onChange={e => setNewRelType(e.target.value)}
+                        className="mt-1 block w-full rounded border-gray-300 text-xs"
+                      >
+                        <option value="spouse">Conjoint·e de</option>
+                        <option value="child">Enfant de</option>
+                        <option value="parent">Parent de</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500">Cible</label>
+                      <select
+                        value={newRelTargetId}
+                        onChange={e => setNewRelTargetId(e.target.value)}
+                        className="mt-1 block w-full rounded border-gray-300 text-xs"
+                        required
+                      >
+                        <option value="">Sélectionnez...</option>
+                        {people.filter(p => p.id !== nodeId).map(p => (
+                          <option key={p.id} value={p.id}>
+                            {p.given} {p.sur !== '—' ? p.sur : ''} ({p.born || '?'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {newRelType === 'child' && newRelTargetId && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500">Second parent (Optionnel)</label>
+                      <select
+                        value={newRelTarget2Id}
+                        onChange={e => setNewRelTarget2Id(e.target.value)}
+                        className="mt-1 block w-full rounded border-gray-300 text-xs"
+                      >
+                        <option value="">Sélectionnez un second parent...</option>
+                        {people.find(p => p.id === newRelTargetId)?.spouseIds?.length > 0 && (
+                          <optgroup label="Conjoint·es recommandés">
+                            {people.filter(p => (people.find(x => x.id === newRelTargetId)?.spouseIds || []).includes(p.id)).map(p => (
+                              <option key={p.id} value={p.id}>
+                                {p.given} {p.sur !== '—' ? p.sur : ''} ({p.born || '?'})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <optgroup label="Autres membres">
+                          {people.filter(p => p.id !== nodeId && p.id !== newRelTargetId && !(people.find(x => x.id === newRelTargetId)?.spouseIds || []).includes(p.id)).map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.given} {p.sur !== '—' ? p.sur : ''} ({p.born || '?'})
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleAddRelSubmit}
+                    disabled={!newRelTargetId}
+                    className="w-full text-center py-1.5 bg-primary text-white rounded text-xs hover:bg-primary/95 disabled:bg-gray-300 font-medium"
+                  >
+                    Enregistrer la liaison
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           

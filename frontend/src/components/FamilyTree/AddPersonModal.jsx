@@ -133,10 +133,8 @@ const AddPersonModal = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (initialRelationType && initialParentNodeId) {
-      onSubmit(formData, initialParentNodeId, initialRelationType, initialParent2NodeId || null);
-    } else if (hasRelation && relToId) {
-      onSubmit(formData, relToId, relType, relTo2Id || null);
+    if (hasRelation && relToId) {
+      onSubmit(formData, relToId, relType, relType === 'child' ? (relTo2Id || null) : null);
     } else {
       onSubmit(formData, null, null, null);
     }
@@ -273,7 +271,7 @@ const AddPersonModal = ({
           </div>
 
           {/* Relation Field */}
-          {!initialRelationType && people.length > 0 && (
+          {people.length > 0 && (
             <div className="border-t border-gray-200 pt-3">
               <label className="flex items-center text-sm font-medium text-gray-700 cursor-pointer mb-2">
                 <input

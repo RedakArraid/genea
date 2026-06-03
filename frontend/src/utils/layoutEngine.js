@@ -383,6 +383,8 @@ export function normalizePersons(apiPersons, apiRelationships = []) {
       sur: p.lastName || p.sur || '—',
       born: birthYear,
       died: deathYear,
+      birthDate: p.birthDate || null,
+      deathDate: p.deathDate || null,
       place: p.birthPlace || p.place || '',
       bio: { fr: p.biography || '', en: p.biography || '' },
       generation: p.generation ?? p.gen ?? 1,

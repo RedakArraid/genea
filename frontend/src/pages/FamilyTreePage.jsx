@@ -277,7 +277,7 @@ export default function FamilyTreePage() {
     setIsRelationOpen(true);
   };
 
-  const handleAddRelationSubmit = async (sourceId, targetId, relType) => {
+  const handleAddRelationSubmit = async (sourceId, targetId, relType, target2Id = null) => {
     // relType: parent, child, spouse
     const source = relType === 'parent' ? sourceId : targetId;
     const target = relType === 'parent' ? targetId : sourceId;
@@ -290,6 +290,13 @@ export default function FamilyTreePage() {
     });
 
     if (response.success) {
+      if (target2Id && relType === 'child') {
+        await addRelationship({
+          sourceId: target2Id,
+          targetId: sourceId,
+          type: 'parent',
+        });
+      }
       showToast('Lien de parenté créé.', 'success');
       fetchTreeById(treeId);
       setIsRelationOpen(false);
@@ -378,6 +385,7 @@ export default function FamilyTreePage() {
           }}
           onEdit={handleEditPerson}
           onAddRelation={handleAddRelation}
+          onAddChildRelation={(parentId, relType, parent2Id) => handleOpenAddModal(parentId, relType, parent2Id)}
           onDelete={handleDeletePerson}
           onDeleteRelation={handleDeleteRelation}
         />
@@ -409,6 +417,10 @@ export default function FamilyTreePage() {
           onSubmit={handleEditPersonSubmit}
           nodeData={editingPersonData}
           nodeId={editingPersonData.id}
+          people={people}
+          currentTree={currentTree}
+          onAddRelationship={handleAddRelationSubmit}
+          onDeleteRelationship={handleDeleteRelation}
         />
       )}
 
