@@ -1,0 +1,441 @@
+/**
+ * Composant d'arbre généalogique traditionnel
+ * Structure hiérarchique avec générations alignées horizontalement
+ * Traits rouges pour les unions, traits bleus pour la descendance
+ */
+
+import React, { useState, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Plus, Edit3, Trash2, Users, Baby } from 'lucide-react';
+import UnionLineWithMenu from './UnionLineWithMenu';
+import '../../styles/TraditionalFamilyTree.css';
+
+/**
+ * Composant PersonCard - Représente une personne dans l'arbre
+ */
+const PersonCard = ({ person, onEdit, onDelete, onAddSpouse, onAddChild, isCompact = false }) => {
+  const [showActions, setShowActions] = useState(false);
+  
+  const cardSize = isCompact ? 'w-20 h-24' : 'w-24 h-28';
+  const photoSize = isCompact ? 'w-12 h-12' : 'w-16 h-16';
+  const textSize = isCompact ? 'text-xs' : 'text-sm';
+  
+  return (
+    <motion.div
+      className={`${cardSize} bg-white border-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer
+        ${person.gender === 'male' ? 'border-blue-200 bg-blue-50' : 
+          person.gender === 'female' ? 'border-pink-200 bg-pink-50' : 
+          'border-gray-200 bg-gray-50'}`}
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+      whileHover={{ scale: 1.05 }}
+      layout
+    >
+      {/* Photo ou avatar */}
+      <div className="flex justify-center pt-2">
+        <div className={`${photoSize} rounded-full overflow-hidden
+          ${person.gender === 'male' ? 'bg-blue-200' : 
+            person.gender === 'female' ? 'bg-pink-200' : 'bg-gray-200'}`}
+        >
+          {person.photoUrl ? (
+            <img 
+              src={person.photoUrl} 
+              alt={`${person.firstName} ${person.lastName}`} 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <User className={`${isCompact ? 'w-6 h-6' : 'w-8 h-8'} text-gray-600`} />
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Nom */}
+      <div className="px-1 py-1 text-center">
+        <div className={`${textSize} font-semibold text-gray-800 leading-tight`} 
+             title={`${person.firstName} ${person.lastName}`}>
+          {person.firstName}
+        </div>
+        <div className={`${textSize} text-gray-600 leading-tight`}>
+          {person.lastName}
+        </div>
+        {person.birthDate && (
+          <div className="text-xs text-gray-500">
+            {new Date(person.birthDate).getFullYear()}
+          </div>
+        )}
+      </div>
+      
+      {/* Menu d'actions */}
+      <AnimatePresence>
+        {showActions && (
+          <motion.div 
+            className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 flex gap-1 bg-white rounded-lg shadow-lg p-1 z-20 border"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+          >
+            <button 
+              className="p-1 hover:bg-gray-100 rounded" 
+              title="Ajouter conjoint"
+              onClick={(e) => { e.stopPropagation(); onAddSpouse?.(person); }}
+            >
+              <Users className="w-3 h-3 text-pink-600" />
+            </button>
+            <button 
+              className="p-1 hover:bg-gray-100 rounded" 
+              title="Ajouter enfant"
+              onClick={(e) => { e.stopPropagation(); onAddChild?.(person); }}
+            >
+              <Baby className="w-3 h-3 text-blue-600" />
+            </button>
+            <button 
+              className="p-1 hover:bg-gray-100 rounded" 
+              title="Modifier"
+              onClick={(e) => { e.stopPropagation(); onEdit?.(person); }}
+            >
+              <Edit3 className="w-3 h-3 text-gray-600" />
+            </button>
+            <button 
+              className="p-1 hover:bg-gray-100 rounded" 
+              title="Supprimer"
+              onClick={(e) => { e.stopPropagation(); onDelete?.(person); }}
+            >
+              <Trash2 className="w-3 h-3 text-red-600" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+
+/**
+ * Composant DescentLine - Trait bleu vertical vers les enfants
+ * Part du centre du trait rouge vers les enfants
+ */
+const DescentLine = ({ height, childrenCount, childrenWidth }) => (
+  <div className="flex flex-col items-center">
+    {/* Ligne verticale principale depuis le centre du trait rouge */}
+    <div className="w-1 bg-blue-500" style={{ height: `${height}px` }} />
+    {/* Ligne horizontale pour distribuer vers les enfants */}
+    {childrenCount > 1 && (
+      <div 
+        className="border-t-2 border-blue-500"
+        style={{ width: `${childrenWidth}px` }}
+      />
+    )}
+  </div>
+);
+
+/**
+ * Utilitaires pour organiser les données en arbre
+ */
+const organizeTreeData = (persons, relationships) => {
+  // Identifier les couples (unions)
+  const unions = [];
+  const spouseRelations = relationships.filter(rel => rel.type === 'spouse');
+  
+  spouseRelations.forEach(rel => {
+    const spouse1 = persons.find(p => p.id === rel.sourceId);
+    const spouse2 = persons.find(p => p.id === rel.targetId);
+    
+    if (spouse1 && spouse2) {
+      unions.push({
+        id: `union_${rel.sourceId}_${rel.targetId}`,
+        spouse1,
+        spouse2,
+        children: []
+      });
+    }
+  });
+  
+  // Identifier les relations parent-enfant
+  const parentChildRelations = relationships.filter(rel => rel.type === 'parent');
+  
+  // Associer les enfants aux couples
+  parentChildRelations.forEach(rel => {
+    const parent = persons.find(p => p.id === rel.sourceId);
+    const child = persons.find(p => p.id === rel.targetId);
+    
+    if (parent && child) {
+      // Trouver le couple dont fait partie ce parent
+      const union = unions.find(u => 
+        u.spouse1.id === parent.id || u.spouse2.id === parent.id
+      );
+      
+      if (union) {
+        // Vérifier que l'enfant n'est pas déjà ajouté
+        if (!union.children.find(c => c.id === child.id)) {
+          union.children.push(child);
+        }
+      }
+    }
+  });
+  
+  // Identifier les personnes sans conjoint
+  const soloPersons = persons.filter(person => 
+    !unions.some(union => 
+      union.spouse1.id === person.id || union.spouse2.id === person.id
+    )
+  );
+  
+  // Organiser par générations
+  const generations = [];
+  
+  // Génération 0 : les couples sans parents (racines)
+  const rootUnions = unions.filter(union => {
+    const hasParents = parentChildRelations.some(rel => 
+      rel.targetId === union.spouse1.id || rel.targetId === union.spouse2.id
+    );
+    return !hasParents;
+  });
+  
+  const rootSolos = soloPersons.filter(person => {
+    const hasParents = parentChildRelations.some(rel => rel.targetId === person.id);
+    const hasChildren = parentChildRelations.some(rel => rel.sourceId === person.id);
+    return !hasParents && !hasChildren;
+  });
+  
+  if (rootUnions.length > 0 || rootSolos.length > 0) {
+    generations.push({
+      level: 0,
+      unions: rootUnions,
+      soloPersons: rootSolos
+    });
+  }
+  
+  // Générations suivantes : les enfants des couples précédents
+  let currentLevel = 0;
+  while (currentLevel < generations.length) {
+    const currentGen = generations[currentLevel];
+    const nextGenChildren = [];
+    const nextGenUnions = [];
+    
+    // Collecter tous les enfants de cette génération
+    currentGen.unions.forEach(union => {
+      nextGenChildren.push(...union.children);
+    });
+    
+    if (nextGenChildren.length > 0) {
+      // Organiser les enfants en couples pour la génération suivante
+      nextGenChildren.forEach(child => {
+        const childAsSpouse = unions.find(u => 
+          u.spouse1.id === child.id || u.spouse2.id === child.id
+        );
+        
+        if (childAsSpouse && !nextGenUnions.find(u => u.id === childAsSpouse.id)) {
+          nextGenUnions.push(childAsSpouse);
+        }
+      });
+      
+      const nextGenSolos = nextGenChildren.filter(child => 
+        !nextGenUnions.some(union => 
+          union.spouse1.id === child.id || union.spouse2.id === child.id
+        )
+      );
+      
+      generations.push({
+        level: currentLevel + 1,
+        unions: nextGenUnions,
+        soloPersons: nextGenSolos
+      });
+    }
+    
+    currentLevel++;
+  }
+  
+  return generations;
+};
+
+/**
+ * Composant principal TraditionalFamilyTree
+ */
+const TraditionalFamilyTree = ({ 
+  persons = [], 
+  relationships = [], 
+  onAddPerson,
+  onEditPerson,
+  onDeletePerson,
+  onAddChild,
+  onAddSpouse,
+  onDeleteRelationship
+}) => {
+  const treeData = useMemo(() => 
+    organizeTreeData(persons, relationships), 
+    [persons, relationships]
+  );
+  
+  const handleAddChildToCouple = useCallback((union) => {
+    onAddChild?.(union.spouse1, union.spouse2);
+  }, [onAddChild]);
+  
+  const handleDeleteUnion = useCallback((union) => {
+    // Trouver la relation de conjoint entre les deux personnes
+    const spouseRelation = relationships.find(rel => 
+      rel.type === 'spouse' && 
+      ((rel.sourceId === union.spouse1.id && rel.targetId === union.spouse2.id) ||
+       (rel.sourceId === union.spouse2.id && rel.targetId === union.spouse1.id))
+    );
+    
+    if (spouseRelation) {
+      onDeleteRelationship?.(spouseRelation.id);
+    }
+  }, [relationships, onDeleteRelationship]);
+  
+  if (persons.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+        <div className="text-center">
+          <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            Votre arbre généalogique est vide
+          </h3>
+          <p className="text-gray-500 mb-6">
+            Commencez par ajouter la première personne de votre famille
+          </p>
+          <button
+            onClick={() => onAddPerson?.()}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center gap-2 mx-auto"
+          >
+            <Plus className="w-5 h-5" />
+            Ajouter une personne
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="family-tree-container p-8 bg-white min-h-screen">
+      <div className="flex flex-col items-center space-y-16">
+        {treeData.map((generation, genIndex) => (
+          <motion.div 
+            key={`gen-${generation.level}`}
+            className="generation flex flex-col items-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: genIndex * 0.2 }}
+          >
+            {/* Étiquette de génération */}
+            <div className="mb-6 text-center">
+              <span className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">
+                {generation.level === 0 ? 'Grands-parents' : 
+                 generation.level === 1 ? 'Parents' : 
+                 generation.level === 2 ? 'Enfants' : 
+                 `Génération ${generation.level + 1}`}
+              </span>
+            </div>
+            
+            {/* Couples et personnes seules */}
+            <div className="flex flex-wrap justify-center gap-16">
+              {/* Couples */}
+              {generation.unions.map((union, unionIndex) => (
+                <div key={union.id} className="flex flex-col items-center">
+                  {/* Le couple */}
+                  <div className="flex items-center gap-4">
+                    <PersonCard 
+                      person={union.spouse1}
+                      onEdit={onEditPerson}
+                      onDelete={onDeletePerson}
+                      onAddSpouse={(person) => onAddSpouse?.(person)}
+                      onAddChild={(person) => onAddChild?.(person)}
+                    />
+                    
+                    <UnionLineWithMenu 
+                      width={60}
+                      hasChildren={union.children.length > 0}
+                      onAddChild={() => handleAddChildToCouple(union)}
+                      onDeleteUnion={(unionId) => handleDeleteUnion(union)}
+                      spouse1Name={`${union.spouse1.firstName} ${union.spouse1.lastName}`}
+                      spouse2Name={`${union.spouse2.firstName} ${union.spouse2.lastName}`}
+                      unionId={union.id}
+                    />
+                    
+                    <PersonCard 
+                      person={union.spouse2}
+                      onEdit={onEditPerson}
+                      onDelete={onDeletePerson}
+                      onAddSpouse={(person) => onAddSpouse?.(person)}
+                      onAddChild={(person) => onAddChild?.(person)}
+                    />
+                  </div>
+                  
+                  {/* Les enfants */}
+                  {union.children.length > 0 && (
+                    <div className="flex flex-col items-center mt-4">
+                      <DescentLine 
+                        height={32}
+                        childrenCount={union.children.length}
+                        childrenWidth={union.children.length > 1 ? (union.children.length - 1) * 120 : 0}
+                      />
+                      
+                      <div className="flex gap-8 mt-4">
+                        {union.children.map((child, childIndex) => (
+                          <div key={child.id} className="flex flex-col items-center">
+                            {union.children.length > 1 && (
+                              <div className="w-1 h-4 bg-blue-500 mb-2" />
+                            )}
+                            <PersonCard 
+                              person={child}
+                              onEdit={onEditPerson}
+                              onDelete={onDeletePerson}
+                              onAddSpouse={(person) => onAddSpouse?.(person)}
+                              onAddChild={(person) => onAddChild?.(person)}
+                              isCompact={generation.level > 1}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {/* Personnes seules */}
+              {generation.soloPersons.map((person) => (
+                <PersonCard 
+                  key={person.id}
+                  person={person}
+                  onEdit={onEditPerson}
+                  onDelete={onDeletePerson}
+                  onAddSpouse={(person) => onAddSpouse?.(person)}
+                  onAddChild={(person) => onAddChild?.(person)}
+                  isCompact={generation.level > 1}
+                />
+              ))}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+      
+      {/* Bouton flottant pour ajouter une personne */}
+      <motion.button
+        className="fixed bottom-6 right-6 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-4 shadow-lg"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => onAddPerson?.()}
+      >
+        <Plus className="w-6 h-6" />
+      </motion.button>
+      
+      {/* Légende */}
+      <div className="fixed top-4 left-4 bg-white p-4 rounded-lg shadow-md border">
+        <h3 className="font-semibold mb-3 text-gray-800">Légende</h3>
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-1 bg-red-500"></div>
+            <span className="text-gray-700">Union (mariage/couple)</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-8 bg-blue-500"></div>
+            <span className="text-gray-700">Descendance (enfants)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TraditionalFamilyTree;

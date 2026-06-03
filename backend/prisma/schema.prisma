@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Edge {
+  id           String     @id @default(uuid())
+  source       String
+  target       String
+  type         String?
+  sourceHandle String?
+  targetHandle String?
+  data         Json?
+  treeId       String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  FamilyTree   FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+}
+
+model FamilyTree {
+  id           String         @id @default(uuid())
+  name         String
+  description  String?
+  isPublic     Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  ownerId      String
+  Edge         Edge[]
+  User         User           @relation(fields: [ownerId], references: [id])
+  NodePosition NodePosition[]
+  Person       Person[]
+}
+
+model NodePosition {
+  id         String     @id @default(uuid())
+  nodeId     String
+  x          Float
+  y          Float
+  treeId     String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  FamilyTree FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+}
+
+model Person {
+  id                                         String         @id @default(uuid())
+  firstName                                  String
+  lastName                                   String
+  birthDate                                  DateTime?
+  birthPlace                                 String?
+  deathDate                                  DateTime?
+  occupation                                 String?
+  biography                                  String?
+  gender                                     String?
+  photoUrl                                   String?
+  createdAt                                  DateTime       @default(now())
+  updatedAt                                  DateTime       @updatedAt
+  treeId                                     String
+  FamilyTree                                 FamilyTree     @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  Relationship_Relationship_sourceIdToPerson Relationship[] @relation("Relationship_sourceIdToPerson")
+  Relationship_Relationship_targetIdToPerson Relationship[] @relation("Relationship_targetIdToPerson")
+}
+
+model Relationship {
+  id                                   String   @id @default(uuid())
+  type                                 String
+  sourceId                             String
+  targetId                             String
+  createdAt                            DateTime @default(now())
+  updatedAt                            DateTime @updatedAt
+  Person_Relationship_sourceIdToPerson Person   @relation("Relationship_sourceIdToPerson", fields: [sourceId], references: [id], onDelete: Cascade)
+  Person_Relationship_targetIdToPerson Person   @relation("Relationship_targetIdToPerson", fields: [targetId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id         String       @id @default(uuid())
+  email      String       @unique
+  password   String
+  name       String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  FamilyTree FamilyTree[]
+}

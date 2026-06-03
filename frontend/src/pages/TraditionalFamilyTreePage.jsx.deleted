@@ -1,0 +1,395 @@
+import React, { useState, useCallback, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+
+// Composants
+import TraditionalFamilyTree from '../components/FamilyTree/TraditionalFamilyTree';
+import AddPersonModal from '../components/FamilyTree/AddPersonModal';
+import EditPersonModal from '../components/FamilyTree/EditPersonModal';
+import { useFamilyTreeStore } from '../store/familyTreeStore';
+import { useToast } from '../hooks/useToast';
+
+/**
+ * Page d'arbre généalogique traditionnel
+ * Structure hiérarchique comme dans l'image de référence
+ */
+const TraditionalFamilyTreePage = () => {
+  const { id: treeId } = useParams();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  
+  // États locaux
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedPerson, setSelectedPerson] = useState(null);
+  const [selectedCouple, setSelectedCouple] = useState(null);
+  const [relationType, setRelationType] = useState(null);
+  
+  // Store de l'arbre généalogique
+  const {
+    currentTree,
+    isLoading,
+    error,
+    fetchTreeById,
+    resetState,
+    addPerson,
+    updatePerson,
+    deletePerson,
+    addRelationship,
+    deleteRelationship,
+  } = useFamilyTreeStore();
+
+  // Chargement initial de l'arbre
+  useEffect(() => {
+    if (treeId) {
+      fetchTreeById(treeId);
+    }
+    
+    // Nettoyage au démontage
+    return () => resetState();
+  }, [treeId, fetchTreeById, resetState]);
+
+  // Transformer les données pour le composant traditionnel
+  const persons = currentTree?.Person || [];
+  const relationships = []; // On va les construire à partir des données Prisma
+  
+  // Debug: Afficher les données
+  console.log('Current tree data:', {
+    persons: persons.length,
+    edges: currentTree?.Edge?.length || 0,
+    relationships: currentTree?.Relationship?.length || 0
+  });
+  
+  // Construire les relations à partir des données de l'arbre
+  if (currentTree) {
+    // Relations depuis la table Relationship (si elle existe)
+    if (currentTree.Relationship) {
+      currentTree.Relationship.forEach(rel => {
+        relationships.push({
+          id: rel.id,
+          type: rel.type,
+          sourceId: rel.sourceId,
+          targetId: rel.targetId
+        });
+      });
+    }
+    
+    // Relations déduites des Edge si pas de table Relationship
+    if (currentTree.Edge && (!currentTree.Relationship || currentTree.Relationship.length === 0)) {
+      currentTree.Edge.forEach(edge => {
+        if (edge.data?.type === 'spouse_connection') {
+          relationships.push({
+            id: edge.id,
+            type: 'spouse',
+            sourceId: edge.source,
+            targetId: edge.target
+          });
+        } else if (edge.data?.type === 'parent_child_connection') {
+          relationships.push({
+            id: edge.id,
+            type: 'parent',
+            sourceId: edge.source,
+            targetId: edge.target
+          });
+        }
+      });
+    }
+  }
+  
+  console.log('Processed relationships:', relationships);
+
+  // Fermer tous les modals
+  const closeModals = useCallback(() => {
+    setIsAddModalOpen(false);
+    setIsEditModalOpen(false);
+    setSelectedPerson(null);
+    setSelectedCouple(null);
+    setRelationType(null);
+  }, []);
+
+  // Gérer l'ajout d'une nouvelle personne
+  const handleAddPerson = useCallback(async (personData = null, parentPerson = null, spousePerson = null) => {
+    if (!personData) {
+      // Ouvrir le modal pour ajouter une personne standalone
+      setSelectedPerson(null);
+      setSelectedCouple(null);
+      setRelationType(null);
+      setIsAddModalOpen(true);
+      return;
+    }
+
+    try {
+      // Ajouter la personne au store
+      const result = await addPerson(treeId, {
+        ...personData,
+        position: { x: 0, y: 0 } // Position non utilisée dans la vue traditionnelle
+      });
+      
+      if (result.success && result.person) {
+        const person = result.person;
+        showToast(`${person.firstName} ${person.lastName} a été ajouté(e) à l'arbre`, 'success');
+        
+        // Créer les relations automatiquement
+        const relationPromises = [];
+        
+        if (parentPerson && relationType === 'child') {
+          // Relation parent-enfant
+          relationPromises.push(
+            addRelationship({
+              sourceId: parentPerson.id,
+              targetId: person.id,
+              type: 'parent',
+              data: { type: 'parent_child_connection' }
+            })
+          );
+        } else if (parentPerson && relationType === 'spouse') {
+          // Relation de conjoint
+          relationPromises.push(
+            addRelationship({
+              sourceId: parentPerson.id,
+              targetId: person.id,
+              type: 'spouse',
+              data: { type: 'spouse_connection' }
+            })
+          );
+        } else if (selectedCouple && relationType === 'couple_child') {
+          // Enfant d'un couple - deux relations parent-enfant
+          relationPromises.push(
+            addRelationship({
+              sourceId: selectedCouple.spouse1.id,
+              targetId: person.id,
+              type: 'parent',
+              data: { type: 'parent_child_connection' }
+            }),
+            addRelationship({
+              sourceId: selectedCouple.spouse2.id,
+              targetId: person.id,
+              type: 'parent',
+              data: { type: 'parent_child_connection' }
+            })
+          );
+        }
+        
+        // Attendre que toutes les relations soient créées
+        if (relationPromises.length > 0) {
+          await Promise.all(relationPromises);
+        }
+        
+        // Recharger l'arbre pour avoir les dernières données
+        await fetchTreeById(treeId);
+        
+        closeModals();
+      } else {
+        showToast(result?.message || 'Erreur lors de l\'ajout de la personne', 'error');
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout:', error);
+      showToast('Erreur lors de l\'ajout de la personne', 'error');
+    }
+  }, [treeId, addPerson, addRelationship, showToast, closeModals, relationType, selectedCouple, fetchTreeById]);
+
+  // Gérer la modification d'une personne
+  const handleEditPerson = useCallback((person) => {
+    setSelectedPerson(person);
+    setIsEditModalOpen(true);
+  }, []);
+
+  // Gérer la sauvegarde des modifications
+  const handleSaveEdit = useCallback(async (personId, updatedData) => {
+    try {
+      const result = await updatePerson(personId, updatedData);
+      if (result.success) {
+        showToast(`Les informations ont été mises à jour`, 'success');
+        // Recharger l'arbre pour avoir les dernières données
+        await fetchTreeById(treeId);
+      } else {
+        showToast(result.message || 'Erreur lors de la mise à jour', 'error');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      showToast('Erreur lors de la mise à jour', 'error');
+    }
+    
+    closeModals();
+  }, [updatePerson, showToast, closeModals, fetchTreeById, treeId]);
+
+  // Gérer la suppression d'une personne
+  const handleDeletePerson = useCallback(async (person) => {
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer ${person.firstName} ${person.lastName} ? Cette action est irréversible.`)) {
+      try {
+        const result = await deletePerson(person.id);
+        if (result.success) {
+          showToast('La personne a été supprimée de l\'arbre', 'success');
+          // Recharger l'arbre pour avoir les dernières données
+          await fetchTreeById(treeId);
+        } else {
+          showToast(result.message || 'Erreur lors de la suppression', 'error');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
+        showToast('Erreur lors de la suppression', 'error');
+      }
+    }
+  }, [deletePerson, showToast, fetchTreeById, treeId]);
+
+  // Gérer l'ajout d'un conjoint
+  const handleAddSpouse = useCallback((person) => {
+    setSelectedPerson(person);
+    setRelationType('spouse');
+    setIsAddModalOpen(true);
+  }, []);
+
+  // Gérer l'ajout d'un enfant à une personne
+  const handleAddChild = useCallback((person, spouse = null) => {
+    if (spouse) {
+      // Enfant d'un couple
+      setSelectedCouple({ spouse1: person, spouse2: spouse });
+      setRelationType('couple_child');
+    } else {
+      // Enfant d'une personne seule
+      setSelectedPerson(person);
+      setRelationType('child');
+    }
+    setIsAddModalOpen(true);
+  }, []);
+  
+  // Gérer la suppression d'une relation
+  const handleDeleteRelationship = useCallback(async (relationshipId) => {
+    try {
+      const result = await deleteRelationship(relationshipId);
+      if (result.success) {
+        showToast('La relation a été supprimée', 'success');
+        // Recharger l'arbre pour avoir les dernières données
+        await fetchTreeById(treeId);
+      } else {
+        showToast(result.message || 'Erreur lors de la suppression de la relation', 'error');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la relation:', error);
+      showToast('Erreur lors de la suppression de la relation', 'error');
+    }
+  }, [deleteRelationship, showToast, fetchTreeById, treeId]);
+
+  // Afficher un message d'erreur si nécessaire
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <div className="max-w-md text-center">
+          <h2 className="text-2xl font-bold text-foreground mb-4">Erreur</h2>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <div className="flex justify-center space-x-4">
+            <button
+              onClick={() => fetchTreeById(treeId)}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+            >
+              Réessayer
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="px-4 py-2 bg-secondary text-foreground rounded hover:bg-secondary/90"
+            >
+              Retour au tableau de bord
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Afficher un indicateur de chargement
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <p className="mt-4 text-muted-foreground">Chargement de l'arbre généalogique...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* En-tête */}
+      {currentTree && (
+        <div className="bg-white border-b border-gray-200 py-4 px-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{currentTree.name}</h1>
+              {currentTree.description && (
+                <p className="text-sm text-gray-600 mt-1">{currentTree.description}</p>
+              )}
+            </div>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => handleAddPerson()}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Ajouter une personne
+              </button>
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Retour
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Arbre généalogique traditionnel */}
+      <TraditionalFamilyTree
+        persons={persons}
+        relationships={relationships}
+        onAddPerson={() => handleAddPerson()}
+        onEditPerson={handleEditPerson}
+        onDeletePerson={handleDeletePerson}
+        onAddChild={handleAddChild}
+        onAddSpouse={handleAddSpouse}
+        onDeleteRelationship={handleDeleteRelationship}
+      />
+      
+      {/* Modals */}
+      <AnimatePresence>
+        {isAddModalOpen && (
+          <AddPersonModal
+            isOpen={isAddModalOpen}
+            onClose={closeModals}
+            onSubmit={(personData) => {
+              if (relationType === 'spouse') {
+                handleAddPerson(personData, selectedPerson, null);
+              } else if (relationType === 'child') {
+                handleAddPerson(personData, selectedPerson, null);
+              } else if (relationType === 'couple_child') {
+                handleAddPerson(personData, null, null);
+              } else {
+                handleAddPerson(personData);
+              }
+            }}
+            parentNodeId={selectedPerson?.id}
+            relationType={relationType}
+          />
+        )}
+      </AnimatePresence>
+      
+      <AnimatePresence>
+        {isEditModalOpen && selectedPerson && (
+          <EditPersonModal
+            isOpen={isEditModalOpen}
+            onClose={closeModals}
+            onSubmit={handleSaveEdit}
+            nodeData={selectedPerson}
+            nodeId={selectedPerson.id}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default TraditionalFamilyTreePage;
