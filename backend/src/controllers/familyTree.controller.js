@@ -14,6 +14,11 @@ exports.getAllTrees = async (req, res, next) => {
     
     const trees = await prisma.familyTree.findMany({
       where: { ownerId: userId },
+      include: {
+        _count: {
+          select: { Person: true }
+        }
+      },
       orderBy: { updatedAt: 'desc' }
     });
     

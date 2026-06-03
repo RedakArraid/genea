@@ -12,6 +12,8 @@ import NotFoundPage from './pages/NotFoundPage';
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Toaster from './components/ui/Toaster';
+import TimelinePage from './pages/TimelinePage';
+import MatchesPage from './pages/MatchesPage';
 
 function App() {
   const { checkAuth, isAuthenticated, isLoading } = useAuth();
@@ -43,7 +45,8 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/family-tree/:id" element={<FamilyTreePage />} />
-
+            <Route path="/family-tree/:id/timeline" element={<TimelinePage />} />
+            <Route path="/family-tree/:id/matches" element={<MatchesPage />} />
           </Route>
           
           {/* Gestion des routes inexistantes */}
