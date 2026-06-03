@@ -334,25 +334,48 @@ export function computeLineage(rootId, people) {
  * Convertit une personne de l'API backend vers le format interne du canvas.
  * L'API retourne : { id, firstName, lastName, birthDate, deathDate, birthPlace, generation, ... }
  */
-export function normalizePersons(apiPersons) {
+export function normalizePersons(apiPersons, apiRelationships = []) {
   return apiPersons.map(p => {
     const tone = pickTone(p.id);
     const birthYear = p.birthDate ? new Date(p.birthDate).getFullYear() : null;
     const deathYear = p.deathDate ? new Date(p.deathDate).getFullYear() : null;
 
     // Extraire les relations
-    const parentIds = (p.relations || [])
-      .filter(r => r.relationType === 'CHILD_OF' || r.relationType === 'child')
-      .map(r => r.relatedPersonId || r.personBId || r.targetId)
-      .filter(Boolean);
+    let parentIds = [];
+    let spouseIds = [];
 
-    const spouseIds = (p.relations || [])
-      .filter(r => r.relationType === 'SPOUSE_OF' || r.relationType === 'spouse')
-      .map(r => {
-        const id = r.personAId === p.id ? r.personBId : r.personAId;
-        return id || r.relatedPersonId;
-      })
-      .filter(Boolean);
+    if (p.relations) {
+      parentIds = p.relations
+        .filter(r => r.relationType === 'CHILD_OF' || r.relationType === 'child')
+        .map(r => r.relatedPersonId || r.personBId || r.targetId)
+        .filter(Boolean);
+
+      spouseIds = p.relations
+        .filter(r => r.relationType === 'SPOUSE_OF' || r.relationType === 'spouse')
+        .map(r => {
+          const id = r.personAId === p.id ? r.personBId : r.personAId;
+          return id || r.relatedPersonId;
+        })
+        .filter(Boolean);
+    } else if (apiRelationships && apiRelationships.length > 0) {
+      apiRelationships.forEach(r => {
+        if (r.type === 'parent') {
+          if (r.targetId === p.id) {
+            parentIds.push(r.sourceId);
+          }
+        } else if (r.type === 'child') {
+          if (r.sourceId === p.id) {
+            parentIds.push(r.targetId);
+          }
+        } else if (r.type === 'spouse') {
+          if (r.sourceId === p.id) {
+            spouseIds.push(r.targetId);
+          } else if (r.targetId === p.id) {
+            spouseIds.push(r.sourceId);
+          }
+        }
+      });
+    }
 
     return {
       id: p.id,

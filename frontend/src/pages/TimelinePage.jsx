@@ -36,7 +36,7 @@ export default function TimelinePage() {
 
   const rawPeople = currentTree.Person || [];
   // Normaliser les personnes avec leurs relations pour avoir le même format
-  const normalized = normalizePersons(rawPeople);
+  const normalized = normalizePersons(rawPeople, currentTree.Relationship);
   
   // Trier par année de naissance
   const sorted = [...normalized]

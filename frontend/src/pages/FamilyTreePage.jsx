@@ -76,7 +76,7 @@ export default function FamilyTreePage() {
   // Initialiser les positions à partir des données de l'arbre
   useEffect(() => {
     if (currentTree && currentTree.Person && currentTree.Person.length > 0) {
-      const normalizedPeople = normalizePersons(currentTree.Person);
+      const normalizedPeople = normalizePersons(currentTree.Person, currentTree.Relationship);
       
       const dbPositions = {};
       currentTree.NodePosition?.forEach(np => {
@@ -152,7 +152,7 @@ export default function FamilyTreePage() {
   // Normaliser les membres de l'arbre
   const people = useMemo(() => {
     if (!currentTree || !currentTree.Person) return [];
-    return normalizePersons(currentTree.Person);
+    return normalizePersons(currentTree.Person, currentTree.Relationship);
   }, [currentTree]);
 
   // Trouver la personne sélectionnée
