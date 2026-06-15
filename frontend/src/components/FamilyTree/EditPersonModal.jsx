@@ -207,9 +207,9 @@ const EditPersonModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <motion.div
-        className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden"
         initial="hidden"
         animate="visible"
         exit="exit"
@@ -217,7 +217,7 @@ const EditPersonModal = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* En-tête du modal */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">
             Modifier les informations
           </h2>
@@ -231,8 +231,8 @@ const EditPersonModal = ({
         </div>
         
         {/* Formulaire */}
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {/* Informations de base */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -618,17 +618,17 @@ const EditPersonModal = ({
           </div>
           
           {/* Boutons d'action */}
-          <div className="mt-6 flex justify-end space-x-3">
+          <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end space-x-3 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              className="btn"
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              className="btn primary"
             >
               Enregistrer
             </button>

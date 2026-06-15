@@ -41,6 +41,7 @@ export default function FamilyTreePage() {
   const [positions, setPositions] = useState({});
   const [growKey, setGrowKey] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [lastRelsHash, setLastRelsHash] = useState(null);
 
   // États d'ouverture des modales/panneaux
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -91,13 +92,21 @@ export default function FamilyTreePage() {
         dbPositions[np.nodeId] = { x: np.x, y: np.y };
       });
 
+      // Calculer un hash des relations courantes pour détecter les changements de structure
+      const currentRelsHash = (currentTree.Relationship || [])
+        .map(r => `${r.id}-${r.type}-${r.sourceId}-${r.targetId}`)
+        .sort()
+        .join('|');
+      
+      const relsChanged = lastRelsHash !== null && lastRelsHash !== currentRelsHash;
+
       // Vérifier si toutes les personnes ont une position enregistrée en DB
       const hasAllPositions = normalizedPeople.every(p => dbPositions[p.id]);
 
-      if (hasAllPositions && Object.keys(dbPositions).length > 0) {
+      if (hasAllPositions && Object.keys(dbPositions).length > 0 && !relsChanged) {
         setPositions(dbPositions);
       } else {
-        // Sinon, calculer une disposition initiale et la sauvegarder
+        // Sinon (ou si les relations ont changé), calculer une disposition initiale et la sauvegarder
         const { positions: computed } = computeLayout(normalizedPeople, tweaks.layout, tweaks.density);
         setPositions(computed);
         
@@ -107,6 +116,8 @@ export default function FamilyTreePage() {
         }));
         updateNodePositions(toSave);
       }
+
+      setLastRelsHash(currentRelsHash);
     }
   }, [currentTree]);
 

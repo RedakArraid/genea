@@ -30,6 +30,32 @@ function groupByGeneration(people) {
 }
 
 /**
+ * Ordonne une ligne de génération pour placer les conjoints côte à côte.
+ */
+function orderRowWithSpouses(row) {
+  const ordered = [];
+  const visited = new Set();
+  
+  row.forEach(p => {
+    if (visited.has(p.id)) return;
+    
+    ordered.push(p);
+    visited.add(p.id);
+    
+    const spouseIds = p.spouseIds || [];
+    spouseIds.forEach(sId => {
+      const spouse = row.find(r => r.id === sId);
+      if (spouse && !visited.has(sId)) {
+        ordered.push(spouse);
+        visited.add(sId);
+      }
+    });
+  });
+  
+  return ordered;
+}
+
+/**
  * Disposition verticale (haut → bas)
  * Génération 1 en haut, descendants vers le bas.
  */
@@ -55,10 +81,11 @@ function computeVertical(people, density = 'spacious') {
   let y = 40;
   for (const g of gens) {
     const row = byGen.get(g);
-    const rowW = row.length * cardW + (row.length - 1) * hGap;
+    const orderedRow = orderRowWithSpouses(row);
+    const rowW = orderedRow.length * cardW + (orderedRow.length - 1) * hGap;
     const startX = (maxRowWidth - rowW) / 2 + 40;
 
-    row.forEach((p, i) => {
+    orderedRow.forEach((p, i) => {
       positions[p.id] = {
         x: startX + i * (cardW + hGap),
         y,
@@ -96,10 +123,11 @@ function computeHorizontal(people, density = 'spacious') {
   let x = 40;
   for (const g of gens) {
     const col = byGen.get(g);
-    const colH = col.length * cardH + (col.length - 1) * hGap;
+    const orderedCol = orderRowWithSpouses(col);
+    const colH = orderedCol.length * cardH + (orderedCol.length - 1) * hGap;
     const startY = (maxColHeight - colH) / 2 + 40;
 
-    col.forEach((p, i) => {
+    orderedCol.forEach((p, i) => {
       positions[p.id] = {
         x,
         y: startY + i * (cardH + hGap),
@@ -238,7 +266,8 @@ export function buildConnections(people, positions, connStyle = 'elbow', layout 
     if (parentIds.length >= 2 && positions[parentIds[0]] && positions[parentIds[1]]) {
       const a = positions[parentIds[0]];
       const b = positions[parentIds[1]];
-      anchor = { x: (a.x + b.x) / 2 + cardW / 2, y: Math.max(a.y, b.y) + cardH };
+      // L'ancre commence exactement sur la ligne d'union (au centre du bouton +)
+      anchor = { x: (a.x + b.x) / 2 + cardW / 2, y: (a.y + b.y) / 2 + cardH / 2 };
     } else if (positions[parentIds[0]]) {
       const a = positions[parentIds[0]];
       anchor = {
@@ -335,7 +364,8 @@ export function computeLineage(rootId, people) {
  * L'API retourne : { id, firstName, lastName, birthDate, deathDate, birthPlace, generation, ... }
  */
 export function normalizePersons(apiPersons, apiRelationships = []) {
-  return apiPersons.map(p => {
+  // 1. Première passe : normaliser les informations de base et extraire les relations dédoublées
+  const people = apiPersons.map(p => {
     const tone = pickTone(p.id);
     const birthYear = p.birthDate ? new Date(p.birthDate).getFullYear() : null;
     const deathYear = p.deathDate ? new Date(p.deathDate).getFullYear() : null;
@@ -387,14 +417,71 @@ export function normalizePersons(apiPersons, apiRelationships = []) {
       deathDate: p.deathDate || null,
       place: p.birthPlace || p.place || '',
       bio: { fr: p.biography || '', en: p.biography || '' },
-      generation: p.generation ?? p.gen ?? 1,
+      generation: 1, // Calculé dynamiquement ci-dessous
       tone,
-      parentIds,
-      spouseIds,
+      parentIds: Array.from(new Set(parentIds)),
+      spouseIds: Array.from(new Set(spouseIds)),
       photoUrl: p.photoUrl || null,
       isAlive: !p.deathDate,
     };
   });
+
+  // 2. Deuxième passe : calcul dynamique des générations par propagation BFS
+  const peopleMap = Object.fromEntries(people.map(p => [p.id, p]));
+  const visited = new Set();
+  const generations = {};
+
+  people.forEach(startPerson => {
+    if (visited.has(startPerson.id)) return;
+
+    const queue = [{ id: startPerson.id, gen: 1 }];
+    visited.add(startPerson.id);
+
+    while (queue.length > 0) {
+      const { id, gen } = queue.shift();
+      generations[id] = gen;
+
+      const p = peopleMap[id];
+      if (!p) continue;
+
+      // Conjoints = même génération
+      p.spouseIds.forEach(sId => {
+        if (!visited.has(sId)) {
+          visited.add(sId);
+          queue.push({ id: sId, gen });
+        }
+      });
+
+      // Enfants = parent.generation + 1
+      const children = people.filter(c => c.parentIds.includes(id));
+      children.forEach(c => {
+        if (!visited.has(c.id)) {
+          visited.add(c.id);
+          queue.push({ id: c.id, gen: gen + 1 });
+        }
+      });
+
+      // Parents = enfant.generation - 1
+      p.parentIds.forEach(pId => {
+        if (!visited.has(pId)) {
+          visited.add(pId);
+          queue.push({ id: pId, gen: gen - 1 });
+        }
+      });
+    }
+  });
+
+  // Shift global pour que le min commence à 1
+  const genValues = Object.values(generations);
+  if (genValues.length > 0) {
+    const minGen = Math.min(...genValues);
+    const shift = 1 - minGen;
+    people.forEach(p => {
+      p.generation = (generations[p.id] || 1) + shift;
+    });
+  }
+
+  return people;
 }
 
 // Tons cycliques basés sur l'ID
