@@ -40,8 +40,8 @@ docker-compose up -d
 ```bash
 # Attendre que PostgreSQL soit prêt (quelques secondes)
 # Puis exécuter les migrations
-docker exec geneaia-backend-local npx prisma migrate deploy
-docker exec geneaia-backend-local npx prisma generate
+docker exec geneaia-backend-local-v2 npx prisma migrate deploy
+docker exec geneaia-backend-local-v2 npx prisma generate
 ```
 
 ### 5. Accéder à l'application
@@ -76,34 +76,34 @@ docker-compose down -v  # Supprime aussi les volumes
 docker-compose down -v
 docker-compose up -d postgres
 # Attendre que PostgreSQL soit prêt
-docker exec geneaia-backend-local npx prisma migrate deploy
+docker exec geneaia-backend-local-v2 npx prisma migrate deploy
 
 # Ajouter des données de test
-docker exec geneaia-backend-local npx prisma db seed
+docker exec geneaia-backend-local-v2 npx prisma db seed
 ```
 
 #### Backend
 ```bash
 # Entrer dans le container
-docker exec -it geneaia-backend-local sh
+docker exec -it geneaia-backend-local-v2 sh
 
 # Voir les logs du backend uniquement
 docker-compose logs -f backend
 
 # Tests
-docker exec geneaia-backend-local npm test
+docker exec geneaia-backend-local-v2 npm test
 ```
 
 #### Frontend
 ```bash
 # Entrer dans le container
-docker exec -it geneaia-frontend-local sh
+docker exec -it geneaia-frontend-local-v2 sh
 
 # Voir les logs du frontend uniquement
 docker-compose logs -f frontend
 
 # Build de production local
-docker exec geneaia-frontend-local npm run build
+docker exec geneaia-frontend-local-v2 npm run build
 ```
 
 ## 🗄️ Base de données
@@ -131,7 +131,7 @@ docker exec geneaia-frontend-local npm run build
 
 #### Erreurs de base de données
 1. Vérifier que PostgreSQL est démarré : `docker ps | grep postgres`
-2. Vérifier les migrations : `docker exec geneaia-backend-local npx prisma migrate status`
+2. Vérifier les migrations : `docker exec geneaia-backend-local-v2 npx prisma migrate status`
 3. Réinitialiser si nécessaire : `docker-compose down -v && docker-compose up -d`
 
 #### Erreurs Docker
@@ -158,16 +158,16 @@ docker-compose logs -f -t backend
 ### Backend
 ```bash
 # Tests unitaires
-docker exec geneaia-backend-local npm test
+docker exec geneaia-backend-local-v2 npm test
 
 # Tests avec couverture
-docker exec geneaia-backend-local npm run test:coverage
+docker exec geneaia-backend-local-v2 npm run test:coverage
 ```
 
 ### Frontend
 ```bash
 # Tests (si configurés)
-docker exec geneaia-frontend-local npm test
+docker exec geneaia-frontend-local-v2 npm test
 ```
 
 ## 📁 Structure du projet
