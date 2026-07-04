@@ -22,6 +22,7 @@ const edgeRoutes = require('./routes/edge.routes');
 const planRoutes = require('./routes/plan.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const documentRoutes = require('./routes/document.routes');
+const adminRoutes = require('./routes/admin.routes');
 const { initStorage } = require('./lib/storage');
 
 // Configuration des variables d'environnement
@@ -76,6 +77,7 @@ app.use('/api/node-positions', nodePositionRoutes);
 app.use('/api/edges', edgeRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Middleware de gestion des erreurs
 app.use((err, req, res, next) => {

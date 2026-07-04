@@ -5,6 +5,22 @@ const prisma = require('./prisma');
  * @returns {{ canRead: boolean, canWrite: boolean, canEditPerson: boolean, role: string, isDemo: boolean }}
  */
 async function resolveTreeAccess(userId, treeId) {
+  if (userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (user?.role === 'ADMIN') {
+      return {
+        canRead: true,
+        canWrite: false,
+        canEditPerson: false,
+        role: 'admin',
+        isDemo: false,
+      };
+    }
+  }
+
   const tree = await prisma.familyTree.findUnique({
     where: { id: treeId },
     include: {

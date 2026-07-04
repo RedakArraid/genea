@@ -24,6 +24,11 @@ enum CollaboratorRole {
   EDITOR
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
 model Edge {
   id           String     @id @default(uuid())
   source       String
@@ -104,6 +109,7 @@ model User {
   password           String
   name               String?
   plan               Plan               @default(SOLO)
+  role               UserRole           @default(USER)
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   FamilyTree         FamilyTree[]

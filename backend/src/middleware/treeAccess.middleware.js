@@ -13,6 +13,14 @@ const canReadTree = async (req, res, next) => {
       return res.status(404).json({ message: 'Arbre généalogique non trouvé' });
     }
 
+    if (req.user?.id) {
+      const adminAccess = await resolveTreeAccess(req.user.id, treeId);
+      if (adminAccess.role === 'admin') {
+        req.treeAccess = adminAccess;
+        return next();
+      }
+    }
+
     if (tree.isDemo) {
       req.treeAccess = {
         canRead: true,
@@ -58,6 +66,11 @@ const canWriteTree = async (req, res, next) => {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Connectez-vous pour modifier la démo' });
       }
+      const adminAccess = await resolveTreeAccess(req.user.id, treeId);
+      if (adminAccess.role === 'admin') {
+        req.treeAccess = adminAccess;
+        return next();
+      }
       req.treeAccess = {
         canRead: true,
         canWrite: true,
@@ -90,6 +103,12 @@ const canWritePerson = async (req, res, next) => {
     if (person.FamilyTree?.isDemo) {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Connectez-vous pour modifier la démo' });
+      }
+      const adminAccess = await resolveTreeAccess(req.user.id, person.treeId);
+      if (adminAccess.role === 'admin') {
+        req.personData = person;
+        req.treeAccess = adminAccess;
+        return next();
       }
       req.personData = person;
       req.treeAccess = {

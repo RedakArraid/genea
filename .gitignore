@@ -46,3 +46,8 @@ prisma/dev.db
 .cache/
 .vercel
 .netlify
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/

@@ -25,11 +25,13 @@
     "test:backend": "bash scripts/run-backend-tests.sh",
     "test:frontend": "npx tsx scripts/test-layout.mjs",
     "test:integration": "bash scripts/test-integration.sh",
+    "test:admin-e2e": "bash scripts/test-admin-e2e.sh",
     "lint": "npm run lint:backend && npm run lint:frontend",
     "lint:backend": "cd backend && npm run lint",
     "lint:frontend": "cd frontend && npm run lint"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "concurrently": "^8.2.2"
   },
   "repository": {

@@ -6,6 +6,7 @@ import type { User } from "@/types"
 interface AuthState {
   isAuthenticated: boolean
   user: User | null
+  isAdmin: boolean
   isLoading: boolean
   checkAuth: () => Promise<void>
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>
@@ -18,6 +19,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   user: null,
+  isAdmin: false,
   isLoading: true,
 
   checkAuth: async () => {
@@ -25,22 +27,27 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const token = localStorage.getItem("token")
       if (!token) {
-        set({ isAuthenticated: false, user: null, isLoading: false })
+        set({ isAuthenticated: false, user: null, isAdmin: false, isLoading: false })
         return
       }
 
       const decoded = jwtDecode<{ exp: number }>(token)
       if (decoded.exp < Date.now() / 1000) {
         localStorage.removeItem("token")
-        set({ isAuthenticated: false, user: null, isLoading: false })
+        set({ isAuthenticated: false, user: null, isAdmin: false, isLoading: false })
         return
       }
 
       const { data } = await api.get("/auth/me")
-      set({ user: data.user, isAuthenticated: true, isLoading: false })
+      set({
+        user: data.user,
+        isAuthenticated: true,
+        isAdmin: data.user?.role === "ADMIN",
+        isLoading: false,
+      })
     } catch {
       localStorage.removeItem("token")
-      set({ isAuthenticated: false, user: null, isLoading: false })
+      set({ isAuthenticated: false, user: null, isAdmin: false, isLoading: false })
     }
   },
 
@@ -48,7 +55,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data } = await api.post("/auth/login", { email, password })
       localStorage.setItem("token", data.token)
-      set({ user: data.user, isAuthenticated: true })
+      set({ user: data.user, isAuthenticated: true, isAdmin: data.user?.role === "ADMIN" })
       return { success: true }
     } catch (error: unknown) {
       const message =
@@ -62,7 +69,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data } = await api.post("/auth/register", { name, email, password })
       localStorage.setItem("token", data.token)
-      set({ user: data.user, isAuthenticated: true })
+      set({ user: data.user, isAuthenticated: true, isAdmin: data.user?.role === "ADMIN" })
       return { success: true }
     } catch (error: unknown) {
       const message =
@@ -74,7 +81,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     localStorage.removeItem("token")
-    set({ user: null, isAuthenticated: false, isLoading: false })
+    set({ user: null, isAuthenticated: false, isAdmin: false, isLoading: false })
   },
 
   updateProfile: async (profileData) => {

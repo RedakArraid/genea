@@ -6,6 +6,7 @@ import {
   LogOut,
   Sparkles,
   Timer,
+  Shield,
   TreePine,
   User,
 } from "lucide-react"
@@ -41,7 +42,7 @@ export function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
   const { id: treeId } = useParams()
-  const { user, logout } = useAuthStore()
+  const { user, logout, isAdmin } = useAuthStore()
   const { trees, sharedTrees, currentTree, fetchTrees } = useFamilyTreeStore()
   const activeTreeId = treeId ?? trees[0]?.id ?? sharedTrees[0]?.id
   const allTrees = [...trees, ...sharedTrees]
@@ -120,6 +121,14 @@ export function AppShell() {
         </SidebarContent>
         <SidebarFooter className="border-t border-sidebar-border p-2">
           <SidebarMenu>
+            {isAdmin && (
+              <SidebarMenuItem>
+                <SidebarMenuButton render={<Link to="/admin" />}>
+                  <Shield />
+                  <span>Administration</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem>
               <SidebarMenuButton render={<Link to="/profile" />}>
                 <User />

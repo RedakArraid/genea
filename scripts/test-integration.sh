@@ -155,6 +155,54 @@ else
   PASS=$((PASS + 1))
 fi
 
+# Admin API — login admin
+admin_login=$(curl -s -X POST "$API/auth/login" \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@geneaia.app","password":"password123"}')
+ADMIN_TOKEN=$(echo "$admin_login" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
+if [ -z "$ADMIN_TOKEN" ]; then
+  echo "  ✗ Login admin@geneaia.app"
+  FAIL=$((FAIL + 1))
+else
+  echo "  ✓ Login admin@geneaia.app"
+  PASS=$((PASS + 1))
+fi
+
+ADMIN_AUTH="Authorization: Bearer $ADMIN_TOKEN"
+
+code=$(curl -s -o /tmp/genea_admin_stats.json -w '%{http_code}' "$API/admin/stats" -H "$ADMIN_AUTH")
+assert_status "GET /admin/stats admin" "200" "$code" "$(cat /tmp/genea_admin_stats.json 2>/dev/null)"
+assert_json "Stats admin usersTotal" "d.get('usersTotal',0) >= 1" "$(cat /tmp/genea_admin_stats.json 2>/dev/null)"
+
+code=$(curl -s -o /tmp/genea_admin_forbidden.json -w '%{http_code}' "$API/admin/stats" -H "$AUTH")
+assert_status "GET /admin/stats user non-admin" "403" "$code" "$(cat /tmp/genea_admin_forbidden.json 2>/dev/null)"
+
+# Admin lecture arbre (support read-only)
+if [ -n "$ADMIN_TOKEN" ] && [ -n "$TREE_ID" ]; then
+  admin_tree=$(curl -s "$API/family-trees/$TREE_ID" -H "$ADMIN_AUTH")
+  assert_json "Admin canRead arbre démo" "d.get('access',{}).get('canRead') is True" "$admin_tree"
+  assert_json "Admin canWrite=false" "d.get('access',{}).get('canWrite') is False" "$admin_tree"
+fi
+
+# Smoke endpoints admin (pages back-office)
+if [ -n "$ADMIN_TOKEN" ]; then
+  code=$(curl -s -o /tmp/genea_admin_users.json -w '%{http_code}' "$API/admin/users" -H "$ADMIN_AUTH")
+  assert_status "GET /admin/users" "200" "$code"
+  USER_ID=$(python3 -c "import json; print(json.load(open('/tmp/genea_admin_users.json'))['users'][0]['id'])" 2>/dev/null || echo "")
+  if [ -n "$USER_ID" ]; then
+    code=$(curl -s -o /dev/null -w '%{http_code}' "$API/admin/users/$USER_ID" -H "$ADMIN_AUTH")
+    assert_status "GET /admin/users/:id" "200" "$code"
+  fi
+  code=$(curl -s -o /dev/null -w '%{http_code}' "$API/admin/trees" -H "$ADMIN_AUTH")
+  assert_status "GET /admin/trees" "200" "$code"
+  code=$(curl -s -o /dev/null -w '%{http_code}' "$API/admin/storage" -H "$ADMIN_AUTH")
+  assert_status "GET /admin/storage" "200" "$code"
+  code=$(curl -s -o /dev/null -w '%{http_code}' "$API/admin/demo" -H "$ADMIN_AUTH")
+  assert_status "GET /admin/demo" "200" "$code"
+  code=$(curl -s -o /dev/null -w '%{http_code}' "$API/admin/plans" -H "$ADMIN_AUTH")
+  assert_status "GET /admin/plans" "200" "$code"
+fi
+
 echo
 echo "=== Résultat API : $PASS passés, $FAIL échoués ==="
 [ "$FAIL" -eq 0 ]

@@ -14,6 +14,15 @@ import FamilyTreePage from "@/pages/family-tree-page"
 import DemoPage from "@/pages/demo-page"
 import TimelinePage from "@/pages/timeline-page"
 import MatchesPage from "@/pages/matches-page"
+import { AdminRoute } from "@/components/admin/admin-route"
+import { AdminShell } from "@/components/layout/admin-shell"
+import AdminDashboardPage from "@/pages/admin/admin-dashboard-page"
+import AdminUsersPage from "@/pages/admin/admin-users-page"
+import AdminUserDetailPage from "@/pages/admin/admin-user-detail-page"
+import AdminTreesPage from "@/pages/admin/admin-trees-page"
+import AdminStoragePage from "@/pages/admin/admin-storage-page"
+import AdminDemoPage from "@/pages/admin/admin-demo-page"
+import AdminPlansPage from "@/pages/admin/admin-plans-page"
 import NotFoundPage from "@/pages/not-found-page"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -58,6 +67,18 @@ export default function App() {
             <Route path="/family-tree/:id" element={<FamilyTreePage />} />
             <Route path="/family-tree/:id/timeline" element={<TimelinePage />} />
             <Route path="/family-tree/:id/matches" element={<MatchesPage />} />
+          </Route>
+        </Route>
+
+        <Route element={<AdminRoute />}>
+          <Route element={<AdminShell />}>
+            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/users/:id" element={<AdminUserDetailPage />} />
+            <Route path="/admin/trees" element={<AdminTreesPage />} />
+            <Route path="/admin/storage" element={<AdminStoragePage />} />
+            <Route path="/admin/demo" element={<AdminDemoPage />} />
+            <Route path="/admin/plans" element={<AdminPlansPage />} />
           </Route>
         </Route>
 

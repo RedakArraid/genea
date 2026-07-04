@@ -7,5 +7,9 @@ if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
   echo "→ Prisma migrate deploy…"
   npx prisma migrate deploy
 fi
+if [ -n "${ADMIN_EMAIL:-}" ]; then
+  echo "→ Promotion admin (${ADMIN_EMAIL})…"
+  node scripts/promote-admin.js
+fi
 echo "→ Démarrage API…"
 exec node src/index.js
