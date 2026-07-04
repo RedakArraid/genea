@@ -9,6 +9,8 @@ const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 
+const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
+
 /**
  * Inscription d'un nouvel utilisateur
  */
@@ -47,7 +49,7 @@ exports.register = async (req, res, next) => {
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: jwtExpiresIn }
     );
     
     // Réponse sans le mot de passe
@@ -96,7 +98,7 @@ exports.login = async (req, res, next) => {
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: jwtExpiresIn }
     );
     
     // Réponse sans le mot de passe
@@ -126,7 +128,8 @@ exports.getMe = async (req, res, next) => {
         email: true,
         name: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        plan: true,
       }
     });
     

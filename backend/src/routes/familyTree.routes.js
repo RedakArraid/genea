@@ -5,23 +5,24 @@
 const express = require('express');
 const { body } = require('express-validator');
 const familyTreeController = require('../controllers/familyTree.controller');
-const { isAuth, isOwner } = require('../middleware/auth.middleware');
+const collaborationController = require('../controllers/collaboration.controller');
+const { isAuth, optionalAuth } = require('../middleware/auth.middleware');
+const { canReadTree } = require('../middleware/treeAccess.middleware');
 
 const router = express.Router();
 
-/**
- * @route GET /api/family-trees
- * @desc Récupérer tous les arbres généalogiques de l'utilisateur
- * @access Private
- */
 router.get('/', isAuth, familyTreeController.getAllTrees);
 
-/**
- * @route GET /api/family-trees/:id
- * @desc Récupérer un arbre généalogique par son ID
- * @access Private
- */
-router.get('/:id', isAuth, isOwner('FamilyTree'), familyTreeController.getTreeById);
+router.get('/demo', collaborationController.getDemoTree);
+router.post('/invites/:token/accept', isAuth, collaborationController.acceptInvite);
+router.get('/:id/access', isAuth, collaborationController.getTreeAccess);
+router.get('/:id/collaborators', isAuth, collaborationController.listCollaborators);
+router.post('/:id/collaborators', isAuth, collaborationController.inviteCollaborator);
+router.delete('/:id/collaborators/:userId', isAuth, collaborationController.removeCollaborator);
+router.delete('/:id/invites/:inviteId', isAuth, collaborationController.revokeInvite);
+router.put('/:id/visibility', isAuth, collaborationController.updateVisibility);
+
+router.get('/:id', optionalAuth, canReadTree, familyTreeController.getTreeById);
 
 /**
  * @route POST /api/family-trees
@@ -47,12 +48,6 @@ router.post(
 router.put(
   '/:id',
   isAuth,
-  isOwner('FamilyTree'),
-  [
-    body('name').optional().trim().notEmpty().withMessage('Le nom ne peut pas être vide'),
-    body('description').optional(),
-    body('isPublic').optional().isBoolean()
-  ],
   familyTreeController.updateTree
 );
 
@@ -61,6 +56,6 @@ router.put(
  * @desc Supprimer un arbre généalogique
  * @access Private
  */
-router.delete('/:id', isAuth, isOwner('FamilyTree'), familyTreeController.deleteTree);
+router.delete('/:id', isAuth, familyTreeController.deleteTree);
 
 module.exports = router;

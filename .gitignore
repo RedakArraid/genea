@@ -30,6 +30,13 @@ Thumbs.db
 # Fichiers de rapport de couverture de test
 coverage/
 
+# Secrets et déploiement sensibles
+secrets-github.txt
+**/secrets*.txt
+SERVER_DEPLOY.md
+SETUP_AUTO_DEPLOY.md
+DEPLOY_ALTERNATIVE.md
+
 # Fichiers locaux Prisma
 prisma/*.db
 prisma/dev.db

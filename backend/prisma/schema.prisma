@@ -7,6 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Plan {
+  SOLO
+  FAMILY
+  PATRIMONY
+}
+
+enum TreeVisibility {
+  PRIVATE
+  SHARED
+  PUBLIC
+}
+
+enum CollaboratorRole {
+  VIEWER
+  EDITOR
+}
+
 model Edge {
   id           String     @id @default(uuid())
   source       String
@@ -22,17 +39,21 @@ model Edge {
 }
 
 model FamilyTree {
-  id           String         @id @default(uuid())
-  name         String
-  description  String?
-  isPublic     Boolean        @default(false)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  ownerId      String
-  Edge         Edge[]
-  User         User           @relation(fields: [ownerId], references: [id])
-  NodePosition NodePosition[]
-  Person       Person[]
+  id               String             @id @default(uuid())
+  name             String
+  description      String?
+  isPublic         Boolean            @default(false)
+  visibility       TreeVisibility     @default(PRIVATE)
+  isDemo           Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  ownerId          String
+  Edge             Edge[]
+  User             User               @relation(fields: [ownerId], references: [id])
+  NodePosition     NodePosition[]
+  Person           Person[]
+  TreeCollaborator TreeCollaborator[]
+  TreeInvite       TreeInvite[]
 }
 
 model NodePosition {
@@ -57,6 +78,7 @@ model Person {
   biography                                  String?
   gender                                     String?
   photoUrl                                   String?
+  PersonDocument                             PersonDocument[]
   createdAt                                  DateTime       @default(now())
   updatedAt                                  DateTime       @updatedAt
   treeId                                     String
@@ -77,11 +99,61 @@ model Relationship {
 }
 
 model User {
-  id         String       @id @default(uuid())
-  email      String       @unique
-  password   String
-  name       String?
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  FamilyTree FamilyTree[]
+  id                 String             @id @default(uuid())
+  email              String             @unique
+  password           String
+  name               String?
+  plan               Plan               @default(SOLO)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  FamilyTree         FamilyTree[]
+  TreeCollaborator   TreeCollaborator[]
+  TreeInviteSent     TreeInvite[]       @relation("InvitedBy")
+}
+
+model TreeCollaborator {
+  id         String           @id @default(uuid())
+  treeId     String
+  userId     String
+  role       CollaboratorRole @default(VIEWER)
+  createdAt  DateTime         @default(now())
+  FamilyTree FamilyTree       @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  User       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([treeId, userId])
+}
+
+model TreeInvite {
+  id          String           @id @default(uuid())
+  treeId      String
+  email       String
+  role        CollaboratorRole @default(VIEWER)
+  token       String           @unique @default(uuid())
+  status      String           @default("pending")
+  invitedById String
+  createdAt   DateTime         @default(now())
+  FamilyTree  FamilyTree       @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  InvitedBy   User             @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([email])
+}
+
+model PersonDocument {
+  id           String   @id @default(uuid())
+  personId     String
+  treeId       String
+  title        String
+  fileName     String
+  fileUrl      String
+  fileKey      String
+  mimeType     String
+  sizeBytes    Int
+  category     String   @default("other")
+  uploadedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  Person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([personId])
+  @@index([treeId])
 }

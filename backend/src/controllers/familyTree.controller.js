@@ -4,66 +4,80 @@
 
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
+const { getPlanLimits } = require('../lib/plans');
+const { requireTreeRead } = require('../lib/treeAccess');
 
-/**
- * Récupérer tous les arbres généalogiques de l'utilisateur connecté
- */
 exports.getAllTrees = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    
-    const trees = await prisma.familyTree.findMany({
-      where: { ownerId: userId },
-      include: {
-        _count: {
-          select: { Person: true }
-        }
-      },
-      orderBy: { updatedAt: 'desc' }
-    });
-    
-    res.status(200).json({ trees });
+
+    const [owned, shared] = await Promise.all([
+      prisma.familyTree.findMany({
+        where: { ownerId: userId, isDemo: false },
+        include: { _count: { select: { Person: true } } },
+        orderBy: { updatedAt: 'desc' },
+      }),
+      prisma.familyTree.findMany({
+        where: {
+          isDemo: false,
+          TreeCollaborator: { some: { userId } },
+        },
+        include: {
+          _count: { select: { Person: true } },
+          TreeCollaborator: { where: { userId } },
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
+    ]);
+
+    res.status(200).json({ trees: owned, sharedTrees: shared });
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * Récupérer un arbre généalogique spécifique avec toutes ses données
- */
 exports.getTreeById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    
+
     const tree = await prisma.familyTree.findUnique({
       where: { id },
       include: {
         Person: true,
         NodePosition: true,
-        Edge: true
-      }
+        Edge: true,
+      },
     });
-    
+
     if (!tree) {
       return res.status(404).json({ message: 'Arbre généalogique non trouvé' });
     }
-    
-    // Récupérer les relations pour les personnes de cet arbre
-    const personIds = tree.Person.map(person => person.id);
+
+    const personIds = tree.Person.map((person) => person.id);
     const relationships = await prisma.relationship.findMany({
       where: {
         OR: [
           { sourceId: { in: personIds } },
-          { targetId: { in: personIds } }
-        ]
-      }
+          { targetId: { in: personIds } },
+        ],
+      },
     });
-    
-    // Ajouter les relations à l'objet arbre
+
     tree.Relationship = relationships;
-    
-    res.status(200).json({ tree });
+
+    const access = req.treeAccess || (req.user?.id
+      ? await requireTreeRead(req.user.id, id)
+      : { canRead: false, canWrite: false, canEditPerson: false, role: 'none', isDemo: false });
+
+    if (!access.canRead) {
+      return res.status(403).json({ message: 'Accès refusé à cet arbre' });
+    }
+
+    res.status(200).json({ tree, access });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     next(error);
   }
 };
@@ -81,17 +95,34 @@ exports.createTree = async (req, res, next) => {
     
     const { name, description, isPublic, rootPerson } = req.body;
     const userId = req.user.id;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const limits = getPlanLimits(user.plan);
+    const treeCount = await prisma.familyTree.count({
+      where: { ownerId: userId, isDemo: false },
+    });
+    if (treeCount >= limits.maxTrees) {
+      return res.status(403).json({
+        message: `Limite de ${limits.maxTrees} arbre(s) atteinte pour le forfait ${limits.name}`,
+      });
+    }
+
+    const visibility = isPublic ? 'PUBLIC' : 'PRIVATE';
+    if (visibility === 'PUBLIC' && !limits.canPublicMatching) {
+      return res.status(403).json({
+        message: 'Les arbres publics nécessitent le forfait Famille ou Patrimoine',
+      });
+    }
     
-    // Utiliser une transaction pour créer l'arbre et la personne racine ensemble
     const result = await prisma.$transaction(async (prisma) => {
-      // Créer l'arbre généalogique
       const newTree = await prisma.familyTree.create({
         data: {
           name,
           description,
           isPublic: isPublic || false,
-          ownerId: userId
-        }
+          visibility,
+          ownerId: userId,
+        },
       });
       
       // Créer une personne racine (avec données personnalisées ou par défaut)
@@ -145,15 +176,44 @@ exports.updateTree = async (req, res, next) => {
     }
     
     const { id } = req.params;
-    const { name, description, isPublic } = req.body;
-    
+    const tree = await prisma.familyTree.findUnique({ where: { id } });
+    if (!tree || tree.isDemo) {
+      return res.status(403).json({ message: 'Cet arbre ne peut pas être modifié' });
+    }
+    if (tree.ownerId !== req.user.id) {
+      return res.status(403).json({ message: 'Seul le propriétaire peut modifier l\'arbre' });
+    }
+
+    const { name, description, isPublic, visibility } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const limits = getPlanLimits(user.plan);
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+
+    if (visibility !== undefined) {
+      if (visibility === 'PUBLIC' && !limits.canPublicMatching) {
+        return res.status(403).json({
+          message: 'Les arbres publics nécessitent le forfait Famille ou Patrimoine',
+        });
+      }
+      updateData.visibility = visibility;
+      updateData.isPublic = visibility === 'PUBLIC';
+    } else if (isPublic !== undefined) {
+      if (isPublic && !limits.canPublicMatching) {
+        return res.status(403).json({
+          message: 'Les arbres publics nécessitent le forfait Famille ou Patrimoine',
+        });
+      }
+      updateData.isPublic = isPublic;
+      updateData.visibility = isPublic ? 'PUBLIC' : 'PRIVATE';
+    }
+
     const updatedTree = await prisma.familyTree.update({
       where: { id },
-      data: {
-        name,
-        description,
-        isPublic: isPublic !== undefined ? isPublic : undefined
-      }
+      data: updateData,
     });
     
     res.status(200).json({ 
@@ -174,6 +234,13 @@ exports.updateTree = async (req, res, next) => {
 exports.deleteTree = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const tree = await prisma.familyTree.findUnique({ where: { id } });
+    if (!tree || tree.isDemo) {
+      return res.status(403).json({ message: 'Cet arbre ne peut pas être supprimé' });
+    }
+    if (tree.ownerId !== req.user.id) {
+      return res.status(403).json({ message: 'Seul le propriétaire peut supprimer l\'arbre' });
+    }
     
     await prisma.familyTree.delete({
       where: { id }

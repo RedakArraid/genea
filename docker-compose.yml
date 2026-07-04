@@ -32,20 +32,53 @@ services:
       - DATABASE_URL=postgresql://geneaia_user:geneaia_password@postgres:5432/geneaia_local?schema=public
       - JWT_SECRET=dev-secret-key-for-local-development-only
       - CORS_ORIGIN=http://localhost:5173
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=geneaia_minio
+      - S3_SECRET_KEY=geneaia_minio_password
+      - S3_BUCKET=geneaia
+      - S3_REGION=us-east-1
+      - S3_PUBLIC_URL=http://localhost:9000/geneaia
+      - API_PUBLIC_URL=http://localhost:3001
+      - STORAGE_PHOTO_PREFIX=photos
+      - STORAGE_DOCUMENT_PREFIX=documents
+      - STORAGE_PHOTO_MAX_MB=5
+      - STORAGE_DOCUMENT_MAX_MB=20
     volumes:
       - ./backend:/app
       - /app/node_modules
-      - uploads_data:/app/uploads
     ports:
       - "3001:3001"
+    command: ["sh", "docker-entrypoint.sh"]
     depends_on:
       postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: unless-stopped
+
+  # MinIO — stockage objet (photos, fichiers)
+  minio:
+    image: minio/minio:latest
+    container_name: geneaia-minio-local-v2
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: geneaia_minio
+      MINIO_ROOT_PASSWORD: geneaia_minio_password
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   # Frontend React
@@ -68,7 +101,7 @@ services:
 volumes:
   postgres_data:
     driver: local
-  uploads_data:
+  minio_data:
     driver: local
 
 networks:

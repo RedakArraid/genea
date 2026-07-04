@@ -21,9 +21,10 @@
     "db:seed": "cd backend && npx prisma db seed",
     "db:reset": "cd backend && npx prisma migrate reset --force",
     "db:init": "npm run db:reset && npm run db:seed",
-    "test": "npm run test:backend && npm run test:frontend",
-    "test:backend": "cd backend && npm test",
-    "test:frontend": "cd frontend && npm test",
+    "test": "npm run test:backend && npm run test:frontend && npm run test:integration",
+    "test:backend": "bash scripts/run-backend-tests.sh",
+    "test:frontend": "npx tsx scripts/test-layout.mjs",
+    "test:integration": "bash scripts/test-integration.sh",
     "lint": "npm run lint:backend && npm run lint:frontend",
     "lint:backend": "cd backend && npm run lint",
     "lint:frontend": "cd frontend && npm run lint"

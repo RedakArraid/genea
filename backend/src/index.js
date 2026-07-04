@@ -19,6 +19,10 @@ const personRoutes = require('./routes/person.routes');
 const relationshipRoutes = require('./routes/relationship.routes');
 const nodePositionRoutes = require('./routes/nodePosition.routes');
 const edgeRoutes = require('./routes/edge.routes');
+const planRoutes = require('./routes/plan.routes');
+const uploadRoutes = require('./routes/upload.routes');
+const documentRoutes = require('./routes/document.routes');
+const { initStorage } = require('./lib/storage');
 
 // Configuration des variables d'environnement
 dotenv.config();
@@ -30,7 +34,21 @@ const PORT = process.env.PORT || 3001;
 // Prisma est maintenant importé depuis le module central
 
 // Configuration des middlewares
-app.use(cors());
+const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || corsOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+      return;
+    }
+    callback(new Error('Non autorisé par CORS'));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('dev'));
@@ -52,9 +70,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/family-trees', familyTreeRoutes);
 app.use('/api/persons', personRoutes);
+app.use('/api/persons/:personId/documents', documentRoutes);
 app.use('/api/relationships', relationshipRoutes);
 app.use('/api/node-positions', nodePositionRoutes);
 app.use('/api/edges', edgeRoutes);
+app.use('/api/plans', planRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 // Middleware de gestion des erreurs
 app.use((err, req, res, next) => {
@@ -71,10 +92,14 @@ app.use((err, req, res, next) => {
 });
 
 // Démarrage du serveur
-app.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
-  console.log(`URL: http://localhost:${PORT}`);
-});
+initStorage()
+  .catch((err) => console.error('Init MinIO:', err.message))
+  .finally(() => {
+    app.listen(PORT, () => {
+      console.log(`Serveur démarré sur le port ${PORT}`);
+      console.log(`URL: http://localhost:${PORT}`);
+    });
+  });
 
 // Gestion propre de la fermeture du processus
 process.on('SIGINT', async () => {

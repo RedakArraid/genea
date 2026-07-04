@@ -1,102 +1,120 @@
-/**
- * Middleware de validation pour les personnes
- * 
- * Vérifie que l'utilisateur a les droits sur les personnes qu'il manipule
- */
-
 const prisma = require('../lib/prisma');
+const { requireTreeRead, requireTreeWrite, resolveTreeAccess } = require('../lib/treeAccess');
 
-/**
- * Middleware qui vérifie si l'utilisateur peut accéder à une personne
- */
 const canAccessPerson = async (req, res, next) => {
   try {
-    const userId = req.user.id;
     const personId = req.params.id;
-    
     if (!personId) {
       return res.status(400).json({ message: 'ID de personne manquant' });
     }
-    
-    // Récupérer la personne avec son arbre
+
     const person = await prisma.person.findUnique({
       where: { id: personId },
-      include: {
-        FamilyTree: {
-          select: { ownerId: true, isPublic: true }
-        }
-      }
+      include: { FamilyTree: true },
     });
-    
+
     if (!person) {
       return res.status(404).json({ message: 'Personne non trouvée' });
     }
-    
-    // Vérifier les droits
-    if (person.FamilyTree.ownerId !== userId && !person.FamilyTree.isPublic) {
-      return res.status(403).json({ 
-        message: 'Vous n\'avez pas les droits pour accéder à cette personne' 
-      });
+
+    const access = await resolveTreeAccess(req.user?.id, person.treeId);
+    if (!access.canRead) {
+      return res.status(403).json({ message: 'Accès refusé' });
     }
-    
-    // Ajouter les infos de la personne à la requête pour éviter une nouvelle requête
     req.personData = person;
-    
+    req.treeAccess = access;
     next();
   } catch (error) {
-    next(error);
+    res.status(error.statusCode || 403).json({ message: error.message });
   }
 };
 
-/**
- * Middleware qui vérifie si l'utilisateur peut créer des relations
- */
+const canWritePerson = async (req, res, next) => {
+  try {
+    const personId = req.params.id;
+    const person = await prisma.person.findUnique({
+      where: { id: personId },
+      include: { FamilyTree: true },
+    });
+
+    if (!person) {
+      return res.status(404).json({ message: 'Personne non trouvée' });
+    }
+
+    await requireTreeWrite(req.user.id, person.treeId);
+    req.personData = person;
+    next();
+  } catch (error) {
+    res.status(error.statusCode || 403).json({ message: error.message });
+  }
+};
+
+const canDeleteRelationship = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const relationship = await prisma.relationship.findUnique({ where: { id } });
+    if (!relationship) {
+      return res.status(404).json({ message: 'Relation non trouvée' });
+    }
+
+    const source = await prisma.person.findUnique({ where: { id: relationship.sourceId } });
+    if (!source) {
+      return res.status(404).json({ message: 'Personne non trouvée' });
+    }
+
+    await requireTreeWrite(req.user.id, source.treeId);
+    next();
+  } catch (error) {
+    res.status(error.statusCode || 403).json({ message: error.message });
+  }
+};
+
+const canReadPersonRelationships = async (req, res, next) => {
+  try {
+    const { personId } = req.params;
+    const person = await prisma.person.findUnique({ where: { id: personId } });
+    if (!person) {
+      return res.status(404).json({ message: 'Personne non trouvée' });
+    }
+    await requireTreeRead(req.user?.id, person.treeId);
+    next();
+  } catch (error) {
+    res.status(error.statusCode || 403).json({ message: error.message });
+  }
+};
+
 const canCreateRelationship = async (req, res, next) => {
   try {
-    const userId = req.user.id;
     const { sourceId, targetId } = req.body;
-    
     if (!sourceId || !targetId) {
       return res.status(400).json({ message: 'IDs des personnes source et cible requis' });
     }
-    
-    // Récupérer les deux personnes avec leurs arbres
+
     const [source, target] = await Promise.all([
-      prisma.person.findUnique({
-        where: { id: sourceId },
-        include: { FamilyTree: { select: { ownerId: true, isPublic: true } } }
-      }),
-      prisma.person.findUnique({
-        where: { id: targetId },
-        include: { FamilyTree: { select: { ownerId: true, isPublic: true } } }
-      })
+      prisma.person.findUnique({ where: { id: sourceId } }),
+      prisma.person.findUnique({ where: { id: targetId } }),
     ]);
-    
+
     if (!source || !target) {
       return res.status(404).json({ message: 'Une ou plusieurs personnes non trouvées' });
     }
-    
-    // Vérifier que les deux personnes sont dans le même arbre
+
     if (source.treeId !== target.treeId) {
-      return res.status(400).json({ 
-        message: 'Les deux personnes doivent appartenir au même arbre généalogique' 
+      return res.status(400).json({
+        message: 'Les deux personnes doivent appartenir au même arbre généalogique',
       });
     }
-    
-    // Vérifier les droits sur l'arbre
-    if (source.FamilyTree.ownerId !== userId && !source.FamilyTree.isPublic) {
-      return res.status(403).json({ 
-        message: 'Vous n\'avez pas les droits pour créer des relations dans cet arbre' 
-      });
-    }
-    
+
+    await requireTreeWrite(req.user.id, source.treeId);
     next();
   } catch (error) {
-    next(error);
+    res.status(error.statusCode || 403).json({ message: error.message });
   }
 };
 
 module.exports = {
   canAccessPerson,
-  canCreateRelationship
+  canCreateRelationship,
+  canDeleteRelationship,
+  canReadPersonRelationships,
 };

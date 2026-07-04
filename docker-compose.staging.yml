@@ -17,6 +17,25 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    container_name: geneaia-minio-staging
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-geneaia_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-geneaia_minio_password}
+    volumes:
+      - minio_staging_data:/data
+    ports:
+      - "9010:9000"
+      - "9011:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     image: ghcr.io/redakarraid/geneaia-backend:staging
     container_name: geneaia-backend-staging
@@ -26,8 +45,22 @@ services:
       - JWT_SECRET=${STAGING_JWT_SECRET:-staging_jwt_secret_xyz789abc}
       - CORS_ORIGIN=http://168.231.86.179:3010
       - PORT=3001
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_ROOT_USER:-geneaia_minio}
+      - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-geneaia_minio_password}
+      - S3_BUCKET=geneaia
+      - S3_REGION=us-east-1
+      - S3_PUBLIC_URL=http://168.231.86.179:9010/geneaia
+      - API_PUBLIC_URL=http://168.231.86.179:3011
+      - STORAGE_USE_PROXY=true
+      - STORAGE_PHOTO_PREFIX=photos
+      - STORAGE_DOCUMENT_PREFIX=documents
+      - STORAGE_PHOTO_MAX_MB=5
+      - STORAGE_DOCUMENT_MAX_MB=20
     depends_on:
       postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     restart: unless-stopped
     ports:
@@ -49,6 +82,8 @@ services:
 
 volumes:
   postgres_staging_data:
+    driver: local
+  minio_staging_data:
     driver: local
 
 networks:

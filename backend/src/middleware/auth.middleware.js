@@ -8,6 +8,24 @@ const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 
 /**
+ * Authentification optionnelle — enrichit req.user si un token valide est présent.
+ */
+const optionalAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return next();
+  }
+  const token = authHeader.split(' ')[1];
+  if (!token) return next();
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    // Token invalide ou expiré : on continue en anonyme
+  }
+  next();
+};
+
+/**
  * Middleware qui vérifie si l'utilisateur est authentifié
  */
 const isAuth = (req, res, next) => {
@@ -92,5 +110,6 @@ const isOwner = (modelName) => {
 
 module.exports = {
   isAuth,
-  isOwner
+  isOwner,
+  optionalAuth,
 };

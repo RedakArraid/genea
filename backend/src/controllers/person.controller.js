@@ -4,6 +4,8 @@
 
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
+const { getPlanLimits } = require('../lib/plans');
+const storage = require('../lib/storage');
 
 /**
  * Récupérer toutes les personnes d'un arbre généalogique
@@ -49,13 +51,27 @@ exports.getPersonById = async (req, res, next) => {
  */
 exports.createPerson = async (req, res, next) => {
   try {
-    // Validation des données
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { treeId } = req.params;
+    const tree = await prisma.familyTree.findUnique({ where: { id: treeId } });
+    if (!tree) {
+      return res.status(404).json({ message: 'Arbre généalogique non trouvé' });
+    }
+
+    if (!tree.isDemo) {
+      const owner = await prisma.user.findUnique({ where: { id: tree.ownerId } });
+      const limits = getPlanLimits(owner.plan);
+      const personCount = await prisma.person.count({ where: { treeId } });
+      if (personCount >= limits.maxPersonsPerTree) {
+        return res.status(403).json({
+          message: `Limite de ${limits.maxPersonsPerTree} personnes atteinte pour le forfait ${limits.name}`,
+        });
+      }
+    }
     const {
       firstName,
       lastName,
@@ -67,17 +83,13 @@ exports.createPerson = async (req, res, next) => {
       gender,
       photoUrl
     } = req.body;
-    
-    // Vérification que l'arbre existe
-    const tree = await prisma.familyTree.findUnique({
-      where: { id: treeId }
-    });
-    
-    if (!tree) {
-      return res.status(404).json({ message: 'Arbre généalogique non trouvé' });
+
+    if (photoUrl && photoUrl.startsWith('data:') && storage.isReady()) {
+      return res.status(400).json({
+        message: 'Utilisez POST /api/uploads/photo pour envoyer une image (MinIO activé)',
+      });
     }
-    
-    // Création de la personne
+
     const newPerson = await prisma.person.create({
       data: {
         firstName,
@@ -107,19 +119,8 @@ exports.createPerson = async (req, res, next) => {
  */
 exports.updatePerson = async (req, res, next) => {
   try {
-    console.log('Requête de mise à jour reçue pour la personne ID:', req.params.id);
-    console.log('Contenu de req.body:', {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      // Ne pas logger toute la photoUrl pour des raisons de performances, juste sa taille
-      photoUrlSize: req.body.photoUrl ? req.body.photoUrl.length : 0,
-      photoUrlStart: req.body.photoUrl ? req.body.photoUrl.substring(0, 30) + '...' : null
-    });
-    
-    // Validation des données
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.error('Erreurs de validation:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
     
@@ -148,8 +149,18 @@ exports.updatePerson = async (req, res, next) => {
     if (biography !== undefined) updateData.biography = biography;
     if (gender !== undefined) updateData.gender = gender;
     if (photoUrl !== undefined) {
-      console.log('Photo URL fournie, longueur:', photoUrl.length);
-      updateData.photoUrl = photoUrl;
+      if (photoUrl && photoUrl.startsWith('data:') && storage.isReady()) {
+        return res.status(400).json({
+          message: 'Utilisez POST /api/uploads/photo pour envoyer une image (MinIO activé)',
+        });
+      }
+      if (photoUrl && storage.isReady()) {
+        const existing = await prisma.person.findUnique({ where: { id }, select: { photoUrl: true } });
+        if (existing?.photoUrl && existing.photoUrl !== photoUrl) {
+          await storage.deleteByUrl(existing.photoUrl);
+        }
+      }
+      updateData.photoUrl = photoUrl || null;
     }
     
     try {
@@ -158,20 +169,17 @@ exports.updatePerson = async (req, res, next) => {
         data: updateData
       });
       
-      console.log('Personne mise à jour avec succès, ID:', updatedPerson.id);
       res.status(200).json({
         message: 'Personne mise à jour avec succès',
         person: updatedPerson
       });
     } catch (dbError) {
-      console.error('Erreur Prisma lors de la mise à jour:', dbError);
       if (dbError.code === 'P2025') {
         return res.status(404).json({ message: 'Personne non trouvée' });
       }
-      throw dbError; // Remonter l'erreur pour le catch global
+      throw dbError;
     }
   } catch (error) {
-    console.error('Erreur générale updatePerson:', error);
     next(error);
   }
 };
@@ -182,7 +190,18 @@ exports.updatePerson = async (req, res, next) => {
 exports.deletePerson = async (req, res, next) => {
   try {
     const { id } = req.params;
-    
+
+    const person = await prisma.person.findUnique({
+      where: { id },
+      select: { photoUrl: true, PersonDocument: { select: { fileKey: true, fileUrl: true } } },
+    });
+    if (person?.photoUrl) {
+      await storage.deleteByUrl(person.photoUrl);
+    }
+    if (person?.PersonDocument?.length) {
+      await Promise.all(person.PersonDocument.map((d) => storage.deleteByKey(d.fileKey)));
+    }
+
     await prisma.person.delete({
       where: { id }
     });
@@ -190,6 +209,47 @@ exports.deletePerson = async (req, res, next) => {
     res.status(200).json({
       message: 'Personne supprimée avec succès'
     });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'Personne non trouvée' });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Mettre à jour uniquement la photo (autorisé en démo — pas une fiche texte)
+ */
+exports.updatePersonPhoto = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { photoUrl } = req.body;
+
+    if (photoUrl === undefined) {
+      return res.status(400).json({ message: 'photoUrl requis' });
+    }
+
+    if (photoUrl && photoUrl.startsWith('data:') && storage.isReady()) {
+      return res.status(400).json({
+        message: 'Utilisez POST /api/uploads/photo pour envoyer une image',
+      });
+    }
+
+    const existing = await prisma.person.findUnique({ where: { id }, select: { photoUrl: true } });
+    if (!existing) {
+      return res.status(404).json({ message: 'Personne non trouvée' });
+    }
+
+    if (photoUrl && storage.isReady() && existing.photoUrl && existing.photoUrl !== photoUrl) {
+      await storage.deleteByUrl(existing.photoUrl);
+    }
+
+    const person = await prisma.person.update({
+      where: { id },
+      data: { photoUrl: photoUrl || null },
+    });
+
+    res.status(200).json({ message: 'Photo mise à jour', person });
   } catch (error) {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'Personne non trouvée' });

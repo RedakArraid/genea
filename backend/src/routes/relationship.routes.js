@@ -6,22 +6,16 @@ const express = require('express');
 const { body } = require('express-validator');
 const relationshipController = require('../controllers/relationship.controller');
 const { isAuth } = require('../middleware/auth.middleware');
-const { canCreateRelationship } = require('../middleware/person.middleware');
+const {
+  canCreateRelationship,
+  canDeleteRelationship,
+  canReadPersonRelationships,
+} = require('../middleware/person.middleware');
 
 const router = express.Router();
 
-/**
- * @route GET /api/relationships/person/:personId
- * @desc Récupérer toutes les relations d'une personne
- * @access Private
- */
-router.get('/person/:personId', isAuth, relationshipController.getPersonRelationships);
+router.get('/person/:personId', isAuth, canReadPersonRelationships, relationshipController.getPersonRelationships);
 
-/**
- * @route POST /api/relationships
- * @desc Créer une nouvelle relation entre deux personnes
- * @access Private
- */
 router.post(
   '/',
   isAuth,
@@ -34,11 +28,6 @@ router.post(
   relationshipController.createRelationship
 );
 
-/**
- * @route DELETE /api/relationships/:id
- * @desc Supprimer une relation
- * @access Private
- */
-router.delete('/:id', isAuth, relationshipController.deleteRelationship);
+router.delete('/:id', isAuth, canDeleteRelationship, relationshipController.deleteRelationship);
 
 module.exports = router;
