@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FRONTEND_URL="${FRONTEND_URL:-http://localhost:5173}"
 API_URL="${API_URL:-http://localhost:3001/api}"
+SPECS="${1:-e2e/admin.spec.ts}"
 
 cd "$ROOT"
 
@@ -25,13 +26,11 @@ if [ ! -d node_modules/@playwright/test ]; then
   npm install --no-save @playwright/test@1.49.1
 fi
 
-if [ ! -d "$HOME/.cache/ms-playwright/chromium-"* ] 2>/dev/null && [ ! -d "$ROOT/node_modules/playwright-core/.local-browsers" ]; then
-  echo "→ Installation navigateur Chromium…"
-  npx playwright install chromium
-fi
+echo "→ Installation navigateur Chromium…"
+npx playwright install chromium
 
-echo "=== GeneaIA — Tests E2E admin ==="
+echo "=== GeneaIA — Tests E2E ($SPECS) ==="
 echo "Frontend: $FRONTEND_URL"
 echo
 
-npx playwright test e2e/admin.spec.ts
+npx playwright test "$SPECS"

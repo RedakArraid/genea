@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 import { TreePine } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
@@ -10,6 +10,11 @@ import { Label } from "@/components/ui/label"
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirect = searchParams.get("redirect") || "/dashboard"
+  const loginHref = redirect !== "/dashboard"
+    ? `/login?redirect=${encodeURIComponent(redirect)}`
+    : "/login"
   const { register } = useAuthStore()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -32,7 +37,7 @@ export default function RegisterPage() {
     setLoading(false)
     if (result.success) {
       toast.success("Compte créé avec succès")
-      navigate("/dashboard")
+      navigate(redirect.startsWith("/") ? redirect : "/dashboard")
     } else {
       toast.error(result.message)
     }
@@ -72,7 +77,7 @@ export default function RegisterPage() {
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Déjà inscrit ?{" "}
-            <Link to="/login" className="text-primary underline-offset-4 hover:underline">
+            <Link to={loginHref} className="text-primary underline-offset-4 hover:underline">
               Se connecter
             </Link>
           </p>

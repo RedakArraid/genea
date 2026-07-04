@@ -26,6 +26,7 @@
     "test:frontend": "npx tsx scripts/test-layout.mjs",
     "test:integration": "bash scripts/test-integration.sh",
     "test:admin-e2e": "bash scripts/test-admin-e2e.sh",
+    "test:collab-e2e": "bash scripts/test-admin-e2e.sh e2e/collaboration.spec.ts",
     "lint": "npm run lint:backend && npm run lint:frontend",
     "lint:backend": "cd backend && npm run lint",
     "lint:frontend": "cd frontend && npm run lint"

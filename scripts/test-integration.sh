@@ -203,6 +203,99 @@ if [ -n "$ADMIN_TOKEN" ]; then
   assert_status "GET /admin/plans" "200" "$code"
 fi
 
+# Collaboration — partage et invitations
+if [ -n "$TOKEN" ]; then
+  demo_login=$(curl -s -X POST "$API/auth/login" \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"demo@geneaia.app","password":"password123"}')
+  DEMO_TOKEN=$(echo "$demo_login" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
+  DEMO_AUTH="Authorization: Bearer $DEMO_TOKEN"
+  DEMO_USER_ID=$(echo "$demo_login" | python3 -c "import sys,json; print(json.load(sys.stdin).get('user',{}).get('id',''))" 2>/dev/null || echo "")
+
+  trees_json=$(curl -s "$API/family-trees" -H "$AUTH")
+  PERSONAL_TREE_ID=$(echo "$trees_json" | python3 -c "import sys,json; trees=json.load(sys.stdin).get('trees',[]); print(trees[0]['id'] if trees else '')" 2>/dev/null || echo "")
+
+  if [ -n "$PERSONAL_TREE_ID" ] && [ -n "$DEMO_TOKEN" ]; then
+    code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API/family-trees/$PERSONAL_TREE_ID/visibility" \
+      -H "$AUTH" -H 'Content-Type: application/json' -d '{"visibility":"SHARED"}')
+    assert_status "PUT visibilité SHARED" "200" "$code"
+
+    collab_add=$(curl -s -w '\n%{http_code}' -X POST "$API/family-trees/$PERSONAL_TREE_ID/collaborators" \
+      -H "$AUTH" -H 'Content-Type: application/json' \
+      -d '{"email":"demo@geneaia.app","role":"VIEWER"}')
+    collab_code=$(echo "$collab_add" | tail -1)
+    assert_status "POST collaborateur existant (VIEWER)" "201" "$collab_code"
+
+    demo_tree=$(curl -s "$API/family-trees/$PERSONAL_TREE_ID" -H "$DEMO_AUTH")
+    assert_json "Collaborateur VIEWER canRead" "d.get('access',{}).get('canRead') is True" "$demo_tree"
+    assert_json "Collaborateur VIEWER canWrite=false" "d.get('access',{}).get('canWrite') is False" "$demo_tree"
+
+    code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API/family-trees/$PERSONAL_TREE_ID/collaborators" \
+      -H "$AUTH" -H 'Content-Type: application/json' \
+      -d '{"email":"demo@geneaia.app","role":"EDITOR"}')
+    assert_status "POST upgrade collaborateur EDITOR" "201" "$code"
+
+    demo_tree=$(curl -s "$API/family-trees/$PERSONAL_TREE_ID" -H "$DEMO_AUTH")
+    assert_json "Collaborateur EDITOR canWrite" "d.get('access',{}).get('canWrite') is True" "$demo_tree"
+
+    COLLAB_EMAIL="collab-test-$(date +%s)@example.com"
+    pending_json=$(curl -s -X POST "$API/family-trees/$PERSONAL_TREE_ID/collaborators" \
+      -H "$AUTH" -H 'Content-Type: application/json' \
+      -d "{\"email\":\"$COLLAB_EMAIL\",\"role\":\"VIEWER\"}")
+    INVITE_TOKEN=$(echo "$pending_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('invite',{}).get('token',''))" 2>/dev/null || echo "")
+    INVITE_ID=$(echo "$pending_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('invite',{}).get('id',''))" 2>/dev/null || echo "")
+
+    if [ -n "$INVITE_TOKEN" ]; then
+      reg_json=$(curl -s -X POST "$API/auth/register" \
+        -H 'Content-Type: application/json' \
+        -d "{\"name\":\"Collab Test\",\"email\":\"$COLLAB_EMAIL\",\"password\":\"password123\"}")
+      COLLAB_TOKEN=$(echo "$reg_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
+
+      if [ -z "$COLLAB_TOKEN" ]; then
+        login_c=$(curl -s -X POST "$API/auth/login" \
+          -H 'Content-Type: application/json' \
+          -d "{\"email\":\"$COLLAB_EMAIL\",\"password\":\"password123\"}")
+        COLLAB_TOKEN=$(echo "$login_c" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
+      fi
+
+      if [ -n "$COLLAB_TOKEN" ]; then
+        code=$(curl -s -o /tmp/genea_accept_invite.json -w '%{http_code}' -X POST \
+          "$API/family-trees/invites/$INVITE_TOKEN/accept" \
+          -H "Authorization: Bearer $COLLAB_TOKEN")
+        assert_status "POST accept invite" "200" "$code" "$(cat /tmp/genea_accept_invite.json 2>/dev/null)"
+
+        collab_trees=$(curl -s "$API/family-trees" -H "Authorization: Bearer $COLLAB_TOKEN")
+        assert_json "Arbre dans sharedTrees après accept" \
+          "any(t.get('id')=='$PERSONAL_TREE_ID' for t in d.get('sharedTrees',[]))" "$collab_trees"
+      else
+        echo "  ✗ Token collaborateur invite"
+        FAIL=$((FAIL + 1))
+      fi
+
+      # Nouvelle invite pour test révocation
+      pending2=$(curl -s -X POST "$API/family-trees/$PERSONAL_TREE_ID/collaborators" \
+        -H "$AUTH" -H 'Content-Type: application/json' \
+        -d '{"email":"revoke-test@example.com","role":"VIEWER"}')
+      REVOKE_ID=$(echo "$pending2" | python3 -c "import sys,json; print(json.load(sys.stdin).get('invite',{}).get('id',''))" 2>/dev/null || echo "")
+      if [ -n "$REVOKE_ID" ]; then
+        code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE \
+          "$API/family-trees/$PERSONAL_TREE_ID/invites/$REVOKE_ID" -H "$AUTH")
+        assert_status "DELETE revoke invite" "200" "$code"
+      fi
+    else
+      echo "  ✗ Token invitation pending"
+      FAIL=$((FAIL + 1))
+    fi
+
+    if [ -n "$DEMO_USER_ID" ]; then
+      curl -s -o /dev/null -X DELETE "$API/family-trees/$PERSONAL_TREE_ID/collaborators/$DEMO_USER_ID" -H "$AUTH"
+    fi
+  else
+    echo "  ✗ Arbre personnel ou compte demo@geneaia.app introuvable"
+    FAIL=$((FAIL + 1))
+  fi
+fi
+
 echo
 echo "=== Résultat API : $PASS passés, $FAIL échoués ==="
 [ "$FAIL" -eq 0 ]

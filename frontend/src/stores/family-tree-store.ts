@@ -12,7 +12,18 @@ interface FamilyTreeState {
   fetchTrees: () => Promise<void>
   fetchTreeById: (treeId: string) => Promise<void>
   fetchCollaborators: (treeId: string) => Promise<{ collaborators: TreeCollaborator[]; invites: TreeInvite[] } | null>
-  inviteCollaborator: (treeId: string, email: string, role: "VIEWER" | "EDITOR") => Promise<{ success: boolean; message?: string }>
+  inviteCollaborator: (
+    treeId: string,
+    email: string,
+    role: "VIEWER" | "EDITOR"
+  ) => Promise<{
+    success: boolean
+    message?: string
+    invite?: { token: string; email: string; role: string }
+    collaborator?: { userId: string; email: string; role: string }
+  }>
+  revokeInvite: (treeId: string, inviteId: string) => Promise<{ success: boolean; message?: string }>
+  acceptInvite: (token: string) => Promise<{ success: boolean; message?: string; treeId?: string }>
   removeCollaborator: (treeId: string, userId: string) => Promise<{ success: boolean; message?: string }>
   updateVisibility: (treeId: string, visibility: TreeVisibility) => Promise<{ success: boolean; message?: string }>
   createTree: (data: { name: string; description?: string; isPublic?: boolean }) => Promise<{ success: boolean; tree?: FamilyTree; message?: string }>
@@ -226,11 +237,41 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
   inviteCollaborator: async (treeId, email, role) => {
     try {
       const { data } = await api.post(`/family-trees/${treeId}/collaborators`, { email, role })
-      return { success: true, message: data.message }
+      return {
+        success: true,
+        message: data.message,
+        invite: data.invite,
+        collaborator: data.collaborator,
+      }
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
         "Erreur lors de l'invitation"
+      return { success: false, message }
+    }
+  },
+
+  revokeInvite: async (treeId, inviteId) => {
+    try {
+      const { data } = await api.delete(`/family-trees/${treeId}/invites/${inviteId}`)
+      return { success: true, message: data.message }
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        "Erreur"
+      return { success: false, message }
+    }
+  },
+
+  acceptInvite: async (token) => {
+    try {
+      const { data } = await api.post(`/family-trees/invites/${token}/accept`)
+      await get().fetchTrees()
+      return { success: true, message: data.message, treeId: data.treeId }
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        "Invitation invalide ou expirée"
       return { success: false, message }
     }
   },

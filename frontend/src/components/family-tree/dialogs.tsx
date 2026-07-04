@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { Trash2, UserPlus } from "lucide-react"
+import { Trash2, UserPlus, Link2 } from "lucide-react"
 import type { NormalizedPerson, TreeTweaks, TreeVisibility, TreeCollaborator, TreeInvite } from "@/types"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
+import { buildInviteUrl } from "@/lib/invite-url"
 import { useStorageConfig, photoMaxBytes } from "@/hooks/use-storage-config"
 import { resolveMediaUrl } from "@/lib/upload"
 import {
@@ -293,7 +294,7 @@ const VISIBILITY_LABELS: Record<TreeVisibility, string> = {
 }
 
 export function ShareDialog({ open, onClose, treeId, visibility, canManage }: ShareDialogProps) {
-  const { fetchCollaborators, inviteCollaborator, removeCollaborator, updateVisibility } = useFamilyTreeStore()
+  const { fetchCollaborators, inviteCollaborator, removeCollaborator, revokeInvite, updateVisibility } = useFamilyTreeStore()
   const [currentVisibility, setCurrentVisibility] = useState<TreeVisibility>(visibility)
   const [collaborators, setCollaborators] = useState<TreeCollaborator[]>([])
   const [invites, setInvites] = useState<TreeInvite[]>([])
@@ -333,13 +334,35 @@ export function ShareDialog({ open, onClose, treeId, visibility, canManage }: Sh
     const result = await inviteCollaborator(treeId, email.trim(), role)
     setLoading(false)
     if (result.success) {
-      toast.success(result.message || "Invitation envoyée")
+      if (result.invite?.token) {
+        const link = buildInviteUrl(result.invite.token)
+        await navigator.clipboard.writeText(link)
+        toast.success("Invitation créée — lien copié dans le presse-papier")
+      } else {
+        toast.success(result.message || "Collaborateur ajouté")
+      }
       setEmail("")
       const data = await fetchCollaborators(treeId)
       if (data) {
         setCollaborators(data.collaborators)
         setInvites(data.invites)
       }
+    } else {
+      toast.error(result.message)
+    }
+  }
+
+  const handleCopyInviteLink = async (token: string) => {
+    const link = buildInviteUrl(token)
+    await navigator.clipboard.writeText(link)
+    toast.success("Lien d'invitation copié")
+  }
+
+  const handleRevokeInvite = async (inviteId: string) => {
+    const result = await revokeInvite(treeId, inviteId)
+    if (result.success) {
+      setInvites((prev) => prev.filter((i) => i.id !== inviteId))
+      toast.success("Invitation révoquée")
     } else {
       toast.error(result.message)
     }
@@ -397,8 +420,11 @@ export function ShareDialog({ open, onClose, treeId, visibility, canManage }: Sh
                     </Select>
                   </div>
                   <Button size="sm" onClick={handleInvite} disabled={loading || !email.trim()}>
-                    Envoyer l'invitation
+                    {loading ? "Envoi…" : "Créer l'invitation"}
                   </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Compte existant : ajout immédiat. Sinon, un lien d'invitation sera copié.
+                  </p>
 
                   {collaborators.length > 0 && (
                     <ul className="flex flex-col gap-1 text-sm">
@@ -413,9 +439,39 @@ export function ShareDialog({ open, onClose, treeId, visibility, canManage }: Sh
                     </ul>
                   )}
                   {invites.length > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      {invites.length} invitation(s) en attente
-                    </p>
+                    <ul className="flex flex-col gap-1 text-sm">
+                      <li className="text-xs font-medium text-muted-foreground">Invitations en attente</li>
+                      {invites.map((inv) => (
+                        <li key={inv.id} className="flex items-center justify-between gap-2 rounded border border-dashed px-2 py-1.5">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate">{inv.email}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {inv.role === "EDITOR" ? "Édition" : "Lecture"} · en attente
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7"
+                              title="Copier le lien"
+                              onClick={() => handleCopyInviteLink(inv.token)}
+                            >
+                              <Link2 className="size-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7"
+                              title="Révoquer"
+                              onClick={() => handleRevokeInvite(inv.id)}
+                            >
+                              <Trash2 className="size-3.5 text-destructive" />
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </div>
               )}
@@ -427,7 +483,7 @@ export function ShareDialog({ open, onClose, treeId, visibility, canManage }: Sh
           )}
 
           <div className="flex flex-col gap-1.5">
-            <Label>Lien</Label>
+            <Label>Lien public de l'arbre</Label>
             <div className="flex gap-2">
               <Input readOnly value={url} />
               <Button variant="outline" onClick={() => { navigator.clipboard.writeText(url); toast.success("Lien copié") }}>

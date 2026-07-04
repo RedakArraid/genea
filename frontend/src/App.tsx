@@ -12,6 +12,7 @@ import DashboardPage from "@/pages/dashboard-page"
 import ProfilePage from "@/pages/profile-page"
 import FamilyTreePage from "@/pages/family-tree-page"
 import DemoPage from "@/pages/demo-page"
+import InvitePage from "@/pages/invite-page"
 import TimelinePage from "@/pages/timeline-page"
 import MatchesPage from "@/pages/matches-page"
 import { AdminRoute } from "@/components/admin/admin-route"
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/demo" element={<DemoPage />} />
+          <Route path="/invite/:token" element={<InvitePage />} />
           <Route path="/tree/:id" element={<FamilyTreePage />} />
           <Route path="/login" element={<AuthRedirect><LoginPage /></AuthRedirect>} />
           <Route path="/register" element={<AuthRedirect><RegisterPage /></AuthRedirect>} />

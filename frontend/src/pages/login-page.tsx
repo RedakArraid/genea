@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 import { TreePine } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label"
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirect = searchParams.get("redirect") || "/dashboard"
   const { login } = useAuthStore()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -22,7 +24,7 @@ export default function LoginPage() {
     setLoading(false)
     if (result.success) {
       toast.success("Connexion réussie")
-      navigate("/dashboard")
+      navigate(redirect.startsWith("/") ? redirect : "/dashboard")
     } else {
       toast.error(result.message)
     }
