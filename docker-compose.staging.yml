@@ -30,7 +30,7 @@ services:
       - DATABASE_URL=postgresql://geneaia_staging:${STAGING_DB_PASSWORD}@postgres:5432/geneaia_staging?schema=public
       - JWT_SECRET=${STAGING_JWT_SECRET:?STAGING_JWT_SECRET requis}
       - PORT=3001
-      - CORS_ORIGIN=https://staging.geneamap.com
+      - CORS_ORIGIN=https://staging.geneamap.com,https://www.staging.geneamap.com
       - FRONTEND_URL=https://staging.geneamap.com
       - API_PUBLIC_URL=https://api-staging.geneamap.com
       # ─── Cloudflare R2 ───
@@ -89,7 +89,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik_network
-      - traefik.http.routers.geneaia-front-staging.rule=Host(`staging.geneamap.com`)
+      - traefik.http.routers.geneaia-front-staging.rule=Host(`staging.geneamap.com`) || Host(`www.staging.geneamap.com`)
       - traefik.http.routers.geneaia-front-staging.entrypoints=websecure
       - traefik.http.routers.geneaia-front-staging.tls.certresolver=mytlschallenge
       - traefik.http.services.geneaia-front-staging.loadbalancer.server.port=80
