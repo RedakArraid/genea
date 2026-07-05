@@ -106,6 +106,7 @@ model Relationship {
 model User {
   id                 String             @id @default(uuid())
   email              String             @unique
+  phone              String?            @unique
   password           String
   name               String?
   plan               Plan               @default(SOLO)

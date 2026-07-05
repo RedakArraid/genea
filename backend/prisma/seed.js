@@ -1,6 +1,10 @@
 /**
  * Script de seed — admin, test user, arbre perso, démo Famille Dupont
- * Comptes : admin@geneaia.app / test@example.com / demo@geneaia.app — password123
+ * Comptes :
+ *   admin@geneaia.app / password123
+ *   test@example.com / password123
+ *   demo@geneaia.app / password123
+ *   testeur@geneaia.app ou 0700000001 / password123 (forfait inactif — tester paiement)
  */
 
 const prisma = require('../src/lib/prisma');
@@ -10,6 +14,7 @@ const { createDemoTree } = require('../src/lib/demoTree');
 async function main() {
   console.log('Start seeding database...');
 
+  await prisma.payment.deleteMany();
   await prisma.personDocument.deleteMany();
   await prisma.treeInvite.deleteMany();
   await prisma.treeCollaborator.deleteMany();
@@ -58,6 +63,18 @@ async function main() {
     },
   });
 
+  const testeur = await prisma.user.create({
+    data: {
+      name: 'Testeur Paiement',
+      email: 'testeur@geneaia.app',
+      phone: '+2250700000001',
+      password: hashedPassword,
+      plan: 'SOLO',
+      role: 'USER',
+      planActive: false,
+    },
+  });
+
   const adminEmail = process.env.ADMIN_EMAIL;
   if (adminEmail && adminEmail !== 'admin@geneaia.app') {
     await prisma.user.upsert({
@@ -73,7 +90,8 @@ async function main() {
     });
   }
 
-  console.log(`Created users: ${admin.email}, ${user.email}, ${demoOwner.email}`);
+  console.log(`Created users: ${admin.email}, ${user.email}, ${demoOwner.email}, ${testeur.email}`);
+  console.log(`Testeur CI — email: ${testeur.email} | tel: ${testeur.phone} | mdp: password123`);
 
   const personalTree = await prisma.familyTree.create({
     data: {

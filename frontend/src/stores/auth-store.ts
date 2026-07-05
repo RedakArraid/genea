@@ -9,8 +9,8 @@ interface AuthState {
   isAdmin: boolean
   isLoading: boolean
   checkAuth: () => Promise<void>
-  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; message?: string }>
+  login: (login: string, password: string) => Promise<{ success: boolean; message?: string }>
+  register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; message?: string }>
   logout: () => void
   updateProfile: (data: Record<string, unknown>) => Promise<{ success: boolean; message?: string }>
   upgradePlan: (plan: import("@/types").PlanId) => Promise<{ success: boolean; message?: string }>
@@ -51,9 +51,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  login: async (email, password) => {
+  login: async (login, password) => {
     try {
-      const { data } = await api.post("/auth/login", { email, password })
+      const { data } = await api.post("/auth/login", { login, password })
       localStorage.setItem("token", data.token)
       set({ user: data.user, isAuthenticated: true, isAdmin: data.user?.role === "ADMIN" })
       return { success: true }
@@ -65,9 +65,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  register: async (name, email, password) => {
+  register: async (name, email, password, phone) => {
     try {
-      const { data } = await api.post("/auth/register", { name, email, password })
+      const { data } = await api.post("/auth/register", {
+        name,
+        email,
+        password,
+        ...(phone ? { phone } : {}),
+      })
       localStorage.setItem("token", data.token)
       set({ user: data.user, isAuthenticated: true, isAdmin: data.user?.role === "ADMIN" })
       return { success: true }

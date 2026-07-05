@@ -5,6 +5,7 @@ export type CollaboratorRole = "VIEWER" | "EDITOR"
 export interface User {
   id: string
   email: string
+  phone?: string | null
   name?: string | null
   plan?: PlanId
   planActive?: boolean

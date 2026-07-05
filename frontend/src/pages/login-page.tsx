@@ -13,14 +13,14 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams()
   const redirect = searchParams.get("redirect") || "/dashboard"
   const { login } = useAuthStore()
-  const [email, setEmail] = useState("")
+  const [loginId, setLoginId] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    const result = await login(email, password)
+    const result = await login(loginId, password)
     setLoading(false)
     if (result.success) {
       toast.success("Connexion réussie")
@@ -43,8 +43,17 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Label htmlFor="login">Email ou téléphone</Label>
+              <Input
+                id="login"
+                type="text"
+                inputMode="email"
+                autoComplete="username"
+                placeholder="vous@exemple.com ou 07XXXXXXXX"
+                value={loginId}
+                onChange={(e) => setLoginId(e.target.value)}
+                required
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="password">Mot de passe</Label>

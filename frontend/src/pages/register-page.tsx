@@ -18,6 +18,7 @@ export default function RegisterPage() {
   const { register } = useAuthStore()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
   const [confirm, setConfirm] = useState("")
   const [loading, setLoading] = useState(false)
@@ -33,7 +34,7 @@ export default function RegisterPage() {
       return
     }
     setLoading(true)
-    const result = await register(name, email, password)
+    const result = await register(name, email, password, phone.trim() || undefined)
     setLoading(false)
     if (result.success) {
       toast.success("Compte créé avec succès")
@@ -62,6 +63,17 @@ export default function RegisterPage() {
             <div className="flex flex-col gap-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="phone">Téléphone (optionnel)</Label>
+              <Input
+                id="phone"
+                type="tel"
+                inputMode="tel"
+                placeholder="07XXXXXXXX"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="password">Mot de passe</Label>
