@@ -1,9 +1,9 @@
 /**
- * Forfaits GeneaIA — tarification internationale (USD facturé, équivalent EUR affiché)
+ * Forfaits GeneaIA — tarification internationale (USD)
  *
- * Essai : $5 (≈ €5) — paiement unique
- * Famille : $30/an (≈ €30/an)
- * Patrimoine : $50/an (≈ €50/an) ou $5/mois (≈ €5/mois)
+ * Essai : $5 — paiement unique
+ * Famille : $30/an
+ * Patrimoine : $50/an ou $5/mois
  */
 
 const CURRENCY = 'USD';
@@ -14,7 +14,7 @@ const PLANS = {
     name: 'Essai',
     billingPeriod: 'once',
     priceUsd: 5,
-    priceLabel: '$5 — one-time (≈ €5)',
+    priceLabel: '$5 — one-time',
     durationDays: 90,
     maxTrees: 1,
     maxPersonsPerTree: 25,
@@ -35,7 +35,7 @@ const PLANS = {
     name: 'Famille',
     billingPeriod: 'yearly',
     priceUsd: 30,
-    priceLabel: '$30 / year (≈ €30)',
+    priceLabel: '$30 / year',
     durationDays: 365,
     maxTrees: 5,
     maxPersonsPerTree: 500,
@@ -58,8 +58,8 @@ const PLANS = {
     billingPeriod: 'yearly',
     priceUsd: 50,
     priceMonthlyUsd: 5,
-    priceLabel: '$50 / year (≈ €50)',
-    priceLabelMonthly: '$5 / month (≈ €5)',
+    priceLabel: '$50 / year',
+    priceLabelMonthly: '$5 / month',
     durationDays: 365,
     durationDaysMonthly: 30,
     maxTrees: Infinity,

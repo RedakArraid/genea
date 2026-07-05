@@ -108,17 +108,8 @@ export function getPlanPrice(plan: PlanDefinition, interval: BillingInterval = "
   return plan.priceUsd
 }
 
-/** Formate un montant USD selon la langue (affichage EUR en français) */
-export function formatPrice(amountUsd: number, locale?: string) {
-  const lang = (locale || "en").split("-")[0]
-  if (lang === "fr") {
-    return new Intl.NumberFormat("fr-FR", {
-      style: "currency",
-      currency: "EUR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amountUsd)
-  }
+/** Formate un montant en USD (affichage unique, sans conversion) */
+export function formatPrice(amountUsd: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",

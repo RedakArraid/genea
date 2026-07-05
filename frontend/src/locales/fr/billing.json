@@ -5,7 +5,7 @@
     "title": "Des tarifs simples, partout dans le monde",
     "sectionTitle": "Tarifs accessibles à l'international",
     "subtitle": "Pas de freemium — un essai à petit prix, puis des forfaits annuels ou mensuels. Paiement par carte sécurisé (Paystack).",
-    "sectionSubtitle": "Essai à 5 €, puis forfaits Famille et Patrimoine. Paiement carte via Paystack.",
+    "sectionSubtitle": "Essai à $5, puis forfaits Famille et Patrimoine. Paiement carte via Paystack.",
     "promoCode": "Code promo",
     "promoHint": "Codes par pays ou campagne — saisissez le vôtre si vous en avez un.",
     "securePayment": "Paiement par carte bancaire — sécurisé",
@@ -16,7 +16,10 @@
     "seeAllPlans": "Voir tous les détails des forfaits →",
     "checkoutError": "Impossible d'initialiser le paiement",
     "yearly": "Annuel",
-    "monthly": "Mensuel"
+    "monthly": "Mensuel",
+    "oneTime": "Paiement unique",
+    "perYear": "Par an",
+    "perMonth": "Par mois"
   },
   "callback": {
     "verifying": "Vérification du paiement…",
@@ -33,7 +36,7 @@
   "plans": {
     "SOLO": {
       "name": "Essai",
-      "priceLabel": "5 € — paiement unique (≈ $5)",
+      "priceLabel": "$5 — paiement unique",
       "cta": "Tester GeneaIA",
       "features": [
         "1 arbre, jusqu'à 25 fiches",
@@ -44,7 +47,7 @@
     },
     "FAMILY": {
       "name": "Famille",
-      "priceLabel": "30 € / an (≈ $30)",
+      "priceLabel": "$30 / an",
       "cta": "Choisir Famille",
       "features": [
         "5 arbres, 500 fiches par arbre",
@@ -56,8 +59,8 @@
     },
     "PATRIMONY": {
       "name": "Patrimoine",
-      "priceLabel": "50 € / an (≈ $50)",
-      "priceLabelMonthly": "5 € / mois (≈ $5)",
+      "priceLabel": "$50 / an",
+      "priceLabelMonthly": "$5 / mois",
       "cta": "Choisir annuel",
       "ctaMonthly": "Choisir mensuel",
       "features": [

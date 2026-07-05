@@ -16,7 +16,10 @@
     "seeAllPlans": "See full plan details →",
     "checkoutError": "Could not initialize payment",
     "yearly": "Yearly",
-    "monthly": "Monthly"
+    "monthly": "Monthly",
+    "oneTime": "One-time payment",
+    "perYear": "Per year",
+    "perMonth": "Per month"
   },
   "callback": {
     "verifying": "Verifying payment…",
@@ -33,7 +36,7 @@
   "plans": {
     "SOLO": {
       "name": "Trial",
-      "priceLabel": "$5 — one-time (≈ €5)",
+      "priceLabel": "$5 — one-time",
       "cta": "Try GeneaIA",
       "features": [
         "1 tree, up to 25 profiles",
@@ -44,7 +47,7 @@
     },
     "FAMILY": {
       "name": "Family",
-      "priceLabel": "$30 / year (≈ €30)",
+      "priceLabel": "$30 / year",
       "cta": "Choose Family",
       "features": [
         "5 trees, 500 profiles per tree",
@@ -56,8 +59,8 @@
     },
     "PATRIMONY": {
       "name": "Heritage",
-      "priceLabel": "$50 / year (≈ €50)",
-      "priceLabelMonthly": "$5 / month (≈ €5)",
+      "priceLabel": "$50 / year",
+      "priceLabelMonthly": "$5 / month",
       "cta": "Choose yearly",
       "ctaMonthly": "Choose monthly",
       "features": [

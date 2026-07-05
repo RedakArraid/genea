@@ -43,7 +43,7 @@
   },
   "activatePlan": {
     "title": "Activez votre forfait pour créer un arbre",
-    "subtitle": "Choisissez l'Essai (5 €, 25 fiches) ou un forfait annuel. Paiement sécurisé par carte (Paystack).",
+    "subtitle": "Choisissez l'Essai ($5, 25 fiches) ou un forfait annuel. Paiement sécurisé par carte (Paystack).",
     "seePricing": "Voir les tarifs"
   },
   "sidebar": {

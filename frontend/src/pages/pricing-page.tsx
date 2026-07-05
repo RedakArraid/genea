@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
 export default function PricingPage() {
-  const { t, i18n } = useTranslation("billing")
+  const { t } = useTranslation("billing")
   const { isAuthenticated, user } = useAuthStore()
   const [promoCode, setPromoCode] = useState("")
   const [previews, setPreviews] = useState<Record<string, number>>({})
@@ -24,7 +24,6 @@ export default function PricingPage() {
   const [patrimonyInterval, setPatrimonyInterval] = useState<BillingInterval>("yearly")
 
   const planActive = user?.planActive ?? false
-  const locale = i18n.language
 
   const previewKey = (planId: PlanId, interval: BillingInterval = "yearly") =>
     planId === "PATRIMONY" ? `${planId}:${interval}` : planId
@@ -114,19 +113,21 @@ export default function PricingPage() {
                     {isCurrent && <Badge variant="secondary" className="ml-auto text-xs">{t("pricing.current")}</Badge>}
                   </CardTitle>
                   <CardDescription className="text-2xl font-semibold text-foreground">
-                    {formatPrice(finalAmount, locale)}
+                    {formatPrice(finalAmount)}
                     {finalAmount < basePrice && (
                       <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
-                        {formatPrice(basePrice, locale)}
+                        {formatPrice(basePrice)}
                       </span>
                     )}
                   </CardDescription>
                   <p className="text-xs text-muted-foreground">
                     {isPatrimony
                       ? interval === "monthly"
-                        ? t(`plans.${plan.id}.priceLabelMonthly`)
-                        : t(`plans.${plan.id}.priceLabel`)
-                      : t(`plans.${plan.id}.priceLabel`)}
+                        ? t("pricing.perMonth")
+                        : t("pricing.perYear")
+                      : plan.id === "SOLO"
+                        ? t("pricing.oneTime")
+                        : t("pricing.perYear")}
                   </p>
                   {isPatrimony && (
                     <div className="mt-2 flex gap-1 rounded-lg border p-1">
