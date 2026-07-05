@@ -88,14 +88,17 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 ## 7. À faire / prochaines étapes
 
 - [x] Buckets R2 `geneamap-staging` et `geneamap-prod` créés et validés (lecture/écriture OK, credentials gérés par Paul dans `~/.config/paul/.env`).
-- [ ] Configurer les secrets GitHub (R2, SMTP, hôte VPS Contabo) — liste dans [../DEPLOY_GUIDE.md](../DEPLOY_GUIDE.md).
-- [ ] DNS geneamap.com : A `@`, `api`, `staging`, `api-staging` → `178.238.229.159`.
-- [ ] Déploiement initial sur le VPS Contabo avec Souley (staging puis prod).
+- [x] Secrets GitHub configurés (environnements `staging`/`production`, clé SSH dédiée `~/.ssh/deploy-keys/geneaia_deploy`).
+- [x] DNS geneamap.com : A `@`, `www`, `api`, `staging`, `api-staging` → `178.238.229.159` (attention : proxy Cloudflare orange actif, fonctionne mais recommandé de passer en DNS only).
+- [x] Déploiement staging opérationnel : https://staging.geneamap.com + https://api-staging.geneamap.com (R2 ready).
+- [ ] **Déploiement prod bloqué** : l'ancienne app `/root/genea` (conteneurs `genea-*`) route déjà `geneamap.com` dans Traefik — la stopper avant de pousser `main` (1 seul user dans son ancienne base `geneaia_production`).
+- [ ] Renseigner SMTP et Paystack dans les `.env` du VPS (`/root/geneaia/.env`, `/root/geneaia-staging/.env`) — champs vides actuellement.
 - [ ] Choisir le fournisseur SMTP/SMS de production pour l'OTP (actuellement Mailpit en local).
 - [ ] Protection de branche `main` sur GitHub (PR obligatoire).
 
 ## 8. Journal
 
+- **2026-07-05 (soir)** — **Staging déployé sur geneamap.com** : `.env` créés sur le VPS (`/root/geneaia{,-staging}`), secrets GitHub via API (les anciens secrets d'environnement `staging`/`production` de juin 2025 écrasaient les secrets repo — corrigé), pipeline vert. Incidents CI corrigés : TS `AuthenticatedImage` (Omit src), 5 erreurs ESLint, Node 18→22 (Tailwind v4 oxide), actions appleboy remplacées par ssh/scp natifs (auth qui échouait silencieusement), healthcheck frontend `localhost`→`127.0.0.1` (IPv6). R2 : le token utilisé était le token DNS filtré par IP → 403 depuis le VPS ; nouveau token `geneamap-r2-vps` (R2 Storage Read+Write, sans filtre IP) créé, credentials dans `~/.config/paul/.env` (`PAUL_CLOUDFLARE_R2_VPS_*`) et dans les `.env` du VPS.
 - **2026-07-05** — R2 opérationnel : buckets `geneamap-staging` et `geneamap-prod` créés via l'API S3 avec les credentials de Paul (`~/.config/paul/.env`), check-r2.sh vert sur les deux. Account ID Cloudflare : `eeea3b33d3e36656a9adaecbf6990424`.
 - **2026-07-05** — Préparation lancement : mémoire projet, compat R2 (`STORAGE_AUTO_INIT`), compose VPS Traefik (geneamap.com), branches dev/staging/main, CI aligné (compose du repo via scp), guide Cloudflare R2, docs déploiement à jour.
 - **2026-07-05** — Édition inline panneau latéral, blocage dates naissance futures (front + back), compte test famille 40 personnes (Famille Traoré, 5 générations), seed 0700000003.
