@@ -2,6 +2,9 @@ name: Debug SSH VPS
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ dev ]
+    paths: [ '.github/workflows/debug-ssh.yml' ]
 
 jobs:
   debug:
