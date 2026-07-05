@@ -130,6 +130,18 @@ export default function AdminOpenWaPage() {
     ? sessionStatusLabel[session.status] || session.status
     : "—"
 
+  const testBlockedReason = !settings?.configured
+    ? "Configuration incomplète (URL, clé API, ID session)."
+    : !status?.reachable && status?.message
+      ? status.message
+      : session && !session.connected
+        ? `Session non connectée (statut : ${sessionLabel}). Scannez le QR code dans le dashboard OpenWA.`
+        : !session?.connected
+          ? status?.message || "Session WhatsApp introuvable ou non connectée."
+          : null
+
+  const canTest = Boolean(settings?.configured && session?.connected)
+
   return (
     <div className="space-y-6">
       <div>
@@ -242,6 +254,20 @@ export default function AdminOpenWaPage() {
         </CardContent>
       </Card>
 
+      {status?.message && !session?.connected && (
+        <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40">
+          <CardContent className="pt-6 text-sm text-amber-900 dark:text-amber-100">
+            <p className="font-medium">Session WhatsApp indisponible</p>
+            <p className="mt-1">{status.message}</p>
+            <p className="mt-2 text-muted-foreground">
+              Vérifiez l&apos;ID de session complet (UUID entier, ex.{" "}
+              <code className="text-xs">56d4768d-8e7a-4b2c-9d1f-xxxxxxxxxxxx</code>
+              ) dans le dashboard OpenWA ({form.baseUrl?.replace(/\/api\/?$/, "") || "votre instance"}).
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {session && (
         <Card>
           <CardHeader>
@@ -293,11 +319,14 @@ export default function AdminOpenWaPage() {
             type="button"
             variant="outline"
             onClick={handleTest}
-            disabled={testing || !settings?.configured || !session?.connected}
+            disabled={testing || !canTest}
           >
             {testing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Send className="mr-2 size-4" />}
             Envoyer un test
           </Button>
+          {testBlockedReason && !canTest && (
+            <p className="w-full text-sm text-muted-foreground">{testBlockedReason}</p>
+          )}
         </CardContent>
       </Card>
     </div>

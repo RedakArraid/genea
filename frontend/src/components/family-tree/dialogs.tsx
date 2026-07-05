@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { todayIsoDate, validateBirthDate } from "@/lib/person-dates"
@@ -614,6 +614,65 @@ export function TreeSettingsSheet({ open, onClose, tweaks, onSetTweak }: TreeSet
   )
 }
 
+interface PersonPickerProps {
+  people: NormalizedPerson[]
+  excludeIds: string[]
+  value: string
+  onChange: (id: string) => void
+  id?: string
+}
+
+function personLabel(p: NormalizedPerson) {
+  return `${p.given}${p.sur && p.sur !== "—" ? ` ${p.sur}` : ""}`
+}
+
+function PersonPicker({ people, excludeIds, value, onChange, id }: PersonPickerProps) {
+  const { t } = useTranslation("tree")
+  const [query, setQuery] = useState("")
+
+  const candidates = useMemo(() => {
+    const exclude = new Set(excludeIds)
+    return people
+      .filter((p) => !exclude.has(p.id))
+      .filter((p) => {
+        if (!query.trim()) return true
+        return personLabel(p).toLowerCase().includes(query.trim().toLowerCase())
+      })
+      .sort((a, b) => personLabel(a).localeCompare(personLabel(b), undefined, { sensitivity: "base" }))
+  }, [people, excludeIds, query])
+
+  const showSearch = people.length > 10
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {showSearch && (
+        <Input
+          id={id}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t("dialogs.searchPerson")}
+        />
+      )}
+      <Select value={value || undefined} onValueChange={(v) => v && onChange(v)}>
+        <SelectTrigger>
+          <SelectValue placeholder={t("dialogs.choosePlaceholder")} />
+        </SelectTrigger>
+        <SelectContent>
+          {candidates.length === 0 ? (
+            <div className="px-2 py-1.5 text-sm text-muted-foreground">{t("dialogs.noPersonMatch")}</div>
+          ) : (
+            candidates.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {personLabel(p)}
+              </SelectItem>
+            ))
+          )}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
 interface AddRelationDialogProps {
   open: boolean
   onClose: () => void
@@ -627,8 +686,6 @@ export function AddRelationDialog({ open, onClose, person, people, onSubmit }: A
   const [targetId, setTargetId] = useState("")
   const [relType, setRelType] = useState("parent")
   const [loading, setLoading] = useState(false)
-
-  const others = people.filter((p) => p.id !== person.id)
 
   const handleSubmit = async () => {
     if (!targetId) return
@@ -647,14 +704,12 @@ export function AddRelationDialog({ open, onClose, person, people, onSubmit }: A
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <Label>{t("dialogs.personLabel")}</Label>
-            <Select value={targetId || undefined} onValueChange={(v) => v && setTargetId(v)}>
-              <SelectTrigger><SelectValue placeholder={t("dialogs.choosePlaceholder")} /></SelectTrigger>
-              <SelectContent>
-                {others.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.given} {p.sur}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <PersonPicker
+              people={people}
+              excludeIds={[person.id]}
+              value={targetId}
+              onChange={setTargetId}
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>{t("dialogs.relationLabel")}</Label>
@@ -671,6 +726,84 @@ export function AddRelationDialog({ open, onClose, person, people, onSubmit }: A
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t("common:actions.cancel")}</Button>
           <Button onClick={handleSubmit} disabled={loading || !targetId}>{t("dialogs.createLink")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface LinkExistingChildDialogProps {
+  open: boolean
+  onClose: () => void
+  parentIds: string[]
+  people: NormalizedPerson[]
+  onSubmit: (childId: string) => Promise<void>
+}
+
+export function LinkExistingChildDialog({
+  open,
+  onClose,
+  parentIds,
+  people,
+  onSubmit,
+}: LinkExistingChildDialogProps) {
+  const { t } = useTranslation("tree")
+  const [childId, setChildId] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  const byId = useMemo(() => Object.fromEntries(people.map((p) => [p.id, p])), [people])
+  const parents = parentIds.map((id) => byId[id]).filter(Boolean)
+
+  const excludeIds = useMemo(() => {
+    const ids = new Set(parentIds)
+    for (const p of people) {
+      if (parentIds.every((pid) => p.parentIds.includes(pid))) {
+        ids.add(p.id)
+      }
+    }
+    return Array.from(ids)
+  }, [people, parentIds])
+
+  const handleSubmit = async () => {
+    if (!childId) return
+    setLoading(true)
+    try {
+      await onSubmit(childId)
+      setChildId("")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t("dialogs.linkChildTitle")}</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label>{t("dialogs.linkChildParents")}</Label>
+            <p className="text-sm text-muted-foreground">
+              {parents.map((p) => personLabel(p)).join(" · ") || "—"}
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="link-child-select">{t("dialogs.linkChildSelect")}</Label>
+            <PersonPicker
+              id="link-child-select"
+              people={people}
+              excludeIds={excludeIds}
+              value={childId}
+              onChange={setChildId}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{t("common:actions.cancel")}</Button>
+          <Button onClick={handleSubmit} disabled={loading || !childId}>
+            {t("dialogs.linkChildSubmit")}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

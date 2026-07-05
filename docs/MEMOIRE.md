@@ -49,6 +49,7 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 - Dates de naissance futures bloquées (frontend `max` + validation backend express-validator).
 - Photos et documents par personne (upload via proxy API authentifié `/api/uploads/file/...` ; composant `AuthenticatedImage` pour le JWT).
 - Bouton **Réorganiser** : recalcul du layout avec confirmation si positions manuelles ; layout spécial « clusters conjugaux » pour les arbres sans liens parent-enfant (`computeSpouseOnlyLayout`).
+- **Lier enfant existant** : menu « Nouvel enfant / Lier existant » pour rattacher une personne déjà dans l'arbre à un parent ou un couple (2 liens parent créés).
 - Partage : visibilité PRIVATE/SHARED/PUBLIC, invitations collaborateurs (VIEWER/EDITOR) avec **email d'invitation** (lien `/invite/:token` ou accès direct), lien public lecture seule.
 - Arbre démo public « Famille Dupont » (10 personnes), **auto-provisionné** au démarrage API si absent, réinitialisable par l'admin.
 - **Admin SMTP** : configuration email depuis `/admin/smtp` (table `SmtpSetting`, prioritaire sur les variables d'env).
@@ -109,6 +110,7 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 
 ## 8. Journal
 
+- **2026-07-05 (soir, lier enfant existant)** — Menu « Nouvel enfant / Lier existant » (panneau latéral, icône bébé conjoint, arête mariage) ; dialogue `LinkExistingChildDialog` ; fix direction parent/enfant dans « Lier ».
 - **2026-07-05 (soir, OpenWA admin)** — Page admin `/admin/openwa` : table `OpenWaSetting`, API GET/PATCH + statut session + test WhatsApp. OTP : WhatsApp prioritaire (OpenWA), email SMTP secours.
 - **2026-07-05 (soir, responsive)** — Refonte responsive complète : SidePanel Sheet mobile, toolbar arbre compacte, menu hamburger marketing, dashboard/timeline/matches touch-friendly, admin tables colonnes adaptatives, pinch-to-zoom canvas, spec E2E viewport 375px. Build frontend vert.
 - **2026-07-05 (soir, layout réorganiser)** — Fix « Réorganiser » : parents placés au-dessus de la personne racine (générations top-down, vraies racines sans parents in-tree, directChildren assoupli si un seul parent référencé). 14 tests layout.

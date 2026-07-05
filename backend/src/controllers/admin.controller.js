@@ -498,12 +498,20 @@ exports.getOpenWaStatus = async (req, res, next) => {
 
     try {
       await pingOpenWa();
-      const session = await getSessionStatus();
-      res.json({
-        reachable: true,
-        configured: true,
-        session,
-      });
+      try {
+        const session = await getSessionStatus();
+        res.json({
+          reachable: true,
+          configured: true,
+          session,
+        });
+      } catch (sessionError) {
+        res.json({
+          reachable: true,
+          configured: true,
+          message: sessionError.message || 'Session introuvable',
+        });
+      }
     } catch (error) {
       res.json({
         reachable: false,

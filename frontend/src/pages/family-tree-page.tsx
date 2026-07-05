@@ -13,6 +13,7 @@ import {
   ShareDialog,
   TreeSettingsSheet,
   AddRelationDialog,
+  LinkExistingChildDialog,
 } from "@/components/family-tree/dialogs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
@@ -91,6 +92,8 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   const [isTweaksOpen, setIsTweaksOpen] = useState(false)
   const [isRelationOpen, setIsRelationOpen] = useState(false)
   const [relationPersonData, setRelationPersonData] = useState<Person | null>(null)
+  const [isLinkChildOpen, setIsLinkChildOpen] = useState(false)
+  const [linkChildParentIds, setLinkChildParentIds] = useState<string[]>([])
   const [addPersonRelData, setAddPersonRelData] = useState({ parentId: null as string | null, parent2Id: null as string | null, relType: null as string | null })
 
   const [tweaks, setTweaks] = useState<TreeTweaks>({
@@ -323,16 +326,57 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     } else toast.error(result.message)
   }
 
-  const handleAddRelationSubmit = async (sourceId: string, targetId: string, relType: string) => {
-    const source = relType === "parent" ? sourceId : targetId
-    const target = relType === "parent" ? targetId : sourceId
-    const type = relType === "spouse" ? "spouse" : "parent"
-    const result = await addRelationship({ sourceId: source, targetId: target, type })
+  const handleOpenLinkChildModal = (parentIds: string[]) => {
+    setLinkChildParentIds(parentIds.filter(Boolean))
+    setIsLinkChildOpen(true)
+  }
+
+  const handleAddRelationSubmit = async (contextId: string, selectedId: string, relType: string) => {
+    let payload: { sourceId: string; targetId: string; type: string }
+    if (relType === "spouse") {
+      payload = { sourceId: contextId, targetId: selectedId, type: "spouse" }
+    } else {
+      const parentId = relType === "parent" ? selectedId : contextId
+      const childId = relType === "parent" ? contextId : selectedId
+      payload = { sourceId: parentId, targetId: childId, type: "parent" }
+    }
+    const result = await addRelationship(payload)
     if (result.success) {
       toast.success(t("page.linkCreated"))
       if (treeId) fetchTreeById(treeId, { silent: true })
       setIsRelationOpen(false)
     } else toast.error(result.message)
+  }
+
+  const handleLinkExistingChild = async (childId: string) => {
+    if (!treeId || linkChildParentIds.length === 0) return
+    let linked = false
+    let hadExisting = false
+
+    for (const parentId of linkChildParentIds) {
+      const result = await addRelationship({ sourceId: parentId, targetId: childId, type: "parent" })
+      if (result.success) {
+        linked = true
+      } else if (result.statusCode === 409) {
+        hadExisting = true
+      } else {
+        toast.error(result.message)
+        return
+      }
+    }
+
+    const child = people.find((p) => p.id === childId)
+    const name = child ? `${child.given}${child.sur && child.sur !== "—" ? ` ${child.sur}` : ""}` : ""
+
+    if (linked) {
+      toast.success(t("page.childLinked", { name: name || "?" }))
+    } else if (hadExisting) {
+      toast.info(t("page.linkAlreadyExists"))
+    }
+
+    await fetchTreeById(treeId, { silent: true })
+    setIsLinkChildOpen(false)
+    setLinkChildParentIds([])
   }
 
   const handleDeleteRelation = async (relId: string) => {
@@ -406,6 +450,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           hoverId={hoverId}
           onHover={setHoverId}
           onOpenAdd={handleOpenAddModal}
+          onLinkExistingChild={handleOpenLinkChildModal}
           onOpenShare={() => setIsShareOpen(true)}
           onOpenTweaks={() => setIsTweaksOpen(true)}
           onSetTweak={handleSetTweak}
@@ -448,6 +493,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
             setIsRelationOpen(true)
           }}
           onAddChildRelation={handleOpenAddModal}
+          onLinkExistingChild={handleOpenLinkChildModal}
           onDelete={handleDeletePerson}
           onDeleteRelation={handleDeleteRelation}
           readOnly={readOnly}
@@ -491,6 +537,16 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           person={people.find((p: NormalizedPerson) => p.id === relationPersonData.id)!}
           people={people}
           onSubmit={handleAddRelationSubmit}
+        />
+      )}
+
+      {isLinkChildOpen && (
+        <LinkExistingChildDialog
+          open={isLinkChildOpen}
+          onClose={() => { setIsLinkChildOpen(false); setLinkChildParentIds([]) }}
+          parentIds={linkChildParentIds}
+          people={people}
+          onSubmit={handleLinkExistingChild}
         />
       )}
     </div>

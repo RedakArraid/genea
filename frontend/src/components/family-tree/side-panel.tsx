@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import { X, Focus, Trash2, Baby, Camera, Save } from "lucide-react"
+import { X, Focus, Trash2, Baby, Camera, Save, ChevronDown, Link2, UserPlus } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { FamilyTree, NormalizedPerson, Person } from "@/types"
 import { todayIsoDate, validateBirthDate } from "@/lib/person-dates"
@@ -20,6 +20,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { PersonDocuments } from "@/components/family-tree/person-documents"
 import { useIsMobile } from "@/hooks/use-mobile"
 
@@ -33,6 +39,7 @@ interface SidePanelProps {
   onChangePhoto?: (personId: string, file: File) => Promise<void>
   onAddRelation: (person: NormalizedPerson) => void
   onAddChildRelation: (parentId: string, relType: string, parent2Id?: string) => void
+  onLinkExistingChild: (parentIds: string[]) => void
   onDelete: (id: string) => void
   onDeleteRelation: (relId: string) => void
   readOnly?: boolean
@@ -67,6 +74,7 @@ function SidePanelContent({
   onChangePhoto,
   onAddRelation,
   onAddChildRelation,
+  onLinkExistingChild,
   onDelete,
   onDeleteRelation,
   readOnly = false,
@@ -161,6 +169,45 @@ function SidePanelContent({
     return null
   }
 
+  const ChildAddMenu = ({
+    onNewChild,
+    onLinkExisting,
+    compact = false,
+  }: {
+    onNewChild: () => void
+    onLinkExisting: () => void
+    compact?: boolean
+  }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          compact ? (
+            <Button variant="ghost" size="icon" className="size-7" title={t("relations.newChild")} />
+          ) : (
+            <Button variant="ghost" size="sm" className="h-6 gap-1 px-2 text-xs" />
+          )
+        }
+      >
+        {compact ? <Baby className="size-3" /> : (
+          <>
+            {t("relations.addButton")}
+            <ChevronDown className="size-3" />
+          </>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onNewChild}>
+          <UserPlus className="size-4" />
+          {t("relations.newChild")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onLinkExisting}>
+          <Link2 className="size-4" />
+          {t("relations.linkExistingChild")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
   const RelChip = ({ p, relType }: { p: NormalizedPerson; relType?: string }) => {
     const relId = relType ? findRelId(p.id, relType) : null
     return (
@@ -169,9 +216,11 @@ function SidePanelContent({
           {p.given} {p.sur !== "—" ? p.sur : ""}
         </Button>
         {!readOnly && relType === "spouse" && (
-          <Button variant="ghost" size="icon" className="size-7" onClick={() => onAddChildRelation(person.id, "child", p.id)}>
-            <Baby className="size-3" />
-          </Button>
+          <ChildAddMenu
+            compact
+            onNewChild={() => onAddChildRelation(person.id, "child", p.id)}
+            onLinkExisting={() => onLinkExistingChild([person.id, p.id])}
+          />
         )}
         {!readOnly && relId && (
           <Button variant="ghost" size="icon" className="size-7 text-destructive" onClick={() => onDeleteRelation(relId)}>
@@ -182,11 +231,27 @@ function SidePanelContent({
     )
   }
 
-  const Section = ({ title, onAdd, children }: { title: string; onAdd?: () => void; children: React.ReactNode }) => (
+  const Section = ({
+    title,
+    onAdd,
+    childAddMenu,
+    children,
+  }: {
+    title: string
+    onAdd?: () => void
+    childAddMenu?: { onNewChild: () => void; onLinkExisting: () => void }
+    children: React.ReactNode
+  }) => (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</span>
-        {onAdd && !readOnly && (
+        {!readOnly && childAddMenu && (
+          <ChildAddMenu
+            onNewChild={childAddMenu.onNewChild}
+            onLinkExisting={childAddMenu.onLinkExisting}
+          />
+        )}
+        {onAdd && !readOnly && !childAddMenu && (
           <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={onAdd}>
             {t("relations.addButton")}
           </Button>
@@ -341,7 +406,21 @@ function SidePanelContent({
             {spouses.length ? spouses.map((p) => <RelChip key={p.id} p={p} relType="spouse" />) : <span className="text-xs text-muted-foreground">{t("relations.none")}</span>}
           </Section>
 
-          <Section title={t("relations.children", { count: children.length })} onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "child")}>
+          <Section
+            title={t("relations.children", { count: children.length })}
+            childAddMenu={
+              readOnly
+                ? undefined
+                : {
+                    onNewChild: () =>
+                      onAddChildRelation(person.id, "child", spouses[0]?.id),
+                    onLinkExisting: () =>
+                      onLinkExistingChild(
+                        spouses.length > 0 ? [person.id, spouses[0].id] : [person.id]
+                      ),
+                  }
+            }
+          >
             {children.length ? children.map((p) => <RelChip key={p.id} p={p} relType="child" />) : <span className="text-xs text-muted-foreground">{t("relations.none")}</span>}
           </Section>
 

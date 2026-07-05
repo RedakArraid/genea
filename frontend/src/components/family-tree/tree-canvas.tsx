@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo, useCallback } from "react"
-import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2, MoreVertical } from "lucide-react"
+import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2, MoreVertical, UserPlus, Link2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { PersonCard } from "./person-card"
 import { buildConnections, computeLineage, getCardDimensions } from "@/utils/tree-layout"
@@ -117,6 +117,7 @@ interface TreeCanvasProps {
   canvasW?: number
   canvasH?: number
   onOpenAdd: (parentId?: string | null, relType?: string | null, parent2Id?: string | null) => void
+  onLinkExistingChild?: (parentIds: string[]) => void
   onOpenShare: () => void
   onOpenTweaks: () => void
   onSetTweak: (key: keyof TreeTweaks, val: string | boolean) => void
@@ -141,6 +142,7 @@ export function TreeCanvas({
   hoverId,
   onHover,
   onOpenAdd,
+  onLinkExistingChild,
   onOpenShare,
   onOpenTweaks,
   onSetTweak,
@@ -664,19 +666,37 @@ export function TreeCanvas({
           connections
             .filter((c) => c.kind === "spouse" && c.midX != null && c.midY != null)
             .map((c, i) => (
-              <button
-                key={`spouse-add-${i}`}
-                type="button"
-                title={t("canvas.addChild")}
-                className="absolute z-[10] flex size-[22px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-2 border-primary bg-primary text-sm font-bold text-primary-foreground shadow-md pointer-events-auto hover:scale-110"
-                style={{ left: c.midX, top: c.midY }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onOpenAdd(c.ids[0], "child", c.ids[1])
-                }}
-              >
-                +
-              </button>
+              <DropdownMenu key={`spouse-add-${i}`}>
+                <DropdownMenuTrigger
+                  render={
+                    <button
+                      type="button"
+                      title={t("canvas.addChild")}
+                      className="absolute z-[10] flex size-[22px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-2 border-primary bg-primary text-sm font-bold text-primary-foreground shadow-md pointer-events-auto hover:scale-110"
+                      style={{ left: c.midX, top: c.midY }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  }
+                >
+                  +
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center">
+                  <DropdownMenuItem
+                    onClick={() => onOpenAdd(c.ids[0], "child", c.ids[1])}
+                  >
+                    <UserPlus className="size-4" />
+                    {t("relations.newChild")}
+                  </DropdownMenuItem>
+                  {onLinkExistingChild && (
+                    <DropdownMenuItem
+                      onClick={() => onLinkExistingChild([c.ids[0], c.ids[1]])}
+                    >
+                      <Link2 className="size-4" />
+                      {t("relations.linkExistingChild")}
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             ))}
       </div>
 

@@ -38,7 +38,7 @@ interface FamilyTreeState {
   addPerson: (treeId: string, personData: Record<string, unknown> & { position?: Position }) => Promise<{ success: boolean; person?: Person; message?: string }>
   updatePerson: (personId: string, personData: Record<string, unknown>) => Promise<{ success: boolean; message?: string }>
   deletePerson: (personId: string) => Promise<{ success: boolean; message?: string }>
-  addRelationship: (data: { sourceId: string; targetId: string; type: string }) => Promise<{ success: boolean; message?: string }>
+  addRelationship: (data: { sourceId: string; targetId: string; type: string }) => Promise<{ success: boolean; message?: string; statusCode?: number }>
   deleteRelationship: (relationshipId: string) => Promise<{ success: boolean; message?: string }>
   updateNodePositions: (nodePositions: { id: string; position: Position }[]) => Promise<void>
   resetState: () => void
@@ -169,8 +169,12 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       const { data } = await api.post("/relationships", relationshipData)
       return { success: true, message: data.message }
     } catch (error: unknown) {
+      const statusCode =
+        typeof error === "object" && error !== null && "response" in error
+          ? (error as { response?: { status?: number } }).response?.status
+          : undefined
       const message = storeError(error, "tree:store.addRelationError")
-      return { success: false, message }
+      return { success: false, message, statusCode }
     }
   },
 
