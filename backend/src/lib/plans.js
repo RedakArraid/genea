@@ -1,19 +1,20 @@
 /**
- * Forfaits GeneaIA — Côte d'Ivoire (XOF)
+ * Forfaits GeneaIA — tarification internationale (USD facturé, équivalent EUR affiché)
  *
- * Pas de freemium : l'Essai est un petit montant pour tester (1 arbre, 25 fiches).
- * Famille et Patrimoine sont facturés à l'année.
+ * Essai : $5 (≈ €5) — paiement unique
+ * Famille : $30/an (≈ €30/an)
+ * Patrimoine : $50/an (≈ €50/an) ou $5/mois (≈ €5/mois)
  */
 
-const CURRENCY = 'XOF';
+const CURRENCY = 'USD';
 
 const PLANS = {
   SOLO: {
     id: 'SOLO',
     name: 'Essai',
     billingPeriod: 'once',
-    priceXof: 2500,
-    priceLabel: '2 500 FCFA — paiement unique',
+    priceUsd: 5,
+    priceLabel: '$5 — one-time (≈ €5)',
     durationDays: 90,
     maxTrees: 1,
     maxPersonsPerTree: 25,
@@ -26,15 +27,15 @@ const PLANS = {
       '1 arbre, jusqu\'à 25 fiches',
       '90 jours pour tester GeneaIA',
       'Partage privé (2 collaborateurs)',
-      'Mobile Money, Orange Money, Wave, carte',
+      'Paiement carte sécurisé',
     ],
   },
   FAMILY: {
     id: 'FAMILY',
     name: 'Famille',
     billingPeriod: 'yearly',
-    priceXof: 20000,
-    priceLabel: '20 000 FCFA / an',
+    priceUsd: 30,
+    priceLabel: '$30 / year (≈ €30)',
     durationDays: 365,
     maxTrees: 5,
     maxPersonsPerTree: 500,
@@ -55,9 +56,12 @@ const PLANS = {
     id: 'PATRIMONY',
     name: 'Patrimoine',
     billingPeriod: 'yearly',
-    priceXof: 35000,
-    priceLabel: '35 000 FCFA / an',
+    priceUsd: 50,
+    priceMonthlyUsd: 5,
+    priceLabel: '$50 / year (≈ €50)',
+    priceLabelMonthly: '$5 / month (≈ €5)',
     durationDays: 365,
+    durationDaysMonthly: 30,
     maxTrees: Infinity,
     maxPersonsPerTree: Infinity,
     maxCollaborators: Infinity,
@@ -79,32 +83,51 @@ function getPlanLimits(plan) {
   return PLANS[plan] || PLANS.SOLO;
 }
 
-function getPlanPriceXof(planId) {
-  return PLANS[planId]?.priceXof ?? PLANS.SOLO.priceXof;
+function getPlanPrice(planId, billingInterval = 'yearly') {
+  const plan = PLANS[planId] || PLANS.SOLO;
+  if (planId === 'PATRIMONY' && billingInterval === 'monthly' && plan.priceMonthlyUsd != null) {
+    return plan.priceMonthlyUsd;
+  }
+  return plan.priceUsd;
+}
+
+/** @deprecated alias */
+function getPlanPriceXof(planId, billingInterval) {
+  return getPlanPrice(planId, billingInterval);
+}
+
+function getPlanDurationDays(planId, billingInterval = 'yearly') {
+  const plan = PLANS[planId] || PLANS.SOLO;
+  if (planId === 'PATRIMONY' && billingInterval === 'monthly') {
+    return plan.durationDaysMonthly ?? 30;
+  }
+  return plan.durationDays;
 }
 
 function isPaidPlan(planId) {
   return !!PLANS[planId];
 }
 
-function computeDiscountedAmount(baseXof, promo) {
-  if (!promo) return baseXof;
+function computeDiscountedAmount(baseAmount, promo) {
+  if (!promo) return baseAmount;
   if (promo.discountType === 'PERCENT') {
-    return Math.max(0, Math.round(baseXof * (1 - promo.discountValue / 100)));
+    return Math.max(0, Math.round(baseAmount * (1 - promo.discountValue / 100) * 100) / 100);
   }
-  return Math.max(0, baseXof - promo.discountValue);
+  return Math.max(0, baseAmount - promo.discountValue);
 }
 
-/** Paystack exige amount × 100 même pour XOF */
-function toPaystackAmount(xof) {
-  return Math.round(xof) * 100;
+/** Paystack : montant en centimes USD (× 100) */
+function toPaystackAmount(usd) {
+  return Math.round(usd * 100);
 }
 
 module.exports = {
   PLANS,
   CURRENCY,
   getPlanLimits,
+  getPlanPrice,
   getPlanPriceXof,
+  getPlanDurationDays,
   isPaidPlan,
   computeDiscountedAmount,
   toPaystackAmount,

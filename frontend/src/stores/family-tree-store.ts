@@ -1,6 +1,11 @@
 import { create } from "zustand"
 import api from "@/lib/api"
+import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
 import type { FamilyTree, Person, Position, TreeAccess, TreeCollaborator, TreeInvite, TreeVisibility } from "@/types"
+
+function storeError(error: unknown, fallbackKey: string) {
+  return translateApiError(getApiErrorPayload(error), fallbackKey)
+}
 
 interface FamilyTreeState {
   trees: FamilyTree[]
@@ -56,9 +61,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
         isLoading: false,
       })
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur lors du chargement des arbres"
+      const message = storeError(error, "tree:store.fetchTreesError")
       set({ error: message, isLoading: false })
     }
   },
@@ -70,9 +73,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       const { data } = await api.get(`/family-trees/${treeId}`)
       set({ currentTree: data.tree, treeAccess: data.access ?? null, isLoading: false })
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur lors du chargement de l'arbre"
+      const message = storeError(error, "tree:store.fetchTreeError")
       set({ error: message, isLoading: false })
     }
   },
@@ -84,9 +85,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       set((state) => ({ trees: [...state.trees, data.tree], isLoading: false }))
       return { success: true, tree: data.tree }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur lors de la création"
+      const message = storeError(error, "tree:store.createTreeError")
       set({ isLoading: false })
       return { success: false, message }
     }
@@ -101,9 +100,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       }))
       return { success: true }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur lors de la mise à jour"
+      const message = storeError(error, "tree:store.updateTreeError")
       return { success: false, message }
     }
   },
@@ -117,9 +114,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       }))
       return { success: true }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur lors de la suppression"
+      const message = storeError(error, "tree:store.deleteTreeError")
       return { success: false, message }
     }
   },
@@ -136,9 +131,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       })
       return { success: true, person: data.person }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur lors de l'ajout"
+      const message = storeError(error, "tree:store.addPersonError")
       return { success: false, message }
     }
   },
@@ -155,9 +148,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       await api.put(`/persons/${personId}`, fields)
       return { success: true }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur lors de la mise à jour"
+      const message = storeError(error, "tree:store.updatePersonError")
       return { success: false, message }
     }
   },
@@ -167,9 +158,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       await api.delete(`/persons/${personId}`)
       return { success: true }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur lors de la suppression"
+      const message = storeError(error, "tree:store.deletePersonError")
       return { success: false, message }
     }
   },
@@ -179,9 +168,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       const { data } = await api.post("/relationships", relationshipData)
       return { success: true, message: data.message }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur lors de l'ajout de la relation"
+      const message = storeError(error, "tree:store.addRelationError")
       return { success: false, message }
     }
   },
@@ -191,9 +178,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       await api.delete(`/relationships/${relationshipId}`)
       return { success: true }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur lors de la suppression"
+      const message = storeError(error, "tree:store.deleteRelationError")
       return { success: false, message }
     }
   },
@@ -267,9 +252,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
         collaborator: data.collaborator,
       }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur lors de l'invitation"
+      const message = storeError(error, "tree:store.inviteError")
       return { success: false, message }
     }
   },
@@ -279,9 +262,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       const { data } = await api.delete(`/family-trees/${treeId}/invites/${inviteId}`)
       return { success: true, message: data.message }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur"
+      const message = storeError(error, "errors:GENERIC")
       return { success: false, message }
     }
   },
@@ -292,9 +273,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       await get().fetchTrees()
       return { success: true, message: data.message, treeId: data.treeId }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Invitation invalide ou expirée"
+      const message = storeError(error, "tree:invite.invalid")
       return { success: false, message }
     }
   },
@@ -304,9 +283,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       await api.delete(`/family-trees/${treeId}/collaborators/${userId}`)
       return { success: true }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur"
+      const message = storeError(error, "errors:GENERIC")
       return { success: false, message }
     }
   },
@@ -322,9 +299,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       }))
       return { success: true, message: data.message }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur"
+      const message = storeError(error, "errors:GENERIC")
       return { success: false, message }
     }
   },

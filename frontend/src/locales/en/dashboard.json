@@ -1,0 +1,73 @@
+{
+  "title": "My family trees",
+  "subtitle": "Create and manage your family lineages",
+  "newTree": "New tree",
+  "createTree": "Create a tree",
+  "stats": {
+    "trees": "Trees",
+    "totalPersons": "Total people",
+    "publicTrees": "Public trees"
+  },
+  "sharedWithMe": "Trees shared with me",
+  "myTrees": "My trees",
+  "personCount": "{{count}} people",
+  "empty": {
+    "title": "No tree yet",
+    "subtitle": "Create your first tree to get started"
+  },
+  "visibility": {
+    "public": "Public",
+    "shared": "Shared",
+    "private": "Private"
+  },
+  "role": {
+    "editor": "Editor",
+    "viewer": "Viewer"
+  },
+  "copyPublicLink": "Copy public link",
+  "publicLinkCopied": "Public link copied",
+  "deleteConfirm": "Delete the tree \"{{name}}\"?",
+  "treeCreated": "Tree created",
+  "treeDeleted": "Tree deleted",
+  "nameRequired": "Name is required",
+  "createDialog": {
+    "title": "New family tree",
+    "subtitle": "Give your new family lineage a name",
+    "nameLabel": "Name *",
+    "namePlaceholder": "Smith family",
+    "descLabel": "Description",
+    "descPlaceholder": "Paternal line...",
+    "publicLabel": "Public tree",
+    "creating": "Creating...",
+    "create": "Create"
+  },
+  "activatePlan": {
+    "title": "Activate your plan to create a tree",
+    "subtitle": "Choose the Trial ($5, 25 profiles) or a yearly plan. Secure card payment via Paystack.",
+    "seePricing": "See pricing"
+  },
+  "sidebar": {
+    "navigation": "Navigation",
+    "myTrees": "My trees",
+    "noTree": "No tree",
+    "myProfile": "My profile"
+  },
+  "profile": {
+    "title": "My profile",
+    "subtitle": "Manage your personal information",
+    "name": "Name",
+    "phone": "Phone",
+    "email": "Email (optional)",
+    "emailHint": "Required for online payments and receiving OTP codes by email.",
+    "memberSince": "Member since {{date}}",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "updated": "Profile updated",
+    "subscription": "Subscription",
+    "currentPlan": "Your current plan",
+    "comparePlans": "Compare plans and switch from the public Pricing page.",
+    "managePlan": "Manage my plan",
+    "language": "Interface language"
+  }
+}

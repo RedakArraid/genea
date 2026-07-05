@@ -11,6 +11,7 @@ export interface User {
   planActive?: boolean
   planExpiresAt?: string | null
   role?: "USER" | "ADMIN"
+  locale?: string
   createdAt: string
   updatedAt?: string
 }

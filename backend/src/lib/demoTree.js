@@ -2,7 +2,12 @@
  * Arbre démo Famille Dupont — création et réinitialisation
  */
 
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const prisma = require('./prisma');
+
+const DEMO_OWNER_EMAIL = 'demo@geneaia.app';
+const DEMO_OWNER_PHONE = '+2250700000002';
 
 async function createRelationship(type, sourceId, targetId) {
   await prisma.relationship.create({ data: { type, sourceId, targetId } });
@@ -104,20 +109,67 @@ async function createDemoTree(ownerId) {
   return demoTree;
 }
 
+async function getOrCreateDemoOwner() {
+  let owner = await prisma.user.findUnique({ where: { email: DEMO_OWNER_EMAIL } });
+  if (owner) return owner;
+
+  owner = await prisma.user.findFirst({
+    where: { role: 'ADMIN' },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (owner) return owner;
+
+  const phoneTaken = await prisma.user.findUnique({ where: { phone: DEMO_OWNER_PHONE } });
+  const password = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
+
+  owner = await prisma.user.create({
+    data: {
+      name: 'GeneaIA Démo',
+      phone: phoneTaken ? `+999${String(Date.now()).slice(-10)}` : DEMO_OWNER_PHONE,
+      email: DEMO_OWNER_EMAIL,
+      password,
+      plan: 'PATRIMONY',
+      role: 'USER',
+      planActive: true,
+      planExpiresAt: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000),
+      locale: 'fr',
+    },
+  });
+  console.log('[demo] Compte propriétaire démo créé automatiquement');
+  return owner;
+}
+
+const DEMO_TREE_SELECT = { id: true, name: true, description: true };
+
+async function ensureDemoTree() {
+  let tree = await prisma.familyTree.findFirst({
+    where: { isDemo: true },
+    select: DEMO_TREE_SELECT,
+  });
+  if (tree) return tree;
+
+  try {
+    const owner = await getOrCreateDemoOwner();
+    const created = await createDemoTree(owner.id);
+    console.log('[demo] Arbre démo créé automatiquement:', created.id);
+    return { id: created.id, name: created.name, description: created.description };
+  } catch (err) {
+    tree = await prisma.familyTree.findFirst({
+      where: { isDemo: true },
+      select: DEMO_TREE_SELECT,
+    });
+    if (tree) return tree;
+    throw err;
+  }
+}
+
 async function resetDemoTree() {
   const existing = await prisma.familyTree.findFirst({ where: { isDemo: true } });
   if (existing) {
     await prisma.familyTree.delete({ where: { id: existing.id } });
   }
 
-  let owner = await prisma.user.findUnique({ where: { email: 'demo@geneaia.app' } });
-  if (!owner) {
-    owner = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
-  }
-  if (!owner) {
-    throw new Error('Aucun propriétaire démo trouvé (demo@geneaia.app)');
-  }
-
+  const owner = await getOrCreateDemoOwner();
   const demoTree = await createDemoTree(owner.id);
   return demoTree;
 }
@@ -136,6 +188,8 @@ async function getDemoTreeInfo() {
 module.exports = {
   createDemoTree,
   populateDemoTree,
+  ensureDemoTree,
+  getOrCreateDemoOwner,
   resetDemoTree,
   getDemoTreeInfo,
 };

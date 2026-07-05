@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
 import { Pencil, Plus, Trash2 } from "lucide-react"
+import { formatMediumDate } from "@/lib/format"
 import { toast } from "sonner"
 import {
   createPromoCode,
@@ -134,7 +133,9 @@ export default function AdminPromoPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Codes promo</h1>
-          <p className="text-muted-foreground">Réductions pour le lancement Côte d'Ivoire</p>
+          <p className="text-muted-foreground">
+            Réductions par marché ou campagne — créez un code par pays/région (ex. lancement France, partenaire Sénégal).
+          </p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="mr-2 size-4" />
@@ -161,14 +162,14 @@ export default function AdminPromoPage() {
                 <TableCell>
                   {promo.discountType === "PERCENT"
                     ? `${promo.discountValue}%`
-                    : `${promo.discountValue} FCFA`}
+                    : `${promo.discountValue} USD`}
                 </TableCell>
                 <TableCell>
                   {promo.usedCount}{promo.maxUses != null ? ` / ${promo.maxUses}` : ""}
                 </TableCell>
                 <TableCell>
                   {promo.validUntil
-                    ? format(new Date(promo.validUntil), "dd MMM yyyy", { locale: fr })
+                    ? formatMediumDate(promo.validUntil)
                     : "—"}
                 </TableCell>
                 <TableCell>
@@ -213,7 +214,11 @@ export default function AdminPromoPage() {
             </div>
             <div className="space-y-2">
               <Label>Description</Label>
-              <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <Input
+                placeholder="ex. Lancement France -50%, Partenaire CI"
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -222,7 +227,7 @@ export default function AdminPromoPage() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PERCENT">Pourcentage</SelectItem>
-                    <SelectItem value="FIXED">Montant fixe (FCFA)</SelectItem>
+                    <SelectItem value="FIXED">Montant fixe (USD)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

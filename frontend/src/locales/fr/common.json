@@ -1,0 +1,46 @@
+{
+  "appName": "GeneaIA",
+  "actions": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "search": "Rechercher",
+    "loading": "Chargement...",
+    "saving": "Enregistrement...",
+    "add": "Ajouter",
+    "share": "Partager",
+    "copy": "Copier",
+    "logout": "Déconnexion",
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "getStarted": "Commencer"
+  },
+  "nav": {
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "myTrees": "Mes arbres",
+    "demo": "Démo",
+    "pricing": "Tarifs",
+    "profile": "Profil",
+    "admin": "Administration",
+    "timeline": "Chronologie",
+    "matches": "Correspondances"
+  },
+  "language": {
+    "label": "Langue",
+    "fr": "Français",
+    "en": "English"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Cette page n'existe pas",
+    "backHome": "Accueil",
+    "backDashboard": "Tableau de bord"
+  },
+  "footer": "GeneaIA — Application de généalogie moderne",
+  "metaTitle": "GeneaIA — Généalogie moderne"
+}

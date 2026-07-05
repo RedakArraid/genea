@@ -10,6 +10,7 @@ import {
   TreePine,
   User,
 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
 import { Button } from "@/components/ui/button"
@@ -30,15 +31,22 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import { cn } from "@/lib/utils"
 
-const navItems = [
-  { title: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Correspondances", href: "matches", icon: Sparkles, treeScoped: true },
-  { title: "Chronologie", href: "timeline", icon: Timer, treeScoped: true },
+const navItems: Array<{
+  key: string
+  href: string
+  icon: typeof LayoutDashboard
+  treeScoped?: boolean
+}> = [
+  { key: "dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { key: "matches", href: "matches", icon: Sparkles, treeScoped: true },
+  { key: "timeline", href: "timeline", icon: Timer, treeScoped: true },
 ]
 
 export function AppShell() {
+  const { t } = useTranslation(["common", "dashboard"])
   const location = useLocation()
   const navigate = useNavigate()
   const { id: treeId } = useParams()
@@ -85,10 +93,10 @@ export function AppShell() {
                   if (item.treeScoped && !activeTreeId) return null
 
                   return (
-                    <SidebarMenuItem key={item.title}>
+                    <SidebarMenuItem key={item.key}>
                       <SidebarMenuButton render={<Link to={href} />} isActive={active}>
                         <item.icon />
-                        <span>{item.title}</span>
+                        <span>{t(`nav.${item.key}`)}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )
@@ -98,7 +106,7 @@ export function AppShell() {
           </SidebarGroup>
 
           <SidebarGroup>
-            <SidebarGroupLabel>Mes arbres</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("dashboard:sidebar.myTrees")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {allTrees.map((tree) => (
@@ -113,7 +121,7 @@ export function AppShell() {
                   </SidebarMenuItem>
                 ))}
                 {allTrees.length === 0 && (
-                  <p className="px-2 text-xs text-muted-foreground">Aucun arbre</p>
+                  <p className="px-2 text-xs text-muted-foreground">{t("dashboard:sidebar.noTree")}</p>
                 )}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -125,20 +133,20 @@ export function AppShell() {
               <SidebarMenuItem>
                 <SidebarMenuButton render={<Link to="/admin" />}>
                   <Shield />
-                  <span>Administration</span>
+                  <span>{t("nav.admin")}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
             <SidebarMenuItem>
               <SidebarMenuButton render={<Link to="/profile" />}>
                 <User />
-                <span>Mon profil</span>
+                <span>{t("dashboard:sidebar.myProfile")}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton onClick={handleLogout}>
                 <LogOut />
-                <span>Déconnexion</span>
+                <span>{t("actions.logout")}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -154,9 +162,10 @@ export function AppShell() {
               {currentTree?.name || "GeneaIA"}
             </div>
             <div className="flex items-center gap-2">
+              <LanguageSwitcher />
               <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={handleLogout}>
                 <LogOut className="mr-1.5 size-4" />
-                Déconnexion
+                {t("actions.logout")}
               </Button>
               <Avatar className="size-8">
                 <AvatarFallback>{initials}</AvatarFallback>

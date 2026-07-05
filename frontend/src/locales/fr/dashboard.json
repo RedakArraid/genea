@@ -1,0 +1,73 @@
+{
+  "title": "Mes arbres généalogiques",
+  "subtitle": "Créez et gérez vos lignées familiales",
+  "newTree": "Nouvel arbre",
+  "createTree": "Créer un arbre",
+  "stats": {
+    "trees": "Arbres",
+    "totalPersons": "Personnes totales",
+    "publicTrees": "Arbres publics"
+  },
+  "sharedWithMe": "Arbres partagés avec moi",
+  "myTrees": "Mes arbres",
+  "personCount": "{{count}} personnes",
+  "empty": {
+    "title": "Aucun arbre pour le moment",
+    "subtitle": "Créez votre premier arbre pour commencer"
+  },
+  "visibility": {
+    "public": "Public",
+    "shared": "Partagé",
+    "private": "Privé"
+  },
+  "role": {
+    "editor": "Éditeur",
+    "viewer": "Lecteur"
+  },
+  "copyPublicLink": "Copier le lien public",
+  "publicLinkCopied": "Lien public copié",
+  "deleteConfirm": "Supprimer l'arbre \"{{name}}\" ?",
+  "treeCreated": "Arbre créé",
+  "treeDeleted": "Arbre supprimé",
+  "nameRequired": "Le nom est requis",
+  "createDialog": {
+    "title": "Nouvel arbre généalogique",
+    "subtitle": "Donnez un nom à votre nouvelle lignée familiale",
+    "nameLabel": "Nom *",
+    "namePlaceholder": "Famille Dupont",
+    "descLabel": "Description",
+    "descPlaceholder": "Lignée paternelle...",
+    "publicLabel": "Arbre public",
+    "creating": "Création...",
+    "create": "Créer"
+  },
+  "activatePlan": {
+    "title": "Activez votre forfait pour créer un arbre",
+    "subtitle": "Choisissez l'Essai (5 €, 25 fiches) ou un forfait annuel. Paiement sécurisé par carte (Paystack).",
+    "seePricing": "Voir les tarifs"
+  },
+  "sidebar": {
+    "navigation": "Navigation",
+    "myTrees": "Mes arbres",
+    "noTree": "Aucun arbre",
+    "myProfile": "Mon profil"
+  },
+  "profile": {
+    "title": "Mon profil",
+    "subtitle": "Gérez vos informations personnelles",
+    "name": "Nom",
+    "phone": "Téléphone",
+    "email": "Email (optionnel)",
+    "emailHint": "Requis pour les paiements en ligne et la réception des codes OTP par email.",
+    "memberSince": "Membre depuis le {{date}}",
+    "changePassword": "Changer le mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "updated": "Profil mis à jour",
+    "subscription": "Abonnement",
+    "currentPlan": "Votre forfait actuel",
+    "comparePlans": "Comparez les forfaits et changez d'offre depuis la page publique Tarifs.",
+    "managePlan": "Gérer mon forfait",
+    "language": "Langue de l'interface"
+  }
+}

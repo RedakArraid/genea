@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
 import { normalizePersons } from "@/utils/tree-layout"
 import { Input } from "@/components/ui/input"
@@ -8,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function TimelinePage() {
+  const { t } = useTranslation("tree")
   const { id: treeId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { currentTree, fetchTreeById, isLoading } = useFamilyTreeStore()
@@ -24,8 +26,8 @@ export default function TimelinePage() {
   if (!currentTree) {
     return (
       <div className="text-center py-20">
-        <p>Arbre non trouvé</p>
-        <Button className="mt-4" onClick={() => navigate("/dashboard")}>Retour</Button>
+        <p>{t("timeline.treeNotFound")}</p>
+        <Button className="mt-4" onClick={() => navigate("/dashboard")}>{t("timeline.back")}</Button>
       </div>
     )
   }
@@ -44,12 +46,12 @@ export default function TimelinePage() {
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Chronologie · {currentTree.name}</p>
-          <h1 className="text-2xl font-bold">Timeline familiale</h1>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t("timeline.kicker", { tree: currentTree.name })}</p>
+          <h1 className="text-2xl font-bold">{t("timeline.title")}</h1>
         </div>
         <Input
           className="max-w-xs"
-          placeholder="Rechercher..."
+          placeholder={t("canvas.searchPlaceholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -79,7 +81,7 @@ export default function TimelinePage() {
           </div>
         ))}
         {filtered.length === 0 && (
-          <p className="py-8 text-center text-muted-foreground">Aucune personne avec date de naissance</p>
+          <p className="py-8 text-center text-muted-foreground">{t("timeline.noPersonWithBirthDate")}</p>
         )}
       </div>
     </div>

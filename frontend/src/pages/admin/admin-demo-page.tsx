@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
 import { AlertTriangle, ExternalLink, RefreshCw } from "lucide-react"
+import { formatDateTime } from "@/lib/format"
 import { toast } from "sonner"
 import { fetchDemoInfo, resetDemoTree, type AdminTree } from "@/lib/admin-api"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -90,7 +89,7 @@ export default function AdminDemoPage() {
               </div>
               <div>
                 <dt className="text-muted-foreground">Dernière MAJ</dt>
-                <dd>{format(new Date(tree.updatedAt), "dd MMMM yyyy à HH:mm", { locale: fr })}</dd>
+                <dd>{formatDateTime(tree.updatedAt)}</dd>
               </div>
             </dl>
           ) : (

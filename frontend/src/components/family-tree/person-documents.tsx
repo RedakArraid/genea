@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { FileText, Trash2, Upload, ExternalLink } from "lucide-react"
 import type { PersonDocument } from "@/types"
@@ -11,6 +12,7 @@ import {
   DOCUMENT_CATEGORY_LABELS,
   resolveMediaUrl,
 } from "@/lib/upload"
+import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -28,6 +30,7 @@ interface PersonDocumentsProps {
 }
 
 export function PersonDocuments({ personId, readOnly = false }: PersonDocumentsProps) {
+  const { t } = useTranslation("tree")
   const [documents, setDocuments] = useState<PersonDocument[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -62,11 +65,11 @@ export function PersonDocuments({ personId, readOnly = false }: PersonDocumentsP
     const file = e.target.files?.[0]
     if (!file || readOnly) return
     if (!storageReady) {
-      toast.error("Stockage MinIO indisponible")
+      toast.error(t("documents.storageUnavailable"))
       return
     }
     if (file.size > maxMb * 1024 * 1024) {
-      toast.error(`Fichier trop volumineux (max ${maxMb} Mo)`)
+      toast.error(t("documents.fileTooBig", { max: maxMb }))
       return
     }
     setUploading(true)
@@ -81,25 +84,22 @@ export function PersonDocuments({ personId, readOnly = false }: PersonDocumentsP
       setTitle("")
       setCategory("other")
       if (fileRef.current) fileRef.current.value = ""
-      toast.success("Document ajouté")
+      toast.success(t("documents.added"))
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Échec de l'upload"
-      toast.error(msg)
+      toast.error(translateApiError(getApiErrorPayload(err), "tree:documents.uploadFailed"))
     } finally {
       setUploading(false)
     }
   }
 
   const handleDelete = async (docId: string) => {
-    if (!confirm("Supprimer ce document ?")) return
+    if (!confirm(t("documents.deleteConfirm"))) return
     try {
       await deletePersonDocument(personId, docId)
       setDocuments((prev) => prev.filter((d) => d.id !== docId))
-      toast.success("Document supprimé")
+      toast.success(t("documents.deleted"))
     } catch {
-      toast.error("Impossible de supprimer le document")
+      toast.error(t("documents.deleteFailed"))
     }
   }
 
@@ -107,14 +107,14 @@ export function PersonDocuments({ personId, readOnly = false }: PersonDocumentsP
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Documents ({documents.length})
+          {t("documents.title", { count: documents.length })}
         </span>
       </div>
 
       {loading ? (
-        <p className="text-xs text-muted-foreground">Chargement…</p>
+        <p className="text-xs text-muted-foreground">{t("documents.loading")}</p>
       ) : documents.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Aucun document</p>
+        <p className="text-xs text-muted-foreground">{t("documents.empty")}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {documents.map((doc) => (
@@ -134,7 +134,7 @@ export function PersonDocuments({ personId, readOnly = false }: PersonDocumentsP
                   href={resolveMediaUrl(doc.fileUrl) || doc.fileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="Ouvrir"
+                  title={t("documents.open")}
                   className="inline-flex size-7 items-center justify-center rounded-md hover:bg-muted"
                 >
                   <ExternalLink className="size-3.5" />
@@ -157,9 +157,9 @@ export function PersonDocuments({ personId, readOnly = false }: PersonDocumentsP
 
       {!readOnly && storageReady && (
         <div className="mt-1 flex flex-col gap-2 rounded-md border border-dashed p-2">
-          <Label className="text-xs">Ajouter un document (PDF, images, Word… max {maxMb} Mo)</Label>
+          <Label className="text-xs">{t("documents.addLabel", { max: maxMb })}</Label>
           <Input
-            placeholder="Titre du document"
+            placeholder={t("documents.titlePlaceholder")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="h-8 text-xs"
@@ -185,14 +185,14 @@ export function PersonDocuments({ personId, readOnly = false }: PersonDocumentsP
             onClick={() => fileRef.current?.click()}
           >
             <Upload className="mr-1 size-3.5" />
-            {uploading ? "Envoi…" : "Choisir un fichier"}
+            {uploading ? t("documents.uploading") : t("documents.chooseFile")}
           </Button>
         </div>
       )}
 
       {!readOnly && !storageReady && !loading && (
         <p className="text-xs text-amber-700 dark:text-amber-300">
-          Stockage MinIO non disponible — configurez S3_* dans le backend.
+          {t("documents.storageHint")}
         </p>
       )}
     </div>

@@ -13,7 +13,4 @@ router.post('/paystack', express.raw({ type: 'application/json' }), (req, res, n
   billingController.paystackWebhook(req, res, next);
 });
 
-router.post('/cinetpay', express.urlencoded({ extended: true }), billingController.cinetpayWebhook);
-router.get('/cinetpay', billingController.cinetpayWebhook);
-
 module.exports = router;

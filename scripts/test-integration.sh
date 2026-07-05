@@ -318,7 +318,7 @@ fi
 
 # Billing & planActive
 billing_json=$(curl -s -X POST "$API/billing/preview" -H 'Content-Type: application/json' -d '{"plan":"FAMILY"}')
-assert_json "Billing preview FAMILY 20000 XOF" "d.get('finalAmount') == 20000 and d.get('limits',{}).get('maxTrees') == 5" "$billing_json"
+assert_json "Billing preview FAMILY 30 USD" "d.get('finalAmount') == 30 and d.get('limits',{}).get('maxTrees') == 5" "$billing_json"
 
 reg_email="billing-test-$(date +%s)@example.com"
 reg_json=$(curl -s -X POST "$API/auth/register" \

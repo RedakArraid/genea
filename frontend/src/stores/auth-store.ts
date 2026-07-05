@@ -1,7 +1,17 @@
 import { create } from "zustand"
 import { jwtDecode } from "jwt-decode"
 import api from "@/lib/api"
+import i18n, { SUPPORTED_LOCALES, type Locale } from "@/i18n"
+import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
 import type { User } from "@/types"
+
+/** Applique la langue du profil utilisateur (login / checkAuth) */
+function syncLocale(user: User | null | undefined) {
+  const locale = user?.locale as Locale | undefined
+  if (locale && SUPPORTED_LOCALES.includes(locale) && i18n.language?.split("-")[0] !== locale) {
+    i18n.changeLanguage(locale)
+  }
+}
 
 interface AuthState {
   isAuthenticated: boolean
@@ -10,9 +20,9 @@ interface AuthState {
   isLoading: boolean
   checkAuth: () => Promise<void>
   login: (login: string, password: string) => Promise<{ success: boolean; message?: string }>
-  requestOtp: (phone: string) => Promise<{ success: boolean; message?: string }>
-  verifyOtp: (phone: string, code: string) => Promise<{ success: boolean; message?: string }>
-  register: (name: string, phone: string, password: string, email?: string) => Promise<{ success: boolean; message?: string }>
+  requestOtp: (phone: string, phoneCountry?: string) => Promise<{ success: boolean; message?: string }>
+  verifyOtp: (phone: string, code: string, phoneCountry?: string) => Promise<{ success: boolean; message?: string }>
+  register: (name: string, phone: string, password: string, email?: string, phoneCountry?: string) => Promise<{ success: boolean; message?: string }>
   logout: () => void
   updateProfile: (data: Record<string, unknown>) => Promise<{ success: boolean; message?: string }>
   upgradePlan: (plan: import("@/types").PlanId) => Promise<{ success: boolean; message?: string }>
@@ -41,6 +51,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       const { data } = await api.get("/auth/me")
+      syncLocale(data.user)
       set({
         user: data.user,
         isAuthenticated: true,
@@ -57,58 +68,63 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data } = await api.post("/auth/login", { login, password })
       localStorage.setItem("token", data.token)
+      syncLocale(data.user)
       set({ user: data.user, isAuthenticated: true, isAdmin: data.user?.role === "ADMIN" })
       return { success: true }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur de connexion"
-      return { success: false, message }
+      return {
+        success: false,
+        message: translateApiError(getApiErrorPayload(error), "errors:loginError"),
+      }
     }
   },
 
-  requestOtp: async (phone) => {
+  requestOtp: async (phone, phoneCountry = "CI") => {
     try {
-      const { data } = await api.post("/auth/otp/request", { phone })
+      const { data } = await api.post("/auth/otp/request", { phone, phoneCountry })
       return { success: true, message: data.message }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Impossible d'envoyer le code"
-      return { success: false, message }
+      return {
+        success: false,
+        message: translateApiError(getApiErrorPayload(error), "errors:otpSendError"),
+      }
     }
   },
 
-  verifyOtp: async (phone, code) => {
+  verifyOtp: async (phone, code, phoneCountry = "CI") => {
     try {
-      const { data } = await api.post("/auth/otp/verify", { phone, code })
+      const { data } = await api.post("/auth/otp/verify", { phone, code, phoneCountry })
       localStorage.setItem("token", data.token)
+      syncLocale(data.user)
       set({ user: data.user, isAuthenticated: true, isAdmin: data.user?.role === "ADMIN" })
       return { success: true }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Code invalide"
-      return { success: false, message }
+      return {
+        success: false,
+        message: translateApiError(getApiErrorPayload(error), "errors:otpVerifyError"),
+      }
     }
   },
 
-  register: async (name, phone, password, email) => {
+  register: async (name, phone, password, email, phoneCountry = "CI") => {
     try {
       const { data } = await api.post("/auth/register", {
         name,
         phone,
         password,
+        phoneCountry,
+        locale: i18n.language?.split("-")[0] || "fr",
         ...(email?.trim() ? { email: email.trim() } : {}),
       })
       localStorage.setItem("token", data.token)
+      syncLocale(data.user)
       set({ user: data.user, isAuthenticated: true, isAdmin: data.user?.role === "ADMIN" })
       return { success: true }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur d'inscription"
-      return { success: false, message }
+      return {
+        success: false,
+        message: translateApiError(getApiErrorPayload(error), "errors:registerError"),
+      }
     }
   },
 
@@ -120,13 +136,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateProfile: async (profileData) => {
     try {
       const { data } = await api.put("/users/profile", profileData)
+      if (data.user?.locale) syncLocale(data.user)
       set({ user: data.user })
       return { success: true, message: data.message }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur de mise à jour"
-      return { success: false, message }
+      return {
+        success: false,
+        message: translateApiError(getApiErrorPayload(error), "errors:updateError"),
+      }
     }
   },
 
@@ -136,10 +153,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: data.user })
       return { success: true, message: data.message }
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        "Erreur lors du changement de forfait"
-      return { success: false, message }
+      return {
+        success: false,
+        message: translateApiError(getApiErrorPayload(error), "errors:planChangeError"),
+      }
     }
   },
 }))

@@ -5,16 +5,20 @@
 const bcrypt = require('bcryptjs');
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
-const { normalizePhone, isValidCiPhone } = require('../lib/phone');
+const { normalizePhone, isValidPhone } = require('../lib/phone');
+const { sendError, sendValidationErrors } = require('../lib/apiErrors');
 
 const profileSelect = {
   id: true,
   name: true,
   phone: true,
   email: true,
+  locale: true,
   createdAt: true,
   updatedAt: true,
 };
+
+const SUPPORTED_LOCALES = ['fr', 'en'];
 
 exports.getUserProfile = async (req, res, next) => {
   try {
@@ -37,11 +41,11 @@ exports.updateUserProfile = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return sendValidationErrors(res, errors);
     }
 
     const userId = req.user.id;
-    const { name, email, phone: rawPhone, currentPassword, newPassword } = req.body;
+    const { name, email, phone: rawPhone, currentPassword, newPassword, locale, phoneCountry } = req.body;
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -54,10 +58,17 @@ exports.updateUserProfile = async (req, res, next) => {
       updateData.name = name;
     }
 
+    if (locale !== undefined) {
+      if (!SUPPORTED_LOCALES.includes(locale)) {
+        return res.status(400).json({ message: 'Langue non supportée', code: 'UNSUPPORTED_LOCALE' });
+      }
+      updateData.locale = locale;
+    }
+
     if (rawPhone !== undefined) {
-      const phone = normalizePhone(rawPhone);
-      if (!phone || !isValidCiPhone(phone)) {
-        return res.status(400).json({ message: 'Numéro de téléphone invalide (format CI : 07XXXXXXXX)' });
+      const phone = normalizePhone(rawPhone, phoneCountry || 'CI');
+      if (!phone || !isValidPhone(phone)) {
+        return sendError(res, 400, 'INVALID_PHONE_CI', 'Numéro de téléphone invalide (format CI : 07XXXXXXXX)');
       }
       if (phone !== user.phone) {
         const existingPhone = await prisma.user.findUnique({ where: { phone } });

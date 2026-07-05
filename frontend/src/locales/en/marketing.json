@@ -1,0 +1,33 @@
+{
+  "hero": {
+    "badge": "Modern genealogy",
+    "title": "Build and explore your family history",
+    "subtitle": "GeneaIA lets you create interactive family trees, add complex relationships and visualize your lineage at a glance.",
+    "ctaAuth": "My trees",
+    "ctaGuest": "Create a free account",
+    "ctaDemo": "View the demo"
+  },
+  "features": {
+    "trees": {
+      "title": "Interactive trees",
+      "description": "Visualize and organize your family on an intuitive canvas with generations and unions."
+    },
+    "search": {
+      "title": "Search & timeline",
+      "description": "Find any family member and browse your family history year by year."
+    },
+    "share": {
+      "title": "Secure sharing",
+      "description": "Invite relatives as viewers or co-editors — no account required to explore the demo."
+    },
+    "privacy": {
+      "title": "Protected data",
+      "description": "Your trees belong to you. Secure authentication and granular access control."
+    }
+  },
+  "demo": {
+    "unavailable": "Demo tree unavailable",
+    "loadError": "Could not load the demo",
+    "backHome": "Back to home"
+  }
+}

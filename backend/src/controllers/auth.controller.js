@@ -7,8 +7,9 @@ const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { findUserByLogin } = require('../lib/authLogin');
-const { normalizePhone, isValidCiPhone } = require('../lib/phone');
+const { normalizePhone, isValidPhone } = require('../lib/phone');
 const { requestLoginOtp, verifyLoginOtp, isOtpDeliveryAvailable } = require('../lib/otp');
+const { sendError, sendValidationErrors } = require('../lib/apiErrors');
 
 const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
 
@@ -30,6 +31,7 @@ const userPublicSelect = {
   phone: true,
   email: true,
   name: true,
+  locale: true,
   createdAt: true,
   updatedAt: true,
   plan: true,
@@ -42,13 +44,14 @@ exports.register = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return sendValidationErrors(res, errors);
     }
 
-    const { name, email: rawEmail, password, phone: rawPhone } = req.body;
-    const phone = normalizePhone(rawPhone);
-    if (!phone || !isValidCiPhone(phone)) {
-      return res.status(400).json({ message: 'Numéro de téléphone invalide (format CI : 07XXXXXXXX)' });
+    const { name, email: rawEmail, password, phone: rawPhone, locale, phoneCountry } = req.body;
+    const userLocale = ['fr', 'en'].includes(locale) ? locale : 'fr';
+    const phone = normalizePhone(rawPhone, phoneCountry || 'CI');
+    if (!phone || !isValidPhone(phone)) {
+      return sendError(res, 400, 'INVALID_PHONE_CI', 'Numéro de téléphone invalide (format CI : 07XXXXXXXX).');
     }
 
     let normalizedEmail = null;
@@ -58,13 +61,13 @@ exports.register = async (req, res, next) => {
 
     const existingPhone = await prisma.user.findUnique({ where: { phone } });
     if (existingPhone) {
-      return res.status(409).json({ message: 'Ce numéro de téléphone est déjà utilisé' });
+      return sendError(res, 409, 'PHONE_TAKEN', 'Ce numéro de téléphone est déjà utilisé');
     }
 
     if (normalizedEmail) {
       const existingEmail = await prisma.user.findUnique({ where: { email: normalizedEmail } });
       if (existingEmail) {
-        return res.status(409).json({ message: 'Cet email est déjà utilisé' });
+        return sendError(res, 409, 'EMAIL_TAKEN', 'Cet email est déjà utilisé');
       }
     }
 
@@ -75,6 +78,7 @@ exports.register = async (req, res, next) => {
         phone,
         email: normalizedEmail,
         password: hashedPassword,
+        locale: userLocale,
       },
     });
 
@@ -94,7 +98,7 @@ exports.login = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return sendValidationErrors(res, errors);
     }
 
     const login = req.body.login || req.body.phone || req.body.email;
@@ -102,12 +106,12 @@ exports.login = async (req, res, next) => {
 
     const user = await findUserByLogin(login);
     if (!user) {
-      return res.status(401).json({ message: 'Identifiant ou mot de passe incorrect' });
+      return sendError(res, 401, 'LOGIN_FAILED', 'Identifiant ou mot de passe incorrect');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Identifiant ou mot de passe incorrect' });
+      return sendError(res, 401, 'LOGIN_FAILED', 'Identifiant ou mot de passe incorrect');
     }
 
     const token = signToken(user);
@@ -154,11 +158,15 @@ exports.requestOtp = async (req, res, next) => {
       return res.status(503).json({ message: 'Connexion par code indisponible.' });
     }
 
-    const { phone } = req.body;
-    const result = await requestLoginOtp(phone);
+    const { phone, phoneCountry } = req.body;
+    const result = await requestLoginOtp(phone, phoneCountry || 'CI');
 
     if (!result.ok) {
-      return res.status(result.status || 400).json({ message: result.message });
+      return res.status(result.status || 400).json({
+        code: result.code,
+        message: result.message,
+        ...(result.params && { params: result.params }),
+      });
     }
 
     res.status(200).json({ message: result.message });
@@ -174,11 +182,11 @@ exports.verifyOtp = async (req, res, next) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { phone, code } = req.body;
-    const result = await verifyLoginOtp(phone, code);
+    const { phone, code, phoneCountry } = req.body;
+    const result = await verifyLoginOtp(phone, code, phoneCountry || 'CI');
 
     if (!result.ok) {
-      return res.status(401).json({ message: result.message });
+      return res.status(401).json({ code: result.code, message: result.message });
     }
 
     const token = signToken(result.user);

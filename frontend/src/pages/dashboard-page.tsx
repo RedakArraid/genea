@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { formatDistanceToNow } from "date-fns"
-import { fr } from "date-fns/locale"
 import { Plus, Trash2, Users, GitBranch, Share2, CreditCard, Link2 } from "lucide-react"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
+import { formatRelativeDate } from "@/lib/format"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 
 export default function DashboardPage() {
+  const { t } = useTranslation("dashboard")
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const planActive = user?.planActive ?? false
@@ -38,14 +39,14 @@ export default function DashboardPage() {
 
   const handleCreate = async () => {
     if (!form.name.trim()) {
-      toast.error("Le nom est requis")
+      toast.error(t("nameRequired"))
       return
     }
     setCreating(true)
     const result = await createTree(form)
     setCreating(false)
     if (result.success && result.tree) {
-      toast.success("Arbre créé")
+      toast.success(t("treeCreated"))
       setOpen(false)
       setForm({ name: "", description: "", isPublic: false })
       navigate(`/family-tree/${result.tree.id}`)
@@ -55,16 +56,16 @@ export default function DashboardPage() {
   }
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Supprimer l'arbre "${name}" ?`)) return
+    if (!confirm(t("deleteConfirm", { name }))) return
     const result = await deleteTree(id)
-    if (result.success) toast.success("Arbre supprimé")
+    if (result.success) toast.success(t("treeDeleted"))
     else toast.error(result.message)
   }
 
   const handleCopyPublicLink = async (treeId: string) => {
     const url = `${window.location.origin}/tree/${treeId}`
     await navigator.clipboard.writeText(url)
-    toast.success("Lien public copié")
+    toast.success(t("publicLinkCopied"))
   }
 
   return (
@@ -74,48 +75,48 @@ export default function DashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-lg">
               <CreditCard className="size-5" />
-              Activez votre forfait pour créer un arbre
+              {t("activatePlan.title")}
             </CardTitle>
             <CardDescription>
-              Choisissez l'Essai (2 500 FCFA, 25 fiches) ou un forfait annuel. Paiement sécurisé via Paystack (Orange Money, MTN, Wave, carte).
+              {t("activatePlan.subtitle")}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link to="/pricing" className={buttonVariants()}>Voir les tarifs</Link>
+            <Link to="/pricing" className={buttonVariants()}>{t("activatePlan.seePricing")}</Link>
           </CardContent>
         </Card>
       )}
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Mes arbres généalogiques</h1>
-          <p className="text-muted-foreground">Créez et gérez vos lignées familiales</p>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
         <Button onClick={() => setOpen(true)} disabled={!planActive}>
           <Plus className="mr-2 size-4" />
-          Nouvel arbre
+          {t("newTree")}
         </Button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Arbres</CardDescription>
+            <CardDescription>{t("stats.trees")}</CardDescription>
             <CardTitle className="text-3xl">{trees.length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Personnes totales</CardDescription>
+            <CardDescription>{t("stats.totalPersons")}</CardDescription>
             <CardTitle className="text-3xl">
-              {trees.reduce((acc, t) => acc + (t._count?.Person || 0), 0)}
+              {trees.reduce((acc, tree) => acc + (tree._count?.Person || 0), 0)}
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Arbres publics</CardDescription>
-            <CardTitle className="text-3xl">{trees.filter((t) => t.isPublic).length}</CardTitle>
+            <CardDescription>{t("stats.publicTrees")}</CardDescription>
+            <CardTitle className="text-3xl">{trees.filter((tree) => tree.isPublic).length}</CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -124,7 +125,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Share2 className="size-5" />
-            Arbres partagés avec moi
+            {t("sharedWithMe")}
           </h2>
           <div className="grid gap-4 md:grid-cols-2">
             {sharedTrees.map((tree) => (
@@ -137,14 +138,14 @@ export default function DashboardPage() {
                       </Link>
                     </CardTitle>
                     <Badge variant="secondary">
-                      {tree.TreeCollaborator?.[0]?.role === "EDITOR" ? "Éditeur" : "Lecteur"}
+                      {tree.TreeCollaborator?.[0]?.role === "EDITOR" ? t("role.editor") : t("role.viewer")}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <span className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Users className="size-4" />
-                    {tree._count?.Person || 0} personnes
+                    {t("personCount", { count: tree._count?.Person || 0 })}
                   </span>
                 </CardContent>
               </Card>
@@ -154,7 +155,7 @@ export default function DashboardPage() {
       )}
 
       <div>
-        <h2 className="mb-4 text-lg font-semibold">Mes arbres</h2>
+        <h2 className="mb-4 text-lg font-semibold">{t("myTrees")}</h2>
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2">
           {[1, 2].map((i) => (
@@ -166,12 +167,12 @@ export default function DashboardPage() {
           <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
             <GitBranch className="size-12 text-muted-foreground" />
             <div>
-              <p className="font-medium">Aucun arbre pour le moment</p>
-              <p className="text-sm text-muted-foreground">Créez votre premier arbre pour commencer</p>
+              <p className="font-medium">{t("empty.title")}</p>
+              <p className="text-sm text-muted-foreground">{t("empty.subtitle")}</p>
             </div>
             <Button onClick={() => setOpen(true)} disabled={!planActive}>
               <Plus className="mr-2 size-4" />
-              Créer un arbre
+              {t("createTree")}
             </Button>
           </CardContent>
         </Card>
@@ -192,7 +193,7 @@ export default function DashboardPage() {
                     )}
                   </div>
                   <Badge variant={tree.visibility === "PUBLIC" || tree.isPublic ? "default" : tree.visibility === "SHARED" ? "outline" : "secondary"}>
-                    {tree.visibility === "PUBLIC" || tree.isPublic ? "Public" : tree.visibility === "SHARED" ? "Partagé" : "Privé"}
+                    {tree.visibility === "PUBLIC" || tree.isPublic ? t("visibility.public") : tree.visibility === "SHARED" ? t("visibility.shared") : t("visibility.private")}
                   </Badge>
                 </div>
               </CardHeader>
@@ -201,11 +202,11 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Users className="size-4" />
-                      {tree._count?.Person || 0} personnes
+                      {t("personCount", { count: tree._count?.Person || 0 })}
                     </span>
                     {tree.updatedAt && (
                       <span>
-                        {formatDistanceToNow(new Date(tree.updatedAt), { addSuffix: true, locale: fr })}
+                        {formatRelativeDate(tree.updatedAt)}
                       </span>
                     )}
                   </div>
@@ -214,7 +215,7 @@ export default function DashboardPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        title="Copier le lien public"
+                        title={t("copyPublicLink")}
                         onClick={() => handleCopyPublicLink(tree.id)}
                       >
                         <Link2 className="size-4" />
@@ -240,30 +241,30 @@ export default function DashboardPage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nouvel arbre généalogique</DialogTitle>
-            <DialogDescription>Donnez un nom à votre nouvelle lignée familiale</DialogDescription>
+            <DialogTitle>{t("createDialog.title")}</DialogTitle>
+            <DialogDescription>{t("createDialog.subtitle")}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="tree-name">Nom *</Label>
+              <Label htmlFor="tree-name">{t("createDialog.nameLabel")}</Label>
               <Input
                 id="tree-name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Famille Dupont"
+                placeholder={t("createDialog.namePlaceholder")}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="tree-desc">Description</Label>
+              <Label htmlFor="tree-desc">{t("createDialog.descLabel")}</Label>
               <Textarea
                 id="tree-desc"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Lignée paternelle..."
+                placeholder={t("createDialog.descPlaceholder")}
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="tree-public">Arbre public</Label>
+              <Label htmlFor="tree-public">{t("createDialog.publicLabel")}</Label>
               <Switch
                 id="tree-public"
                 checked={form.isPublic}
@@ -272,9 +273,9 @@ export default function DashboardPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t("common:actions.cancel")}</Button>
             <Button onClick={handleCreate} disabled={creating}>
-              {creating ? "Création..." : "Créer"}
+              {creating ? t("createDialog.creating") : t("createDialog.create")}
             </Button>
           </DialogFooter>
         </DialogContent>

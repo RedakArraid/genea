@@ -9,7 +9,7 @@ Dernière mise à jour : **2026-07-05**
 
 ## 1. Vue d'ensemble
 
-**GeneaIA** est une application de généalogie : création d'arbres familiaux, fiches personnes (photos, documents), collaboration, plans payants (Paystack/CinetPay, marché Côte d'Ivoire).
+**GeneaIA** est une application de généalogie : création d'arbres familiaux, fiches personnes (photos, documents), collaboration, plans payants internationaux (USD via Paystack, affichage EUR/USD).
 
 | Couche | Techno |
 |---|---|
@@ -36,7 +36,10 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 ### Authentification et comptes
 - Connexion par **téléphone (identifiant principal) + mot de passe** ou **OTP par code** ; email optionnel.
 - Rôles USER/ADMIN, plans SOLO/FAMILY/PATRIMONY avec expiration.
-- Billing Paystack (+ fallback CinetPay), codes promo, page admin.
+- Billing **100 % international** : Paystack USD uniquement (carte). Codes promo par marché/campagne via l'admin.
+- **Internationalisation fr/en** : i18next (namespaces `common`, `auth`, `marketing`, `tree`, `dashboard`, `billing`, `errors`), sélecteur FR/EN (header marketing, app connectée, profil), champ `User.locale` synchronisé au login.
+- **Téléphone international** : `libphonenumber-js` (back + front), indicatif par défaut +225, sélecteur à l'inscription/connexion/profil.
+- Erreurs API avec **codes stables** (`INVALID_PHONE`, `PLAN_LIMIT_REACHED`, …) traduits côté frontend ; templates email OTP fr/en selon `user.locale`.
 
 ### Arbre généalogique
 - Canvas interactif : drag des cartes, zoom, layouts vertical/horizontal/radial, densité, styles de connexions.
@@ -45,7 +48,7 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 - Photos et documents par personne (upload via proxy API authentifié `/api/uploads/file/...` ; composant `AuthenticatedImage` pour le JWT).
 - Bouton **Réorganiser** : recalcul du layout avec confirmation si positions manuelles ; layout spécial « clusters conjugaux » pour les arbres sans liens parent-enfant (`computeSpouseOnlyLayout`).
 - Partage : visibilité PRIVATE/SHARED/PUBLIC, invitations collaborateurs (VIEWER/EDITOR), lien public lecture seule.
-- Arbre démo public « Famille Dupont » (10 personnes), réinitialisable par l'admin.
+- Arbre démo public « Famille Dupont » (10 personnes), **auto-provisionné** au démarrage API si absent, réinitialisable par l'admin.
 
 ### Corrections récentes notables
 - Fix accumulation de listeners `pointerup` dans `person-card.tsx` (clics bloqués après drag).
@@ -95,9 +98,13 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 - [ ] Renseigner SMTP et Paystack dans les `.env` du VPS (`/root/geneaia/.env`, `/root/geneaia-staging/.env`) — champs vides actuellement.
 - [ ] Choisir le fournisseur SMTP/SMS de production pour l'OTP (actuellement Mailpit en local).
 - [ ] Protection de branche `main` sur GitHub (PR obligatoire).
+- [ ] Routes SEO `/fr` `/en` + hreflang (hors périmètre i18n phase 1).
 
 ## 8. Journal
 
+- **2026-07-05 (soir, démo prod)** — Fix démo prod : `ensureDemoTree()` crée l'arbre Famille Dupont + compte `demo@geneaia.app` automatiquement si la base est vide (pas de seed requis).
+- **2026-07-05 (soir, pricing intl)** — Billing 100 % international : Paystack USD seul, CinetPay retiré ; codes promo par marché (description admin). Tarifs $5 / $30/an / $50/an ou $5/mois.
+- **2026-07-05 (soir, i18n)** — **Internationalisation fr/en** : i18next + 7 namespaces, `User.locale` (Prisma + API profil), `lib/format.ts` (dates dynamiques), `translateApiError` + codes backend (auth, person, billing, OTP), templates OTP email fr/en, `PhoneInput` + `libphonenumber-js`, sélecteur langue (marketing, app-shell, profil). Pages publiques et app connectée traduites ; build frontend + tests layout/backend verts.
 - **2026-07-05 (soir, prod)** — **Production live sur geneamap.com** : backup ancienne base (`/root/geneaia/backups/legacy-genea-20260705_184808.sql`), arrêt `/root/genea` (genea-*), push `dev`→`main`, pipeline vert, conteneurs `geneaia-*-prod` healthy, API + frontend HTTP 200, R2 `geneamap-prod` ready. Base prod vierge (migrations appliquées, pas de seed — inscription utilisateur requise).
 - **2026-07-05 (soir)** — **Staging déployé sur geneamap.com** : `.env` créés sur le VPS (`/root/geneaia{,-staging}`), secrets GitHub via API (les anciens secrets d'environnement `staging`/`production` de juin 2025 écrasaient les secrets repo — corrigé), pipeline vert. Incidents CI corrigés : TS `AuthenticatedImage` (Omit src), 5 erreurs ESLint, Node 18→22 (Tailwind v4 oxide), actions appleboy remplacées par ssh/scp natifs (auth qui échouait silencieusement), healthcheck frontend `localhost`→`127.0.0.1` (IPv6). R2 : le token utilisé était le token DNS filtré par IP → 403 depuis le VPS ; nouveau token `geneamap-r2-vps` (R2 Storage Read+Write, sans filtre IP) créé, credentials dans `~/.config/paul/.env` (`PAUL_CLOUDFLARE_R2_VPS_*`) et dans les `.env` du VPS.
 - **2026-07-05** — R2 opérationnel : buckets `geneamap-staging` et `geneamap-prod` créés via l'API S3 avec les credentials de Paul (`~/.config/paul/.env`), check-r2.sh vert sur les deux. Account ID Cloudflare : `eeea3b33d3e36656a9adaecbf6990424`.

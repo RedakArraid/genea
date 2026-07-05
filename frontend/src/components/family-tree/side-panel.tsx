@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { X, Focus, Trash2, Baby, Camera, Save } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import type { FamilyTree, NormalizedPerson, Person } from "@/types"
 import { todayIsoDate, validateBirthDate } from "@/lib/person-dates"
+import { formatLongDate } from "@/lib/format"
 import { AuthenticatedImage } from "@/components/ui/authenticated-image"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -39,11 +41,7 @@ interface SidePanelProps {
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return null
-  try {
-    return new Date(dateStr).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
-  } catch {
-    return null
-  }
+  return formatLongDate(dateStr) || null
 }
 
 function personToForm(person: NormalizedPerson, raw?: Person) {
@@ -74,6 +72,7 @@ export function SidePanel({
   canEditInfo = true,
   canChangePhoto = false,
 }: SidePanelProps) {
+  const { t } = useTranslation("tree")
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState(() => {
     const raw = currentTree.Person?.find((p) => p.id === person.id)
@@ -108,9 +107,9 @@ export function SidePanel({
     if (!file || !onChangePhoto) return
     try {
       await onChangePhoto(person.id, file)
-      toast.success("Photo mise à jour")
+      toast.success(t("person.photoUpdated"))
     } catch {
-      toast.error("Échec de l'upload photo")
+      toast.error(t("person.photoUploadFailed"))
     } finally {
       e.target.value = ""
     }
@@ -126,9 +125,9 @@ export function SidePanel({
     setSaving(true)
     try {
       await onSave(person.id, form)
-      toast.success("Personne mise à jour")
+      toast.success(t("person.updated"))
     } catch {
-      toast.error("Échec de la mise à jour")
+      toast.error(t("person.updateFailed"))
     } finally {
       setSaving(false)
     }
@@ -188,7 +187,7 @@ export function SidePanel({
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</span>
         {onAdd && !readOnly && (
           <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={onAdd}>
-            + Ajouter
+            {t("relations.addButton")}
           </Button>
         )}
       </div>
@@ -224,7 +223,7 @@ export function SidePanel({
               {canEditInfo && !readOnly ? (
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor="side-first-name" className="text-xs">Prénom</Label>
+                    <Label htmlFor="side-first-name" className="text-xs">{t("person.firstName")}</Label>
                     <Input
                       id="side-first-name"
                       data-testid="edit-first-name"
@@ -233,7 +232,7 @@ export function SidePanel({
                     />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor="side-last-name" className="text-xs">Nom</Label>
+                    <Label htmlFor="side-last-name" className="text-xs">{t("person.lastName")}</Label>
                     <Input
                       id="side-last-name"
                       value={form.lastName}
@@ -257,7 +256,7 @@ export function SidePanel({
                   <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoPick} />
                   <Button variant="outline" size="sm" className="mt-2 h-7" onClick={() => photoInputRef.current?.click()}>
                     <Camera className="mr-1 size-3.5" />
-                    Changer photo
+                    {t("person.changePhoto")}
                   </Button>
                 </>
               )}
@@ -270,7 +269,7 @@ export function SidePanel({
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-1">
-                  <Label htmlFor="side-birth-date" className="text-xs">Naissance</Label>
+                  <Label htmlFor="side-birth-date" className="text-xs">{t("person.birthDate")}</Label>
                   <Input
                     id="side-birth-date"
                     type="date"
@@ -280,7 +279,7 @@ export function SidePanel({
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <Label htmlFor="side-death-date" className="text-xs">Décès</Label>
+                  <Label htmlFor="side-death-date" className="text-xs">{t("person.deathDate")}</Label>
                   <Input
                     id="side-death-date"
                     type="date"
@@ -290,7 +289,7 @@ export function SidePanel({
                 </div>
               </div>
               <div className="flex flex-col gap-1">
-                <Label htmlFor="side-birth-place" className="text-xs">Lieu de naissance</Label>
+                <Label htmlFor="side-birth-place" className="text-xs">{t("person.birthPlace")}</Label>
                 <Input
                   id="side-birth-place"
                   value={form.birthPlace}
@@ -298,18 +297,18 @@ export function SidePanel({
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <Label className="text-xs">Genre</Label>
+                <Label className="text-xs">{t("person.gender")}</Label>
                 <Select value={form.gender || undefined} onValueChange={(v) => v && setForm({ ...form, gender: v })}>
-                  <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("person.genderSelect")} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="male">Homme</SelectItem>
-                    <SelectItem value="female">Femme</SelectItem>
-                    <SelectItem value="other">Autre</SelectItem>
+                    <SelectItem value="male">{t("person.genderMale")}</SelectItem>
+                    <SelectItem value="female">{t("person.genderFemale")}</SelectItem>
+                    <SelectItem value="other">{t("person.genderOther")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex flex-col gap-1">
-                <Label htmlFor="side-biography" className="text-xs">Biographie</Label>
+                <Label htmlFor="side-biography" className="text-xs">{t("person.biography")}</Label>
                 <Textarea
                   id="side-biography"
                   value={form.biography}
@@ -320,11 +319,11 @@ export function SidePanel({
             </div>
           ) : (
             <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-              <span className="text-muted-foreground">Naissance</span>
+              <span className="text-muted-foreground">{t("person.birthDate")}</span>
               <span>{formatDate(person.birthDate) || person.born || "?"}</span>
               {(person.deathDate || person.died) && (
                 <>
-                  <span className="text-muted-foreground">Décès</span>
+                  <span className="text-muted-foreground">{t("person.deathDate")}</span>
                   <span>{formatDate(person.deathDate) || person.died}</span>
                 </>
               )}
@@ -333,20 +332,20 @@ export function SidePanel({
 
           <Separator />
 
-          <Section title="Parents" onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "parent")}>
-            {parents.length ? parents.map((p) => <RelChip key={p.id} p={p} relType="parent" />) : <span className="text-xs text-muted-foreground">Inconnus</span>}
+          <Section title={t("relations.parents")} onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "parent")}>
+            {parents.length ? parents.map((p) => <RelChip key={p.id} p={p} relType="parent" />) : <span className="text-xs text-muted-foreground">{t("relations.unknown")}</span>}
           </Section>
 
-          <Section title="Conjoint·e" onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "spouse")}>
-            {spouses.length ? spouses.map((p) => <RelChip key={p.id} p={p} relType="spouse" />) : <span className="text-xs text-muted-foreground">Aucun</span>}
+          <Section title={t("relations.spouse")} onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "spouse")}>
+            {spouses.length ? spouses.map((p) => <RelChip key={p.id} p={p} relType="spouse" />) : <span className="text-xs text-muted-foreground">{t("relations.none")}</span>}
           </Section>
 
-          <Section title={`Enfants (${children.length})`} onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "child")}>
-            {children.length ? children.map((p) => <RelChip key={p.id} p={p} relType="child" />) : <span className="text-xs text-muted-foreground">Aucun</span>}
+          <Section title={t("relations.children", { count: children.length })} onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "child")}>
+            {children.length ? children.map((p) => <RelChip key={p.id} p={p} relType="child" />) : <span className="text-xs text-muted-foreground">{t("relations.none")}</span>}
           </Section>
 
           {siblings.length > 0 && (
-            <Section title={`Frères et sœurs (${siblings.length})`}>
+            <Section title={t("relations.siblings", { count: siblings.length })}>
               {siblings.map((p) => <RelChip key={p.id} p={p} />)}
             </Section>
           )}
@@ -360,7 +359,7 @@ export function SidePanel({
       <div className="flex flex-col gap-2 border-t p-4">
         <Button variant="outline" className="w-full" onClick={() => window.__focusOn?.(person.id)}>
           <Focus className="mr-1 size-4" />
-          Centrer
+          {t("relations.focus")}
         </Button>
         {!readOnly && (
           <>
@@ -373,7 +372,7 @@ export function SidePanel({
                   disabled={saving || !form.firstName.trim()}
                 >
                   <Save className="mr-1 size-4" />
-                  {saving ? "Enregistrement…" : "Enregistrer"}
+                  {saving ? t("common:actions.saving") : t("common:actions.save")}
                 </Button>
               )}
               <Button
@@ -381,12 +380,12 @@ export function SidePanel({
                 variant={canEditInfo && onSave ? "outline" : "default"}
                 onClick={() => onAddRelation(person)}
               >
-                Lier
+                {t("relations.link")}
               </Button>
             </div>
             <Button variant="destructive" className="w-full" onClick={() => onDelete(person.id)}>
               <Trash2 className="mr-1 size-4" />
-              Supprimer
+              {t("common:actions.delete")}
             </Button>
           </>
         )}

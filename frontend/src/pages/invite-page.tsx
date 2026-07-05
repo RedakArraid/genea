@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { GitBranch, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -18,6 +19,7 @@ export default function InvitePage() {
   const [error, setError] = useState<string | null>(null)
   const [treeId, setTreeId] = useState<string | null>(null)
 
+  const { t } = useTranslation("tree")
   const redirectPath = token ? `/invite/${token}` : "/dashboard"
   const loginUrl = `/login?redirect=${encodeURIComponent(redirectPath)}`
   const registerUrl = `/register?redirect=${encodeURIComponent(redirectPath)}`
@@ -32,10 +34,10 @@ export default function InvitePage() {
       if (result.success && result.treeId) {
         setTreeId(result.treeId)
         setStatus("success")
-        toast.success("Invitation acceptée")
+        toast.success(t("invite.accepted"))
         navigate(`/family-tree/${result.treeId}`, { replace: true })
       } else {
-        setError(result.message || "Invitation invalide")
+        setError(result.message || t("invite.invalid"))
         setStatus("error")
       }
     }
@@ -50,10 +52,10 @@ export default function InvitePage() {
     if (result.success && result.treeId) {
       setTreeId(result.treeId)
       setStatus("success")
-      toast.success("Invitation acceptée")
+      toast.success(t("invite.accepted"))
       navigate(`/family-tree/${result.treeId}`)
     } else {
-      setError(result.message || "Invitation invalide")
+      setError(result.message || t("invite.invalid"))
       setStatus("error")
     }
   }
@@ -71,8 +73,8 @@ export default function InvitePage() {
       <div className="flex flex-1 items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Invitation invalide</CardTitle>
-            <CardDescription>Le lien d'invitation est incomplet.</CardDescription>
+            <CardTitle>{t("invite.invalidTitle")}</CardTitle>
+            <CardDescription>{t("invite.incompleteLink")}</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -87,17 +89,15 @@ export default function InvitePage() {
             <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-primary/10">
               <GitBranch className="size-6" />
             </div>
-            <CardTitle>Invitation à un arbre</CardTitle>
-            <CardDescription>
-              Connectez-vous ou créez un compte avec l'adresse email invitée pour accepter.
-            </CardDescription>
+            <CardTitle>{t("invite.title")}</CardTitle>
+            <CardDescription>{t("invite.loginPrompt")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             <Link to={loginUrl} className={cn(buttonVariants(), "w-full")}>
-              Se connecter
+              {t("invite.login")}
             </Link>
             <Link to={registerUrl} className={cn(buttonVariants({ variant: "outline" }), "w-full")}>
-              Créer un compte
+              {t("invite.createAccount")}
             </Link>
           </CardContent>
         </Card>
@@ -109,7 +109,7 @@ export default function InvitePage() {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Acceptation de l'invitation…</p>
+        <p className="text-sm text-muted-foreground">{t("invite.accepting")}</p>
       </div>
     )
   }
@@ -119,12 +119,12 @@ export default function InvitePage() {
       <div className="flex flex-1 items-center justify-center p-4">
         <Card className="w-full max-w-md text-center">
           <CardHeader>
-            <CardTitle>Invitation acceptée</CardTitle>
-            <CardDescription>Redirection vers l'arbre…</CardDescription>
+            <CardTitle>{t("invite.accepted")}</CardTitle>
+            <CardDescription>{t("invite.redirecting")}</CardDescription>
           </CardHeader>
           <CardContent>
             <Link to={`/family-tree/${treeId}`} className={buttonVariants()}>
-              Ouvrir l'arbre
+              {t("invite.openTree")}
             </Link>
           </CardContent>
         </Card>
@@ -136,20 +136,20 @@ export default function InvitePage() {
     <div className="flex flex-1 items-center justify-center bg-muted/30 p-4 py-16">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle>Accepter l'invitation</CardTitle>
+          <CardTitle>{t("invite.acceptTitle")}</CardTitle>
           <CardDescription>
-            {error || "Vous avez été invité à collaborer sur un arbre généalogique."}
+            {error || t("invite.acceptPrompt")}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {status === "error" && (
-            <Button onClick={handleManualAccept}>Réessayer</Button>
+            <Button onClick={handleManualAccept}>{t("invite.retry")}</Button>
           )}
           {status === "idle" && !autoAccept && (
-            <Button onClick={handleManualAccept}>Accepter l'invitation</Button>
+            <Button onClick={handleManualAccept}>{t("invite.accept")}</Button>
           )}
           <Link to="/dashboard" className={cn(buttonVariants({ variant: "outline" }), "w-full")}>
-            Retour au tableau de bord
+            {t("invite.backToDashboard")}
           </Link>
         </CardContent>
       </Card>

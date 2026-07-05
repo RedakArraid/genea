@@ -1,4 +1,4 @@
-const { toPaystackAmount } = require('../plans');
+const { CURRENCY, toPaystackAmount } = require('../plans');
 
 const PAYSTACK_BASE = 'https://api.paystack.co';
 
@@ -6,7 +6,7 @@ function isConfigured() {
   return !!(process.env.PAYSTACK_SECRET_KEY && process.env.PAYSTACK_PUBLIC_KEY);
 }
 
-async function initializePayment({ email, amountXof, reference, callbackUrl, metadata }) {
+async function initializePayment({ email, amountUsd, reference, callbackUrl, metadata }) {
   const secret = process.env.PAYSTACK_SECRET_KEY;
   if (!secret) {
     throw new Error('Paystack non configuré');
@@ -20,12 +20,12 @@ async function initializePayment({ email, amountXof, reference, callbackUrl, met
     },
     body: JSON.stringify({
       email,
-      amount: toPaystackAmount(amountXof),
-      currency: 'XOF',
+      amount: toPaystackAmount(amountUsd),
+      currency: CURRENCY,
       reference,
       callback_url: callbackUrl,
       metadata,
-      channels: ['card', 'mobile_money'],
+      channels: ['card'],
     }),
   });
 
@@ -57,7 +57,7 @@ async function verifyPayment(reference) {
   const tx = data.data;
   return {
     success: tx.status === 'success',
-    amount: Math.round(tx.amount / 100),
+    amount: Math.round(tx.amount) / 100,
     currency: tx.currency,
     reference: tx.reference,
     raw: tx,

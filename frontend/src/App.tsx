@@ -1,5 +1,6 @@
 import { useEffect } from "react"
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
 import { ProtectedRoute } from "@/components/protected-route"
 import { PublicLayout } from "@/components/layout/public-layout"
@@ -37,11 +38,16 @@ function AuthRedirect({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { t, i18n } = useTranslation()
   const { checkAuth, isLoading } = useAuthStore()
 
   useEffect(() => {
     checkAuth()
   }, [checkAuth])
+
+  useEffect(() => {
+    document.title = t("metaTitle")
+  }, [t, i18n.language])
 
   if (isLoading) {
     return (

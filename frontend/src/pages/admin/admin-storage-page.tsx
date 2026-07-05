@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
 import { Database, FileText, Image } from "lucide-react"
+import { formatDateTime } from "@/lib/format"
 import { toast } from "sonner"
 import { fetchAdminStorage, type AdminStorageInfo } from "@/lib/admin-api"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
@@ -89,7 +88,7 @@ export default function AdminStoragePage() {
                     <TableCell>{doc.Person.firstName} {doc.Person.lastName}</TableCell>
                     <TableCell><Badge variant="outline">{doc.category}</Badge></TableCell>
                     <TableCell>{formatBytes(doc.sizeBytes)}</TableCell>
-                    <TableCell>{format(new Date(doc.createdAt), "dd MMM yyyy HH:mm", { locale: fr })}</TableCell>
+                    <TableCell>{formatDateTime(doc.createdAt)}</TableCell>
                   </TableRow>
                 ))}
                 {!loading && !info?.recentDocuments?.length && (

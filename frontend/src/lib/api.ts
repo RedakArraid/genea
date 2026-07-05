@@ -11,6 +11,10 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  const locale = localStorage.getItem("geneaia_locale")
+  if (locale) {
+    config.headers["Accept-Language"] = locale
+  }
   return config
 })
 
@@ -18,8 +22,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      const hadToken = !!localStorage.getItem("token")
       localStorage.removeItem("token")
-      useAuthStore.getState().logout()
+      if (hadToken) {
+        useAuthStore.getState().logout()
+      }
     }
     return Promise.reject(error)
   }

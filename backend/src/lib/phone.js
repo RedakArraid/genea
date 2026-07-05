@@ -1,40 +1,52 @@
 /**
- * Normalisation téléphone Côte d'Ivoire (+225)
+ * Normalisation téléphone internationale (libphonenumber-js).
+ * Défaut : Côte d'Ivoire (+225).
  */
 
-function normalizePhone(raw) {
+const { parsePhoneNumberFromString, isValidPhoneNumber } = require('libphonenumber-js');
+
+const DEFAULT_COUNTRY = 'CI';
+
+function normalizePhone(raw, defaultCountry = DEFAULT_COUNTRY) {
   if (!raw || typeof raw !== 'string') return null;
-  let p = raw.trim().replace(/[\s.-]/g, '');
-  if (!p) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
 
-  if (p.startsWith('+')) p = p.slice(1);
-  if (p.startsWith('00')) p = p.slice(2);
-
-  if (p.startsWith('225') && p.length >= 12) {
-    return `+${p.slice(0, 12)}`;
-  }
-
-  // 07XXXXXXXX ou 05XXXXXXXX (10 chiffres)
-  if (/^0\d{9}$/.test(p)) {
-    return `+225${p}`;
-  }
-
-  return null;
+  const parsed = parsePhoneNumberFromString(trimmed, defaultCountry);
+  if (!parsed || !parsed.isValid()) return null;
+  return parsed.format('E.164');
 }
 
-function looksLikePhone(input) {
-  return normalizePhone(input) !== null;
+function looksLikePhone(input, defaultCountry = DEFAULT_COUNTRY) {
+  return normalizePhone(input, defaultCountry) !== null;
 }
 
+function isValidPhone(phone) {
+  if (!phone) return false;
+  return isValidPhoneNumber(phone);
+}
+
+/** Compatibilité : valide tout numéro E.164 (plus seulement CI) */
 function isValidCiPhone(phone) {
-  return /^\+2250\d{9}$/.test(phone);
+  return isValidPhone(phone);
 }
 
-/** Affiche +2250700000001 → 0700000001 */
-function formatPhoneDisplay(phone) {
+/** Affichage national : +2250700000001 → 0700000001 (CI) ou format local du pays */
+function formatPhoneDisplay(phone, defaultCountry = DEFAULT_COUNTRY) {
   if (!phone) return '';
-  if (phone.startsWith('+225')) return `0${phone.slice(4)}`;
-  return phone;
+  const parsed = parsePhoneNumberFromString(phone, defaultCountry);
+  if (!parsed) return phone;
+  if (parsed.country === 'CI') {
+    return `0${parsed.nationalNumber}`;
+  }
+  return parsed.formatNational();
 }
 
-module.exports = { normalizePhone, looksLikePhone, isValidCiPhone, formatPhoneDisplay };
+module.exports = {
+  normalizePhone,
+  looksLikePhone,
+  isValidPhone,
+  isValidCiPhone,
+  formatPhoneDisplay,
+  DEFAULT_COUNTRY,
+};

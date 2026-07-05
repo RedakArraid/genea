@@ -2,20 +2,20 @@ import { useEffect, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 import { TreePine } from "lucide-react"
+import { Trans, useTranslation } from "react-i18next"
+import type { CountryCode } from "libphonenumber-js"
 import { useAuthStore } from "@/stores/auth-store"
 import api from "@/lib/api"
+import { PhoneInput } from "@/components/phone-input"
+import { composePhone, formatPhoneDisplay, DEFAULT_COUNTRY } from "@/lib/phone"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-function formatPhoneDisplay(phone: string) {
-  if (phone.startsWith("+225")) return `0${phone.slice(4)}`
-  return phone
-}
-
 export default function LoginPage() {
+  const { t } = useTranslation("auth")
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirect = searchParams.get("redirect") || "/dashboard"
@@ -26,10 +26,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   const [otpPhone, setOtpPhone] = useState("")
+  const [otpCountry, setOtpCountry] = useState<CountryCode>(DEFAULT_COUNTRY)
   const [otpCode, setOtpCode] = useState("")
   const [otpSent, setOtpSent] = useState(false)
   const [otpLoading, setOtpLoading] = useState(false)
   const [otpEnabled, setOtpEnabled] = useState(false)
+  const [composedOtpPhone, setComposedOtpPhone] = useState("")
 
   useEffect(() => {
     api.get("/auth/otp/status").then(({ data }) => setOtpEnabled(data.enabled)).catch(() => setOtpEnabled(false))
@@ -45,7 +47,7 @@ export default function LoginPage() {
     const result = await login(loginId, password)
     setLoading(false)
     if (result.success) {
-      toast.success("Connexion réussie")
+      toast.success(t("login.success"))
       goAfterLogin()
     } else {
       toast.error(result.message)
@@ -54,12 +56,14 @@ export default function LoginPage() {
 
   const handleOtpRequest = async (e: React.FormEvent) => {
     e.preventDefault()
+    const composed = composePhone(otpPhone, otpCountry)
     setOtpLoading(true)
-    const result = await requestOtp(otpPhone)
+    const result = await requestOtp(composed, otpCountry)
     setOtpLoading(false)
     if (result.success) {
+      setComposedOtpPhone(composed)
       setOtpSent(true)
-      toast.success(result.message || "Code envoyé")
+      toast.success(result.message || t("otp.sent"))
     } else {
       toast.error(result.message)
     }
@@ -68,10 +72,10 @@ export default function LoginPage() {
   const handleOtpVerify = async (e: React.FormEvent) => {
     e.preventDefault()
     setOtpLoading(true)
-    const result = await verifyOtp(otpPhone, otpCode)
+    const result = await verifyOtp(composedOtpPhone, otpCode, otpCountry)
     setOtpLoading(false)
     if (result.success) {
-      toast.success("Connexion réussie")
+      toast.success(t("login.success"))
       goAfterLogin()
     } else {
       toast.error(result.message)
@@ -85,22 +89,22 @@ export default function LoginPage() {
           <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-primary/10">
             <TreePine className="size-6" />
           </div>
-          <CardTitle>Connexion</CardTitle>
-          <CardDescription>Accédez à vos arbres généalogiques</CardDescription>
+          <CardTitle>{t("login.title")}</CardTitle>
+          <CardDescription>{t("login.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="password">
             <TabsList className="mb-4 grid w-full grid-cols-2">
-              <TabsTrigger value="password">Mot de passe</TabsTrigger>
+              <TabsTrigger value="password">{t("login.passwordTab")}</TabsTrigger>
               <TabsTrigger value="otp" disabled={!otpEnabled}>
-                Code SMS
+                {t("login.otpTab")}
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="password">
               <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="login">Téléphone ou email</Label>
+                  <Label htmlFor="login">{t("login.loginField")}</Label>
                   <Input
                     id="login"
                     type="text"
@@ -113,7 +117,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="password">Mot de passe</Label>
+                  <Label htmlFor="password">{t("login.password")}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -123,7 +127,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <Button type="submit" disabled={loading} className="w-full">
-                  {loading ? "Connexion..." : "Se connecter"}
+                  {loading ? t("login.submitting") : t("login.submit")}
                 </Button>
               </form>
             </TabsContent>
@@ -131,33 +135,32 @@ export default function LoginPage() {
             <TabsContent value="otp">
               {!otpSent ? (
                 <form onSubmit={handleOtpRequest} className="flex flex-col gap-4">
-                  <p className="text-sm text-muted-foreground">
-                    Recevez un code à 6 chiffres (par email si renseigné sur votre compte).
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="otp-phone">Téléphone</Label>
-                    <Input
-                      id="otp-phone"
-                      type="tel"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      placeholder="07XXXXXXXX"
-                      value={otpPhone}
-                      onChange={(e) => setOtpPhone(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <p className="text-sm text-muted-foreground">{t("otp.intro")}</p>
+                  <PhoneInput
+                    id="otp-phone"
+                    label={t("otp.phone")}
+                    country={otpCountry}
+                    onCountryChange={setOtpCountry}
+                    value={otpPhone}
+                    onChange={setOtpPhone}
+                    required
+                  />
                   <Button type="submit" disabled={otpLoading} className="w-full">
-                    {otpLoading ? "Envoi..." : "Recevoir un code"}
+                    {otpLoading ? t("otp.requesting") : t("otp.request")}
                   </Button>
                 </form>
               ) : (
                 <form onSubmit={handleOtpVerify} className="flex flex-col gap-4">
                   <p className="text-sm text-muted-foreground">
-                    Un code a été envoyé pour le <strong>{formatPhoneDisplay(otpPhone)}</strong>.
+                    <Trans
+                      ns="auth"
+                      i18nKey="otp.sentTo"
+                      values={{ phone: formatPhoneDisplay(composedOtpPhone, otpCountry) }}
+                      components={{ strong: <strong /> }}
+                    />
                   </p>
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="otp-code">Code à 6 chiffres</Label>
+                    <Label htmlFor="otp-code">{t("otp.codeLabel")}</Label>
                     <Input
                       id="otp-code"
                       type="text"
@@ -172,7 +175,7 @@ export default function LoginPage() {
                     />
                   </div>
                   <Button type="submit" disabled={otpLoading || otpCode.length !== 6} className="w-full">
-                    {otpLoading ? "Vérification..." : "Valider le code"}
+                    {otpLoading ? t("otp.verifying") : t("otp.verify")}
                   </Button>
                   <Button
                     type="button"
@@ -183,7 +186,7 @@ export default function LoginPage() {
                       setOtpCode("")
                     }}
                   >
-                    Changer de numéro
+                    {t("otp.changeNumber")}
                   </Button>
                 </form>
               )}
@@ -191,9 +194,9 @@ export default function LoginPage() {
           </Tabs>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Pas de compte ?{" "}
+            {t("login.noAccount")}{" "}
             <Link to="/register" className="text-primary underline-offset-4 hover:underline">
-              S'inscrire
+              {t("login.registerLink")}
             </Link>
           </p>
         </CardContent>

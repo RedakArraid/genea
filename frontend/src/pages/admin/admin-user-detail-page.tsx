@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
 import { ArrowLeft, ExternalLink, Pencil, Trash2 } from "lucide-react"
+import { formatDateTime, formatMediumDate } from "@/lib/format"
 import { toast } from "sonner"
 import {
   deleteAdminUser,
@@ -180,12 +179,12 @@ export default function AdminUserDetailPage() {
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-muted-foreground">Inscription</dt>
-              <dd>{format(new Date(user.createdAt), "dd MMMM yyyy à HH:mm", { locale: fr })}</dd>
+              <dd>{formatDateTime(user.createdAt)}</dd>
             </div>
             {user.updatedAt && (
               <div>
                 <dt className="text-muted-foreground">Dernière MAJ</dt>
-                <dd>{format(new Date(user.updatedAt), "dd MMMM yyyy à HH:mm", { locale: fr })}</dd>
+                <dd>{formatDateTime(user.updatedAt)}</dd>
               </div>
             )}
             <div>
@@ -224,7 +223,7 @@ export default function AdminUserDetailPage() {
                     </TableCell>
                     <TableCell>{tree._count?.Person ?? 0}</TableCell>
                     <TableCell><Badge variant="outline">{tree.visibility}</Badge></TableCell>
-                    <TableCell>{format(new Date(tree.createdAt), "dd MMM yyyy", { locale: fr })}</TableCell>
+                    <TableCell>{formatMediumDate(tree.createdAt)}</TableCell>
                     <TableCell className="text-right">
                       <Link
                         to={tree.isDemo ? "/demo" : `/tree/${tree.id}`}

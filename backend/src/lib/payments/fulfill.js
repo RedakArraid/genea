@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const prisma = require('../prisma');
-const { getPlanLimits } = require('../plans');
+const { getPlanLimits, getPlanDurationDays } = require('../plans');
 const { incrementPromoUsage } = require('../promo');
 
 async function fulfillPayment(paymentId) {
@@ -11,13 +11,15 @@ async function fulfillPayment(paymentId) {
 
   const user = await prisma.user.findUnique({ where: { id: payment.userId } });
   const limits = getPlanLimits(payment.plan);
+  const billingInterval = payment.metadata?.billingInterval || 'yearly';
+  const durationDays = getPlanDurationDays(payment.plan, billingInterval);
   const now = new Date();
-  let expiresAt = limits.durationDays
-    ? new Date(now.getTime() + limits.durationDays * 24 * 60 * 60 * 1000)
+  let expiresAt = durationDays
+    ? new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000)
     : null;
 
   if (payment.plan !== 'SOLO' && user.planExpiresAt && new Date(user.planExpiresAt) > now) {
-    expiresAt = new Date(new Date(user.planExpiresAt).getTime() + limits.durationDays * 24 * 60 * 60 * 1000);
+    expiresAt = new Date(new Date(user.planExpiresAt).getTime() + durationDays * 24 * 60 * 60 * 1000);
   }
 
   const [updatedPayment] = await prisma.$transaction([

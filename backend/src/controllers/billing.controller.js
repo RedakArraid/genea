@@ -1,24 +1,24 @@
 const prisma = require('../lib/prisma');
-const { PLANS, CURRENCY, getPlanPriceXof, getPlanLimits } = require('../lib/plans');
+const { CURRENCY, getPlanPrice, getPlanLimits } = require('../lib/plans');
 const { validatePromoCode, applyDiscount } = require('../lib/promo');
 const { generateReference, fulfillPayment } = require('../lib/payments/fulfill');
 const payments = require('../lib/payments');
+const { sendError } = require('../lib/apiErrors');
 
 function publicBaseUrl() {
   return process.env.FRONTEND_URL || process.env.CORS_ORIGIN?.split(',')[0] || 'http://localhost:5173';
 }
 
-function apiBaseUrl() {
-  return process.env.API_PUBLIC_URL || `http://localhost:${process.env.PORT || 3001}`;
-}
-
 exports.previewCheckout = async (req, res, next) => {
   try {
-    const { plan, promoCode } = req.body;
+    const { plan, promoCode, billingInterval = 'yearly' } = req.body;
     if (!['SOLO', 'FAMILY', 'PATRIMONY'].includes(plan)) {
-      return res.status(400).json({ message: 'Forfait invalide' });
+      return sendError(res, 400, 'INVALID_PLAN', 'Forfait invalide');
     }
-    const baseAmount = getPlanPriceXof(plan);
+    if (billingInterval === 'monthly' && plan !== 'PATRIMONY') {
+      return sendError(res, 400, 'INVALID_BILLING_INTERVAL', 'Facturation mensuelle disponible uniquement pour Patrimoine');
+    }
+    const baseAmount = getPlanPrice(plan, billingInterval);
     let promo = null;
     if (promoCode) {
       const validated = await validatePromoCode(promoCode, plan);
@@ -27,6 +27,7 @@ exports.previewCheckout = async (req, res, next) => {
     const finalAmount = applyDiscount(baseAmount, promo);
     res.json({
       plan,
+      billingInterval,
       currency: CURRENCY,
       baseAmount,
       finalAmount,
@@ -41,19 +42,25 @@ exports.previewCheckout = async (req, res, next) => {
 
 exports.initializeCheckout = async (req, res, next) => {
   try {
-    const { plan, promoCode } = req.body;
+    const { plan, promoCode, billingInterval = 'yearly' } = req.body;
     if (!['SOLO', 'FAMILY', 'PATRIMONY'].includes(plan)) {
-      return res.status(400).json({ message: 'Forfait invalide' });
+      return sendError(res, 400, 'INVALID_PLAN', 'Forfait invalide');
+    }
+    if (billingInterval === 'monthly' && plan !== 'PATRIMONY') {
+      return sendError(res, 400, 'INVALID_BILLING_INTERVAL', 'Facturation mensuelle disponible uniquement pour Patrimoine');
     }
 
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user.email) {
-      return res.status(400).json({
-        message: 'Ajoutez une adresse email à votre profil pour effectuer un paiement en ligne.',
-      });
+      return sendError(
+        res,
+        400,
+        'EMAIL_REQUIRED_FOR_PAYMENT',
+        'Ajoutez une adresse email à votre profil pour effectuer un paiement en ligne.',
+      );
     }
 
-    const baseAmount = getPlanPriceXof(plan);
+    const baseAmount = getPlanPrice(plan, billingInterval);
     let promo = null;
     if (promoCode) {
       const validated = await validatePromoCode(promoCode, plan);
@@ -61,29 +68,19 @@ exports.initializeCheckout = async (req, res, next) => {
     }
     const finalAmount = applyDiscount(baseAmount, promo);
     if (finalAmount <= 0) {
-      return res.status(400).json({ message: 'Montant invalide après réduction' });
+      return sendError(res, 400, 'INVALID_AMOUNT', 'Montant invalide après réduction');
     }
 
     const reference = generateReference('genea');
     const callbackUrl = `${publicBaseUrl()}/billing/callback?reference=${reference}`;
-    const notifyUrl = `${apiBaseUrl()}/api/billing/webhooks/cinetpay`;
 
     const checkout = await payments.initializeCheckout({
       paystack: {
         email: user.email,
-        amountXof: finalAmount,
+        amountUsd: finalAmount,
         reference,
         callbackUrl,
-        metadata: { userId: user.id, plan, promoCodeId: promo?.id || null },
-      },
-      cinetpay: {
-        transactionId: reference,
-        amountXof: finalAmount,
-        description: `GeneaIA — Forfait ${PLANS[plan].name}`,
-        notifyUrl,
-        returnUrl: callbackUrl,
-        customerName: user.name || user.phone,
-        customerEmail: user.email,
+        metadata: { userId: user.id, plan, billingInterval, promoCodeId: promo?.id || null },
       },
     });
 
@@ -97,7 +94,7 @@ exports.initializeCheckout = async (req, res, next) => {
         plan,
         status: 'PENDING',
         promoCodeId: promo?.id || null,
-        metadata: { baseAmount, promoCode: promo?.code || null },
+        metadata: { baseAmount, promoCode: promo?.code || null, billingInterval },
       },
     });
 
@@ -170,38 +167,11 @@ exports.paystackWebhook = async (req, res, next) => {
   }
 };
 
-exports.cinetpayWebhook = async (req, res, next) => {
-  try {
-    const transactionId = req.body?.cpm_trans_id || req.body?.transaction_id || req.query?.transaction_id;
-    if (!transactionId) {
-      return res.status(200).send('OK');
-    }
-    const payment = await prisma.payment.findUnique({ where: { reference: transactionId } });
-    if (!payment) {
-      return res.status(200).send('OK');
-    }
-    if (payment.status === 'SUCCESS') {
-      return res.status(200).send('OK');
-    }
-
-    const verified = await payments.cinetpay.verifyPayment(transactionId);
-    if (verified.success) {
-      await fulfillPayment(payment.id);
-    }
-    res.status(200).send('OK');
-  } catch (error) {
-    console.error('CinetPay webhook:', error.message);
-    res.status(200).send('OK');
-  }
-};
-
 exports.getPublicConfig = (req, res) => {
   res.json({
     currency: CURRENCY,
-    country: 'CI',
     providers: {
       paystack: payments.paystack.isConfigured(),
-      cinetpay: payments.cinetpay.isConfigured(),
     },
     paystackPublicKey: process.env.PAYSTACK_PUBLIC_KEY || null,
   });

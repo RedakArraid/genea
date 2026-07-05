@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { formatDistanceToNow } from "date-fns"
-import { fr } from "date-fns/locale"
 import { FileText, GitBranch, Sparkles, Users } from "lucide-react"
+import { formatRelativeDate } from "@/lib/format"
 import { fetchAdminStats, type AdminStats } from "@/lib/admin-api"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -110,7 +109,7 @@ export default function AdminDashboardPage() {
                 <div className="text-right">
                   <Badge variant={u.role === "ADMIN" ? "default" : "secondary"}>{u.role ?? "USER"}</Badge>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(u.createdAt), { addSuffix: true, locale: fr })}
+                    {formatRelativeDate(u.createdAt)}
                   </p>
                 </div>
               </li>

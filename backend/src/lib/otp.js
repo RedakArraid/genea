@@ -6,7 +6,8 @@
 const crypto = require('crypto');
 const prisma = require('./prisma');
 const { sendMail, isMailConfigured } = require('./mail');
-const { normalizePhone, isValidCiPhone, formatPhoneDisplay } = require('./phone');
+const { normalizePhone, isValidPhone, formatPhoneDisplay } = require('./phone');
+const { buildOtpEmail } = require('./otpTemplates');
 
 const OTP_EXPIRES_MINUTES = parseInt(process.env.OTP_EXPIRES_MINUTES || '10', 10);
 const OTP_MAX_ATTEMPTS = parseInt(process.env.OTP_MAX_ATTEMPTS || '5', 10);
@@ -25,34 +26,27 @@ function isOtpDeliveryAvailable() {
   return isMailConfigured() || process.env.NODE_ENV === 'development';
 }
 
-async function sendLoginOtpEmail(email, code, name, phoneDisplay) {
-  const subject = `${code} — votre code de connexion GeneaIA`;
-  const greeting = name ? `Bonjour ${name},` : 'Bonjour,';
-  const text = `${greeting}
-
-Votre code de connexion GeneaIA pour le numéro ${phoneDisplay} : ${code}
-
-Ce code est valable ${OTP_EXPIRES_MINUTES} minutes.
-Si vous n'avez pas demandé ce code, ignorez ce message.
-
-— L'équipe GeneaIA`;
-
-  const html = `
-    <p>${greeting}</p>
-    <p>Code de connexion pour <strong>${phoneDisplay}</strong> :</p>
-    <p style="font-size:28px;font-weight:bold;letter-spacing:4px;margin:16px 0">${code}</p>
-    <p style="color:#666">Valable ${OTP_EXPIRES_MINUTES} minutes.</p>
-  `;
-
-  await sendMail({ to: email, subject, text, html });
-}
-
 const GENERIC_SENT_MESSAGE = 'Si un compte existe avec ce numéro, un code a été envoyé.';
 
-async function requestLoginOtp(rawPhone) {
-  const phone = normalizePhone(rawPhone);
-  if (!phone || !isValidCiPhone(phone)) {
-    return { ok: false, status: 400, message: 'Numéro de téléphone invalide (format CI : 07XXXXXXXX).' };
+async function sendLoginOtpEmail(user, code, phoneDisplay) {
+  const { subject, text, html } = buildOtpEmail({
+    code,
+    name: user.name,
+    phoneDisplay,
+    locale: user.locale,
+  });
+  await sendMail({ to: user.email, subject, text, html });
+}
+
+async function requestLoginOtp(rawPhone, defaultCountry = 'CI') {
+  const phone = normalizePhone(rawPhone, defaultCountry);
+  if (!phone || !isValidPhone(phone)) {
+    return {
+      ok: false,
+      status: 400,
+      code: 'INVALID_PHONE_CI',
+      message: 'Numéro de téléphone invalide (format CI : 07XXXXXXXX).',
+    };
   }
 
   const user = await prisma.user.findUnique({ where: { phone } });
@@ -72,7 +66,9 @@ async function requestLoginOtp(rawPhone) {
     return {
       ok: false,
       status: 429,
+      code: 'OTP_RATE_LIMITED',
       message: `Veuillez patienter ${waitSec}s avant de redemander un code.`,
+      params: { seconds: waitSec },
     };
   }
 
@@ -91,7 +87,7 @@ async function requestLoginOtp(rawPhone) {
 
   let delivered = false;
   if (user.email && isMailConfigured()) {
-    await sendLoginOtpEmail(user.email, code, user.name, phoneDisplay);
+    await sendLoginOtpEmail(user, code, phoneDisplay);
     delivered = true;
   }
 
@@ -104,6 +100,7 @@ async function requestLoginOtp(rawPhone) {
     return {
       ok: false,
       status: 503,
+      code: 'OTP_UNAVAILABLE',
       message: 'Envoi du code indisponible. Ajoutez un email à votre profil ou utilisez votre mot de passe.',
     };
   }
@@ -111,15 +108,15 @@ async function requestLoginOtp(rawPhone) {
   return { ok: true, message: GENERIC_SENT_MESSAGE };
 }
 
-async function verifyLoginOtp(rawPhone, code) {
-  const phone = normalizePhone(rawPhone);
-  if (!phone || !isValidCiPhone(phone)) {
-    return { ok: false, message: 'Numéro de téléphone invalide.' };
+async function verifyLoginOtp(rawPhone, code, defaultCountry = 'CI') {
+  const phone = normalizePhone(rawPhone, defaultCountry);
+  if (!phone || !isValidPhone(phone)) {
+    return { ok: false, code: 'INVALID_PHONE', message: 'Numéro de téléphone invalide.' };
   }
 
   const trimmedCode = String(code || '').trim();
   if (!/^\d{6}$/.test(trimmedCode)) {
-    return { ok: false, message: 'Code invalide (6 chiffres attendus).' };
+    return { ok: false, code: 'INVALID_OTP_FORMAT', message: 'Code invalide (6 chiffres attendus).' };
   }
 
   const record = await prisma.otpCode.findFirst({
@@ -133,11 +130,11 @@ async function verifyLoginOtp(rawPhone, code) {
   });
 
   if (!record) {
-    return { ok: false, message: 'Code invalide ou expiré.' };
+    return { ok: false, code: 'INVALID_OTP', message: 'Code invalide ou expiré.' };
   }
 
   if (record.attempts >= OTP_MAX_ATTEMPTS) {
-    return { ok: false, message: 'Trop de tentatives. Demandez un nouveau code.' };
+    return { ok: false, code: 'OTP_TOO_MANY_ATTEMPTS', message: 'Trop de tentatives. Demandez un nouveau code.' };
   }
 
   if (hashOtp(trimmedCode) !== record.codeHash) {
@@ -145,7 +142,7 @@ async function verifyLoginOtp(rawPhone, code) {
       where: { id: record.id },
       data: { attempts: { increment: 1 } },
     });
-    return { ok: false, message: 'Code incorrect.' };
+    return { ok: false, code: 'OTP_WRONG_CODE', message: 'Code incorrect.' };
   }
 
   await prisma.otpCode.update({
@@ -155,7 +152,7 @@ async function verifyLoginOtp(rawPhone, code) {
 
   const user = await prisma.user.findUnique({ where: { phone } });
   if (!user) {
-    return { ok: false, message: 'Compte introuvable.' };
+    return { ok: false, code: 'ACCOUNT_NOT_FOUND', message: 'Compte introuvable.' };
   }
 
   return { ok: true, user };

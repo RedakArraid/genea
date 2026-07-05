@@ -1,7 +1,9 @@
 import { Link, useNavigate } from "react-router-dom"
 import { LogOut, TreePine } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import { cn } from "@/lib/utils"
 
 interface MarketingHeaderProps {
@@ -10,6 +12,7 @@ interface MarketingHeaderProps {
 }
 
 export function MarketingHeader({ variant = "default" }: MarketingHeaderProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { isAuthenticated, logout } = useAuthStore()
 
@@ -28,33 +31,34 @@ export function MarketingHeader({ variant = "default" }: MarketingHeaderProps) {
 
         <nav className="hidden items-center gap-6 text-sm sm:flex">
           <Link to="/demo" className="text-muted-foreground transition-colors hover:text-foreground">
-            Démo
+            {t("nav.demo")}
           </Link>
           <Link to="/pricing" className="text-muted-foreground transition-colors hover:text-foreground">
-            Tarifs
+            {t("nav.pricing")}
           </Link>
         </nav>
 
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           {isAuthenticated ? (
             <>
               <Link to="/dashboard" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
-                Mes arbres
+                {t("nav.myTrees")}
               </Link>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="mr-1.5 size-4" />
-                Déconnexion
+                {t("actions.logout")}
               </Button>
             </>
           ) : (
             <>
               {variant !== "minimal" && (
                 <Link to="/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
-                  Connexion
+                  {t("actions.login")}
                 </Link>
               )}
               <Link to="/register" className={cn(buttonVariants({ size: "sm" }))}>
-                Commencer
+                {t("actions.getStarted")}
               </Link>
             </>
           )}

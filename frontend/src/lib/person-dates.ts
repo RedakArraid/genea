@@ -1,3 +1,5 @@
+import i18n from "@/i18n"
+
 export function todayIsoDate(): string {
   const d = new Date()
   const y = d.getFullYear()
@@ -9,7 +11,7 @@ export function todayIsoDate(): string {
 export function validateBirthDate(date: string): string | null {
   if (!date) return null
   if (date > todayIsoDate()) {
-    return "La date de naissance ne peut pas être dans le futur"
+    return i18n.t("errors:BIRTH_DATE_FUTURE")
   }
   return null
 }

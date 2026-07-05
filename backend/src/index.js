@@ -26,6 +26,7 @@ const billingRoutes = require('./routes/billing.routes');
 const billingWebhookRoutes = require('./routes/billing-webhook.routes');
 const adminRoutes = require('./routes/admin.routes');
 const { initStorage } = require('./lib/storage');
+const { ensureDemoTree } = require('./lib/demoTree');
 
 // Configuration des variables d'environnement
 dotenv.config();
@@ -101,6 +102,7 @@ app.use((err, req, res, next) => {
 initStorage()
   .catch((err) => console.error('Init MinIO:', err.message))
   .finally(() => {
+    ensureDemoTree().catch((err) => console.error('Demo tree bootstrap:', err.message));
     app.listen(PORT, () => {
       console.log(`Serveur démarré sur le port ${PORT}`);
       console.log(`URL: http://localhost:${PORT}`);

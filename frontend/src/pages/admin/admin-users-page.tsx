@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
 import { Eye, Pencil, Trash2 } from "lucide-react"
+import { formatMediumDate } from "@/lib/format"
 import { toast } from "sonner"
 import {
   fetchAdminUsers,
@@ -163,7 +162,7 @@ export default function AdminUsersPage() {
                     <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>{user.role}</Badge>
                   </TableCell>
                   <TableCell>{user.treeCount ?? 0}</TableCell>
-                  <TableCell>{format(new Date(user.createdAt), "dd MMM yyyy", { locale: fr })}</TableCell>
+                  <TableCell>{formatMediumDate(user.createdAt)}</TableCell>
                   <TableCell className="text-right">
                     <Link to={`/admin/users/${user.id}`} className={buttonVariants({ variant: "ghost", size: "icon" })}>
                       <Eye className="size-4" />

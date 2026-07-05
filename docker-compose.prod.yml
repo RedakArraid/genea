@@ -49,8 +49,6 @@ services:
       # ─── Paiements ───
       - PAYSTACK_SECRET_KEY=${PAYSTACK_SECRET_KEY:-}
       - PAYSTACK_PUBLIC_KEY=${PAYSTACK_PUBLIC_KEY:-}
-      - CINETPAY_API_KEY=${CINETPAY_API_KEY:-}
-      - CINETPAY_SITE_ID=${CINETPAY_SITE_ID:-}
       # ─── SMTP / OTP ───
       - SMTP_HOST=${SMTP_HOST:-}
       - SMTP_PORT=${SMTP_PORT:-587}

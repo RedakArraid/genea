@@ -1,0 +1,33 @@
+{
+  "hero": {
+    "badge": "Généalogie moderne",
+    "title": "Construisez et explorez votre histoire familiale",
+    "subtitle": "GeneaIA vous permet de créer des arbres généalogiques interactifs, d'ajouter des relations complexes et de visualiser votre lignée en un coup d'œil.",
+    "ctaAuth": "Mes arbres",
+    "ctaGuest": "Créer un compte gratuit",
+    "ctaDemo": "Voir la démo"
+  },
+  "features": {
+    "trees": {
+      "title": "Arbres interactifs",
+      "description": "Visualisez et organisez votre famille sur un canvas intuitif avec générations et unions."
+    },
+    "search": {
+      "title": "Recherche & chronologie",
+      "description": "Retrouvez n'importe quel membre et parcourez l'histoire familiale année par année."
+    },
+    "share": {
+      "title": "Partage sécurisé",
+      "description": "Invitez vos proches en lecteur ou co-éditeur, sans compte requis pour explorer la démo."
+    },
+    "privacy": {
+      "title": "Données protégées",
+      "description": "Vos arbres vous appartiennent. Authentification sécurisée et contrôle d'accès granulaire."
+    }
+  },
+  "demo": {
+    "unavailable": "Arbre démo indisponible",
+    "loadError": "Impossible de charger la démo",
+    "backHome": "Retour à l'accueil"
+  }
+}

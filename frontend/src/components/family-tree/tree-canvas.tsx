@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useMemo, useCallback } from "react"
 import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { PersonCard } from "./person-card"
 import { buildConnections, computeLineage, getCardDimensions } from "@/utils/tree-layout"
 import type { NormalizedPerson, TreeTweaks } from "@/types"
@@ -145,6 +146,7 @@ export function TreeCanvas({
   canShare = true,
   onCardDragStateChange,
 }: TreeCanvasProps) {
+  const { t } = useTranslation("tree")
   const wrapRef = useRef<HTMLDivElement>(null)
   const innerRef = useRef<HTMLDivElement>(null)
   const lastFitKeyRef = useRef<string | null>(null)
@@ -350,13 +352,13 @@ export function TreeCanvas({
 
   const generationOptions = useMemo(
     () => [
-      { value: "all", label: "Toutes les générations" },
+      { value: "all", label: t("canvas.allGenerations") },
       ...Array.from({ length: maxGens }, (_, i) => ({
         value: String(i + 1),
-        label: `Génération ${i + 1} (G${i + 1})`,
+        label: t("canvas.generationLabel", { num: i + 1 }),
       })),
     ],
-    [maxGens]
+    [maxGens, t]
   )
 
   return (
@@ -370,14 +372,14 @@ export function TreeCanvas({
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
           <Input
             className="pl-8"
-            placeholder="Rechercher..."
+            placeholder={t("canvas.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
         <Select value={genFilter} onValueChange={(v) => v && onSetTweak("generation", v)}>
           <SelectTrigger size="sm" className="w-[180px]">
-            <SelectValue placeholder="Génération" />
+            <SelectValue placeholder={t("canvas.generationPlaceholder")} />
           </SelectTrigger>
           <SelectContent className="max-h-64">
             {generationOptions.map((opt) => (
@@ -405,14 +407,14 @@ export function TreeCanvas({
           variant="outline"
           onClick={onReorganize}
           disabled={!onReorganize || people.length === 0 || (readOnly && !isDemo)}
-          title="Recalculer automatiquement les positions (conjoint·es groupé·es, branches hiérarchiques) et centrer la vue"
+          title={t("canvas.reorganizeTitle")}
         >
           <LayoutGrid className="mr-1 size-4" />
-          Réorganiser
+          {t("canvas.reorganize")}
         </Button>
-        <Button size="sm" variant="outline" onClick={fitToView} title="Centrer l'arbre dans la vue">
+        <Button size="sm" variant="outline" onClick={fitToView} title={t("canvas.centerTitle")}>
           <Maximize2 className="mr-1 size-4" />
-          Centrer
+          {t("canvas.center")}
         </Button>
         <Button size="sm" variant="ghost" onClick={onOpenTweaks}>
           <Settings className="size-4" />
@@ -421,18 +423,18 @@ export function TreeCanvas({
           <>
             <Button size="sm" variant="outline" onClick={onOpenShare}>
               <Share2 className="mr-1 size-4" />
-              Partager
+              {t("canvas.share")}
             </Button>
             <Button size="sm" onClick={() => onOpenAdd()}>
               <Plus className="mr-1 size-4" />
-              Ajouter
+              {t("canvas.add")}
             </Button>
           </>
         )}
         {!readOnly && !canShare && (
           <Button size="sm" onClick={() => onOpenAdd()}>
             <Plus className="mr-1 size-4" />
-            Ajouter
+            {t("canvas.add")}
           </Button>
         )}
       </div>
@@ -520,7 +522,7 @@ export function TreeCanvas({
               <button
                 key={`spouse-add-${i}`}
                 type="button"
-                title="Ajouter un enfant"
+                title={t("canvas.addChild")}
                 className="absolute z-[10] flex size-[22px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-2 border-primary bg-primary text-sm font-bold text-primary-foreground shadow-md pointer-events-auto hover:scale-110"
                 style={{ left: c.midX, top: c.midY }}
                 onClick={(e) => {
@@ -537,7 +539,7 @@ export function TreeCanvas({
         <Button size="sm" variant="ghost" onClick={() => setScale((s) => Math.min(2.5, s * 1.15))}>+</Button>
         <span className="px-2 text-center text-xs">{Math.round(scale * 100)}%</span>
         <Button size="sm" variant="ghost" onClick={() => setScale((s) => Math.max(0.2, s / 1.15))}>−</Button>
-        <Button size="sm" variant="ghost" onClick={fitToView} title="Centrer l'arbre">
+        <Button size="sm" variant="ghost" onClick={fitToView} title={t("canvas.centerTree")}>
           <Maximize2 className="size-4" />
         </Button>
       </div>
@@ -546,8 +548,8 @@ export function TreeCanvas({
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center pt-12">
           <div className="text-center text-muted-foreground">
             <p className="text-4xl">🌳</p>
-            <p className="mt-2 font-medium">Arbre vide</p>
-            <p className="text-sm">{readOnly ? "Explorez les fiches en cliquant sur une personne" : "Cliquez sur Ajouter pour commencer"}</p>
+            <p className="mt-2 font-medium">{t("canvas.emptyTree")}</p>
+            <p className="text-sm">{readOnly ? t("canvas.emptyReadOnly") : t("canvas.emptyEditable")}</p>
           </div>
         </div>
       )}

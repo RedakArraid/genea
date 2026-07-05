@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
 import { ExternalLink, Trash2 } from "lucide-react"
+import { formatMediumDate } from "@/lib/format"
 import { toast } from "sonner"
 import { fetchAdminTrees, deleteAdminTree, type AdminTree } from "@/lib/admin-api"
 import { AdminDataTable } from "@/components/admin/admin-data-table"
@@ -122,7 +121,7 @@ export default function AdminTreesPage() {
                   <TableCell>
                     <Badge variant="outline">{tree.visibility}</Badge>
                   </TableCell>
-                  <TableCell>{format(new Date(tree.updatedAt), "dd MMM yyyy", { locale: fr })}</TableCell>
+                  <TableCell>{formatMediumDate(tree.updatedAt)}</TableCell>
                   <TableCell className="text-right">
                     <Link
                       to={tree.isDemo ? "/demo" : `/tree/${tree.id}`}

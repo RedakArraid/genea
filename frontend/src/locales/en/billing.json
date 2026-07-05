@@ -1,0 +1,72 @@
+{
+  "pricing": {
+    "badge": "International · USD",
+    "sectionBadge": "Pricing",
+    "title": "Simple pricing, worldwide",
+    "sectionTitle": "International-friendly pricing",
+    "subtitle": "No freemium — a low-cost trial, then yearly or monthly plans. Secure card payment via Paystack.",
+    "sectionSubtitle": "$5 trial, then Family and Heritage plans. Card payment via Paystack.",
+    "promoCode": "Promo code",
+    "promoHint": "Country or campaign codes — enter yours if you have one.",
+    "securePayment": "Credit & debit card payment — secure",
+    "current": "Current",
+    "currentPlan": "Current plan",
+    "redirecting": "Redirecting…",
+    "createAccount": "Create an account",
+    "seeAllPlans": "See full plan details →",
+    "checkoutError": "Could not initialize payment",
+    "yearly": "Yearly",
+    "monthly": "Monthly"
+  },
+  "callback": {
+    "verifying": "Verifying payment…",
+    "successTitle": "Payment successful",
+    "failedTitle": "Payment failed",
+    "successDesc": "{{plan}} plan activated.",
+    "failedDesc": "Payment could not be confirmed. Try again from the Pricing page.",
+    "paymentConfirmed": "Payment confirmed",
+    "paymentFailed": "Payment not confirmed",
+    "goDashboard": "Go to dashboard",
+    "backPricing": "Back to pricing",
+    "home": "Home"
+  },
+  "plans": {
+    "SOLO": {
+      "name": "Trial",
+      "priceLabel": "$5 — one-time (≈ €5)",
+      "cta": "Try GeneaIA",
+      "features": [
+        "1 tree, up to 25 profiles",
+        "90 days to explore the tool",
+        "Private sharing (2 collaborators)",
+        "Secure card payment"
+      ]
+    },
+    "FAMILY": {
+      "name": "Family",
+      "priceLabel": "$30 / year (≈ €30)",
+      "cta": "Choose Family",
+      "features": [
+        "5 trees, 500 profiles per tree",
+        "100 photos & documents included",
+        "Unlimited collaborators",
+        "Public matches",
+        "GEDCOM & PDF export"
+      ]
+    },
+    "PATRIMONY": {
+      "name": "Heritage",
+      "priceLabel": "$50 / year (≈ €50)",
+      "priceLabelMonthly": "$5 / month (≈ €5)",
+      "cta": "Choose yearly",
+      "ctaMonthly": "Choose monthly",
+      "features": [
+        "Unlimited people and trees",
+        "Unlimited photos & documents",
+        "Versioning and full history",
+        "Multi-format import",
+        "Priority support"
+      ]
+    }
+  }
+}

@@ -131,6 +131,7 @@ model User {
   planActive         Boolean            @default(false)
   planExpiresAt      DateTime?
   role               UserRole           @default(USER)
+  locale             String             @default("fr")
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   FamilyTree         FamilyTree[]
@@ -161,7 +162,7 @@ model Payment {
   reference   String           @unique
   provider    PaymentProvider
   amount      Int
-  currency    String           @default("XOF")
+  currency    String           @default("USD")
   plan        Plan
   status      PaymentStatus    @default(PENDING)
   promoCodeId String?

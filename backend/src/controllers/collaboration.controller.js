@@ -12,15 +12,11 @@ exports.getTreeAccess = async (req, res, next) => {
   }
 };
 
+const { ensureDemoTree } = require('../lib/demoTree');
+
 exports.getDemoTree = async (req, res, next) => {
   try {
-    const demo = await prisma.familyTree.findFirst({
-      where: { isDemo: true },
-      select: { id: true, name: true, description: true },
-    });
-    if (!demo) {
-      return res.status(404).json({ message: 'Arbre démo non disponible' });
-    }
+    const demo = await ensureDemoTree();
     res.json({ demoTree: demo });
   } catch (error) {
     next(error);

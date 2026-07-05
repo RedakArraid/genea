@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { useAuthStore } from "@/stores/auth-store"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
@@ -40,6 +41,7 @@ function personForEdit(person: NormalizedPerson, treeId: string, raw?: Person): 
 }
 
 export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: FamilyTreePageProps = {}) {
+  const { t } = useTranslation(["tree", "common"])
   const { id: paramTreeId } = useParams<{ id: string }>()
   const treeId = treeIdOverride ?? paramTreeId
   const navigate = useNavigate()
@@ -228,15 +230,12 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
       updateNodePositions(Object.entries(computed).map(([id, pos]) => ({ id, position: pos as Position })))
     }
     setFitRequestId((id) => id + 1)
-    toast.success("Arbre réorganisé")
+    toast.success(t("page.reorganized"))
   }
 
   const handleReorganize = () => {
     if (!people.length) return
-    if (
-      positionsDirtyRef.current &&
-      !confirm("Réorganiser recalculera toutes les positions et effacera vos déplacements manuels. Continuer ?")
-    ) {
+    if (positionsDirtyRef.current && !confirm(t("page.reorganizeConfirm"))) {
       return
     }
     applyReorganize()
@@ -256,7 +255,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         const { url } = await uploadPersonPhoto(photoFile, treeId)
         photoUrl = url
       } catch {
-        toast.error("Échec de l'upload photo")
+        toast.error(t("person.photoUploadFailed"))
         return
       }
     }
@@ -282,7 +281,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
       if (relToId2 && relType === "child") {
         await addRelationship({ sourceId: relToId2, targetId: result.person.id, type: "parent" })
       }
-      toast.success(`${result.person.firstName} ajouté(e)`)
+      toast.success(t("page.personAdded", { name: result.person.firstName }))
       fetchTreeById(treeId, { silent: true })
       setIsAddOpen(false)
     } else {
@@ -308,17 +307,17 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
       await setPersonPhoto(personId, url)
       await fetchTreeById(treeId, { silent: true })
     } catch {
-      toast.error("Échec de l'upload photo")
+      toast.error(t("person.photoUploadFailed"))
       throw new Error("photo upload failed")
     }
   }
 
   const handleDeletePerson = async (personId: string) => {
     const person = people.find((p: NormalizedPerson) => p.id === personId)
-    if (!confirm(`Supprimer ${person?.given} ${person?.sur} ?`)) return
+    if (!confirm(t("page.deletePersonConfirm", { name: `${person?.given} ${person?.sur}` }))) return
     const result = await deletePerson(personId)
     if (result.success) {
-      toast.success("Personne supprimée")
+      toast.success(t("page.personDeleted"))
       setSelectedId(null)
       if (treeId) fetchTreeById(treeId, { silent: true })
     } else toast.error(result.message)
@@ -330,17 +329,17 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     const type = relType === "spouse" ? "spouse" : "parent"
     const result = await addRelationship({ sourceId: source, targetId: target, type })
     if (result.success) {
-      toast.success("Lien créé")
+      toast.success(t("page.linkCreated"))
       if (treeId) fetchTreeById(treeId, { silent: true })
       setIsRelationOpen(false)
     } else toast.error(result.message)
   }
 
   const handleDeleteRelation = async (relId: string) => {
-    if (!confirm("Supprimer ce lien ?")) return
+    if (!confirm(t("page.deleteLinkConfirm"))) return
     const result = await deleteRelationship(relId)
     if (result.success) {
-      toast.success("Lien supprimé")
+      toast.success(t("page.linkDeleted"))
       if (treeId) fetchTreeById(treeId, { silent: true })
     } else toast.error(result.message)
   }
@@ -356,8 +355,8 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   if (error || !currentTree) {
     return (
       <div className={`flex ${pageHeight} flex-col items-center justify-center gap-4`}>
-        <p className="text-muted-foreground">{error || "Arbre introuvable"}</p>
-        <Button onClick={() => navigate(publicDemo ? "/" : "/dashboard")}>Retour</Button>
+        <p className="text-muted-foreground">{error || t("page.treeNotFound")}</p>
+        <Button onClick={() => navigate(publicDemo ? "/" : "/dashboard")}>{t("common:actions.back")}</Button>
       </div>
     )
   }
@@ -370,27 +369,27 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           <span>
             {isDemo
               ? canWrite
-                ? "Mode démo partagé — structure libre (ajouts, liens, photos, documents). Fiches texte verrouillées. Les changements sont visibles par tous."
-                : "Mode démo — déplacez les cartes pour explorer. Connectez-vous pour ajouter, lier et sauvegarder."
+                ? t("page.demoSharedWrite")
+                : t("page.demoReadOnly")
               : isPublicRoute && !isAuthenticated
-                ? "Consultation publique en lecture seule — explorez l'arbre sans compte. Connectez-vous pour le modifier."
+                ? t("page.publicReadOnly")
                 : readOnly && isAuthenticated
-                  ? "Mode lecture seule — vous pouvez explorer l'arbre mais pas le modifier."
-                  : "Mode lecture seule — créez un compte pour modifier cet arbre."}
+                  ? t("page.authReadOnly")
+                  : t("page.guestReadOnly")}
           </span>
           {(publicDemo || (readOnly && !isAuthenticated)) && (
             <>
               <Button size="sm" variant="outline" className="h-7 border-amber-300 bg-background" onClick={() => navigate("/login")}>
-                Se connecter
+                {t("page.login")}
               </Button>
               <Button size="sm" variant="outline" className="h-7 border-amber-300 bg-background" onClick={() => navigate("/register")}>
-                Créer un compte
+                {t("page.createAccount")}
               </Button>
             </>
           )}
           {publicDemo && canWrite && (
             <Button size="sm" variant="outline" className="h-7 border-amber-300 bg-background" onClick={() => navigate("/register")}>
-              Créer mon arbre
+              {t("page.createMyTree")}
             </Button>
           )}
         </div>

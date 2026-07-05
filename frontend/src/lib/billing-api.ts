@@ -1,15 +1,17 @@
 import api from "@/lib/api"
 import type { PlanId } from "@/types"
 
+export type BillingInterval = "yearly" | "monthly"
+
 export interface BillingConfig {
   currency: string
-  country: string
-  providers: { paystack: boolean; cinetpay: boolean }
+  providers: { paystack: boolean }
   paystackPublicKey: string | null
 }
 
 export interface CheckoutPreview {
   plan: PlanId
+  billingInterval?: BillingInterval
   currency: string
   baseAmount: number
   finalAmount: number
@@ -21,19 +23,35 @@ export async function fetchBillingConfig(): Promise<BillingConfig> {
   return data
 }
 
-export async function previewCheckout(plan: PlanId, promoCode?: string): Promise<CheckoutPreview> {
-  const { data } = await api.post<CheckoutPreview>("/billing/preview", { plan, promoCode: promoCode || undefined })
+export async function previewCheckout(
+  plan: PlanId,
+  promoCode?: string,
+  billingInterval: BillingInterval = "yearly"
+): Promise<CheckoutPreview> {
+  const { data } = await api.post<CheckoutPreview>("/billing/preview", {
+    plan,
+    promoCode: promoCode || undefined,
+    billingInterval,
+  })
   return data
 }
 
-export async function initializeCheckout(plan: PlanId, promoCode?: string): Promise<{
+export async function initializeCheckout(
+  plan: PlanId,
+  promoCode?: string,
+  billingInterval: BillingInterval = "yearly"
+): Promise<{
   provider: string
   authorizationUrl: string
   reference: string
   amount: number
   currency: string
 }> {
-  const { data } = await api.post("/billing/initialize", { plan, promoCode: promoCode || undefined })
+  const { data } = await api.post("/billing/initialize", {
+    plan,
+    promoCode: promoCode || undefined,
+    billingInterval,
+  })
   return data
 }
 

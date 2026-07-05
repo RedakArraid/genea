@@ -1,0 +1,72 @@
+{
+  "pricing": {
+    "badge": "International · USD",
+    "sectionBadge": "Tarifs",
+    "title": "Des tarifs simples, partout dans le monde",
+    "sectionTitle": "Tarifs accessibles à l'international",
+    "subtitle": "Pas de freemium — un essai à petit prix, puis des forfaits annuels ou mensuels. Paiement par carte sécurisé (Paystack).",
+    "sectionSubtitle": "Essai à 5 €, puis forfaits Famille et Patrimoine. Paiement carte via Paystack.",
+    "promoCode": "Code promo",
+    "promoHint": "Codes par pays ou campagne — saisissez le vôtre si vous en avez un.",
+    "securePayment": "Paiement par carte bancaire — sécurisé",
+    "current": "Actuel",
+    "currentPlan": "Forfait actuel",
+    "redirecting": "Redirection…",
+    "createAccount": "Créer un compte",
+    "seeAllPlans": "Voir tous les détails des forfaits →",
+    "checkoutError": "Impossible d'initialiser le paiement",
+    "yearly": "Annuel",
+    "monthly": "Mensuel"
+  },
+  "callback": {
+    "verifying": "Vérification du paiement…",
+    "successTitle": "Paiement réussi",
+    "failedTitle": "Paiement échoué",
+    "successDesc": "Forfait {{plan}} activé.",
+    "failedDesc": "Le paiement n'a pas pu être confirmé. Réessayez depuis la page Tarifs.",
+    "paymentConfirmed": "Paiement confirmé",
+    "paymentFailed": "Paiement non confirmé",
+    "goDashboard": "Accéder au tableau de bord",
+    "backPricing": "Retour aux tarifs",
+    "home": "Accueil"
+  },
+  "plans": {
+    "SOLO": {
+      "name": "Essai",
+      "priceLabel": "5 € — paiement unique (≈ $5)",
+      "cta": "Tester GeneaIA",
+      "features": [
+        "1 arbre, jusqu'à 25 fiches",
+        "90 jours pour découvrir l'outil",
+        "Partage privé (2 collaborateurs)",
+        "Paiement carte sécurisé"
+      ]
+    },
+    "FAMILY": {
+      "name": "Famille",
+      "priceLabel": "30 € / an (≈ $30)",
+      "cta": "Choisir Famille",
+      "features": [
+        "5 arbres, 500 fiches par arbre",
+        "100 photos & documents inclus",
+        "Collaborateurs illimités",
+        "Correspondances publiques",
+        "Export GEDCOM & PDF"
+      ]
+    },
+    "PATRIMONY": {
+      "name": "Patrimoine",
+      "priceLabel": "50 € / an (≈ $50)",
+      "priceLabelMonthly": "5 € / mois (≈ $5)",
+      "cta": "Choisir annuel",
+      "ctaMonthly": "Choisir mensuel",
+      "features": [
+        "Personnes et arbres illimités",
+        "Photos & documents illimités",
+        "Versioning et historique complet",
+        "Import multi-formats",
+        "Support prioritaire"
+      ]
+    }
+  }
+}

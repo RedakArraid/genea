@@ -1,11 +1,13 @@
 export type PlanId = "SOLO" | "FAMILY" | "PATRIMONY"
+export type BillingInterval = "yearly" | "monthly"
 
 export interface PlanDefinition {
   id: PlanId
   name: string
-  priceXof: number
+  priceUsd: number
+  priceMonthlyUsd?: number
   priceLabel: string
-  billingPeriod: "once" | "yearly"
+  billingPeriod: "once" | "yearly" | "monthly"
   durationDays?: number
   maxTrees: number
   maxPersonsPerTree: number
@@ -17,15 +19,16 @@ export interface PlanDefinition {
   features: string[]
   featured?: boolean
   cta: string
+  ctaMonthly?: string
 }
 
-/** Tarifs CI — synchronisés avec backend/src/lib/plans.js */
+/** Tarifs internationaux — synchronisés avec backend/src/lib/plans.js */
 export const PLANS: PlanDefinition[] = [
   {
     id: "SOLO",
     name: "Essai",
-    priceXof: 2500,
-    priceLabel: "2 500 FCFA — paiement unique",
+    priceUsd: 5,
+    priceLabel: "$5 — one-time",
     billingPeriod: "once",
     durationDays: 90,
     maxTrees: 1,
@@ -35,19 +38,19 @@ export const PLANS: PlanDefinition[] = [
     canPublicMatching: false,
     canExport: false,
     canVersioning: false,
-    cta: "Tester GeneaIA",
+    cta: "Try GeneaIA",
     features: [
-      "1 arbre, jusqu'à 25 fiches",
-      "90 jours pour découvrir l'outil",
-      "Partage privé (2 collaborateurs)",
-      "Orange Money, MTN, Wave, carte",
+      "1 tree, up to 25 profiles",
+      "90 days to explore",
+      "Private sharing (2 collaborators)",
+      "Secure card payment",
     ],
   },
   {
     id: "FAMILY",
-    name: "Famille",
-    priceXof: 20000,
-    priceLabel: "20 000 FCFA / an",
+    name: "Family",
+    priceUsd: 30,
+    priceLabel: "$30 / year",
     billingPeriod: "yearly",
     durationDays: 365,
     maxTrees: 5,
@@ -58,20 +61,21 @@ export const PLANS: PlanDefinition[] = [
     canExport: true,
     canVersioning: false,
     featured: true,
-    cta: "Choisir Famille",
+    cta: "Choose Family",
     features: [
-      "5 arbres, 500 fiches par arbre",
-      "100 photos & documents inclus",
-      "Collaborateurs illimités",
-      "Correspondances publiques",
-      "Export GEDCOM & PDF",
+      "5 trees, 500 profiles per tree",
+      "100 photos & documents included",
+      "Unlimited collaborators",
+      "Public matches",
+      "GEDCOM & PDF export",
     ],
   },
   {
     id: "PATRIMONY",
-    name: "Patrimoine",
-    priceXof: 35000,
-    priceLabel: "35 000 FCFA / an",
+    name: "Heritage",
+    priceUsd: 50,
+    priceMonthlyUsd: 5,
+    priceLabel: "$50 / year",
     billingPeriod: "yearly",
     durationDays: 365,
     maxTrees: Infinity,
@@ -81,13 +85,14 @@ export const PLANS: PlanDefinition[] = [
     canPublicMatching: true,
     canExport: true,
     canVersioning: true,
-    cta: "Choisir Patrimoine",
+    cta: "Choose yearly",
+    ctaMonthly: "Choose monthly",
     features: [
-      "Personnes et arbres illimités",
-      "Photos & documents illimités",
-      "Versioning et historique complet",
-      "Import multi-formats",
-      "Support prioritaire",
+      "Unlimited people and trees",
+      "Unlimited photos & documents",
+      "Versioning and full history",
+      "Multi-format import",
+      "Priority support",
     ],
   },
 ]
@@ -96,6 +101,31 @@ export function getPlanById(id: PlanId) {
   return PLANS.find((p) => p.id === id) ?? PLANS[0]
 }
 
-export function formatXof(amount: number) {
-  return new Intl.NumberFormat("fr-CI", { style: "currency", currency: "XOF", maximumFractionDigits: 0 }).format(amount)
+export function getPlanPrice(plan: PlanDefinition, interval: BillingInterval = "yearly") {
+  if (plan.id === "PATRIMONY" && interval === "monthly" && plan.priceMonthlyUsd != null) {
+    return plan.priceMonthlyUsd
+  }
+  return plan.priceUsd
 }
+
+/** Formate un montant USD selon la langue (affichage EUR en français) */
+export function formatPrice(amountUsd: number, locale?: string) {
+  const lang = (locale || "en").split("-")[0]
+  if (lang === "fr") {
+    return new Intl.NumberFormat("fr-FR", {
+      style: "currency",
+      currency: "EUR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amountUsd)
+  }
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amountUsd)
+}
+
+/** @deprecated */
+export const formatXof = formatPrice
