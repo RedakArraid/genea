@@ -42,5 +42,9 @@ export default function DemoPage() {
     )
   }
 
-  return <FamilyTreePage treeIdOverride={demoTreeId} publicDemo />
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <FamilyTreePage treeIdOverride={demoTreeId} publicDemo />
+    </div>
+  )
 }

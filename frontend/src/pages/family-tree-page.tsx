@@ -71,7 +71,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   const readOnly = !canWrite
   const canChangePhoto = canWrite
   const canShare = !isDemo && treeAccess?.role === "owner"
-  const pageHeight = "h-full min-h-0"
+  const pageHeight = publicDemo || isPublicRoute ? "flex min-h-0 flex-1 flex-col" : "h-full min-h-0"
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hoverId, setHoverId] = useState<string | null>(null)

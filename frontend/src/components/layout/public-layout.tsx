@@ -1,14 +1,22 @@
 import { Outlet, useLocation } from "react-router-dom"
 import { MarketingHeader } from "@/components/layout/marketing-header"
+import { cn } from "@/lib/utils"
 
 export function PublicLayout() {
   const { pathname } = useLocation()
-  const isPublicView = pathname === "/demo" || pathname.startsWith("/tree/")
+  const isCanvasView = pathname === "/demo" || pathname.startsWith("/tree/")
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <MarketingHeader variant={isPublicView ? "minimal" : "default"} />
-      <Outlet />
+    <div
+      className={cn(
+        "flex flex-col bg-background",
+        isCanvasView ? "h-svh max-h-svh overflow-hidden" : "min-h-screen"
+      )}
+    >
+      <MarketingHeader variant={isCanvasView ? "minimal" : "default"} />
+      <main className={cn(isCanvasView && "flex min-h-0 flex-1 flex-col")}>
+        <Outlet />
+      </main>
     </div>
   )
 }
