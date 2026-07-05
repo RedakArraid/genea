@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Baby, ChevronDown, Link2, UserPlus } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
@@ -8,8 +9,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-function runAfterMenu(action: () => void) {
-  queueMicrotask(action)
+function runAfterMenuClose(action: () => void) {
+  window.setTimeout(action, 0)
 }
 
 interface ChildAddMenuProps {
@@ -20,9 +21,19 @@ interface ChildAddMenuProps {
 
 export function ChildAddMenu({ onNewChild, onLinkExisting, compact = false }: ChildAddMenuProps) {
   const { t } = useTranslation("tree")
+  const [open, setOpen] = useState(false)
+
+  const handleAction = (action: () => void) => {
+    setOpen(false)
+    runAfterMenuClose(action)
+  }
+
+  const stopTriggerBubble = (event: React.SyntheticEvent) => {
+    event.stopPropagation()
+  }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
       <DropdownMenuTrigger
         render={
           compact ? (
@@ -33,6 +44,8 @@ export function ChildAddMenu({ onNewChild, onLinkExisting, compact = false }: Ch
               className="size-7"
               title={t("relations.newChild")}
               data-testid="child-add-menu-compact"
+              onClick={stopTriggerBubble}
+              onPointerDown={stopTriggerBubble}
             />
           ) : (
             <Button
@@ -41,6 +54,8 @@ export function ChildAddMenu({ onNewChild, onLinkExisting, compact = false }: Ch
               size="sm"
               className="h-6 gap-1 px-2 text-xs"
               data-testid="child-add-menu"
+              onClick={stopTriggerBubble}
+              onPointerDown={stopTriggerBubble}
             />
           )
         }
@@ -54,17 +69,23 @@ export function ChildAddMenu({ onNewChild, onLinkExisting, compact = false }: Ch
           </>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="z-[200]">
+      <DropdownMenuContent
+        align={compact ? "center" : "end"}
+        side={compact ? "bottom" : "left"}
+        sideOffset={4}
+        positionerClassName="z-[300]"
+        className="z-[300]"
+      >
         <DropdownMenuItem
           data-testid="child-add-new"
-          onClick={() => runAfterMenu(onNewChild)}
+          onClick={() => handleAction(onNewChild)}
         >
           <UserPlus className="size-4" />
           {t("relations.newChild")}
         </DropdownMenuItem>
         <DropdownMenuItem
           data-testid="child-add-link-existing"
-          onClick={() => runAfterMenu(onLinkExisting)}
+          onClick={() => handleAction(onLinkExisting)}
         >
           <Link2 className="size-4" />
           {t("relations.linkExistingChild")}

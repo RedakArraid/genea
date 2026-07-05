@@ -671,7 +671,7 @@ export function TreeCanvas({
                 className="absolute z-[10] pointer-events-none"
                 style={{ left: c.midX, top: c.midY }}
               >
-                <DropdownMenu>
+                <DropdownMenu modal={false}>
                   <DropdownMenuTrigger
                     render={
                       <button

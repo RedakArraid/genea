@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { X, Focus, Trash2, Camera, Save } from "lucide-react"
 import { useTranslation } from "react-i18next"
@@ -239,6 +239,23 @@ function SidePanelContent({
     return null
   }
 
+  const firstSpouseId = spouses[0]?.id
+  const handleAddNewChild = useCallback(() => {
+    onAddChildRelation(person.id, "child", firstSpouseId)
+  }, [person.id, firstSpouseId, onAddChildRelation])
+
+  const handleLinkExistingChildFromSection = useCallback(() => {
+    onLinkExistingChild(firstSpouseId ? [person.id, firstSpouseId] : [person.id])
+  }, [person.id, firstSpouseId, onLinkExistingChild])
+
+  const childrenAddMenu = useMemo(
+    () => ({
+      onNewChild: handleAddNewChild,
+      onLinkExisting: handleLinkExistingChildFromSection,
+    }),
+    [handleAddNewChild, handleLinkExistingChildFromSection]
+  )
+
   const renderRelChip = (relative: NormalizedPerson, relType?: string) => (
     <RelChip
       key={relative.id}
@@ -413,15 +430,7 @@ function SidePanelContent({
             title={t("relations.children", { count: children.length })}
             readOnly={readOnly}
             addButtonLabel={t("relations.addButton")}
-            childAddMenu={
-              readOnly
-                ? undefined
-                : {
-                    onNewChild: () => onAddChildRelation(person.id, "child", spouses[0]?.id),
-                    onLinkExisting: () =>
-                      onLinkExistingChild(spouses.length > 0 ? [person.id, spouses[0].id] : [person.id]),
-                  }
-            }
+            childAddMenu={readOnly ? undefined : childrenAddMenu}
           >
             {children.length ? children.map((p) => renderRelChip(p, "child")) : <span className="text-xs text-muted-foreground">{t("relations.none")}</span>}
           </RelSection>
