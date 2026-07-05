@@ -81,6 +81,9 @@ services:
       - traefik.http.routers.geneaia-api.entrypoints=websecure
       - traefik.http.routers.geneaia-api.tls.certresolver=mytlschallenge
       - traefik.http.services.geneaia-api.loadbalancer.server.port=3001
+      - traefik.http.services.geneaia-api.loadbalancer.healthcheck.path=/api/health
+      - traefik.http.services.geneaia-api.loadbalancer.healthcheck.interval=5s
+      - traefik.http.services.geneaia-api.loadbalancer.healthcheck.timeout=3s
 
   frontend:
     image: ghcr.io/redakarraid/geneaia-frontend:latest
