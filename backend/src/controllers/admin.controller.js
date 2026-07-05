@@ -8,6 +8,10 @@ const { PLANS } = require('../lib/plans');
 const { resetDemoTree, getDemoTreeInfo } = require('../lib/demoTree');
 const { getPublicSmtpSettings, updateSmtpSettings } = require('../lib/smtpSettings');
 const { sendMail, verifySmtpConnection, resetTransporter } = require('../lib/mail');
+const { getPublicOpenWaSettings, updateOpenWaSettings } = require('../lib/openWaSettings');
+const { getSessionStatus, sendTextMessage, pingOpenWa } = require('../lib/openWa');
+const { buildOtpTestMessage } = require('../lib/otpWhatsappTemplates');
+const { normalizePhone, isValidPhone } = require('../lib/phone');
 
 const userPublicSelect = {
   id: true,
@@ -458,6 +462,84 @@ exports.testSmtpSettings = async (req, res, next) => {
   } catch (error) {
     res.status(400).json({
       message: error.message || 'Échec du test SMTP',
+    });
+  }
+};
+
+exports.getOpenWaSettings = async (req, res, next) => {
+  try {
+    const openwa = await getPublicOpenWaSettings();
+    res.json({ openwa });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.updateOpenWaSettings = async (req, res, next) => {
+  try {
+    const { enabled, baseUrl, apiKey, sessionId } = req.body;
+    const openwa = await updateOpenWaSettings({ enabled, baseUrl, apiKey, sessionId });
+    res.json({ message: 'Configuration OpenWA enregistrée', openwa });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getOpenWaStatus = async (req, res, next) => {
+  try {
+    const settings = await getPublicOpenWaSettings();
+    if (!settings.configured) {
+      return res.json({
+        reachable: false,
+        configured: false,
+        message: 'OpenWA non configuré',
+      });
+    }
+
+    try {
+      await pingOpenWa();
+      const session = await getSessionStatus();
+      res.json({
+        reachable: true,
+        configured: true,
+        session,
+      });
+    } catch (error) {
+      res.json({
+        reachable: false,
+        configured: true,
+        message: error.message || 'OpenWA injoignable',
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.testOpenWaSettings = async (req, res, next) => {
+  try {
+    const rawPhone = req.body.phone?.trim();
+    if (!rawPhone) {
+      return res.status(400).json({ message: 'Numéro de téléphone de test requis' });
+    }
+
+    const phone = normalizePhone(rawPhone, req.body.phoneCountry || 'CI');
+    if (!phone || !isValidPhone(phone)) {
+      return res.status(400).json({ message: 'Numéro de téléphone invalide' });
+    }
+
+    const session = await getSessionStatus();
+    if (!session.connected) {
+      return res.status(400).json({
+        message: `Session WhatsApp non connectée (statut : ${session.status})`,
+      });
+    }
+
+    await sendTextMessage(phone, buildOtpTestMessage());
+    res.json({ message: `Message de test WhatsApp envoyé au ${rawPhone}` });
+  } catch (error) {
+    res.status(400).json({
+      message: error.message || 'Échec du test OpenWA',
     });
   }
 };

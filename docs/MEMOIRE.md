@@ -52,6 +52,7 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 - Partage : visibilité PRIVATE/SHARED/PUBLIC, invitations collaborateurs (VIEWER/EDITOR) avec **email d'invitation** (lien `/invite/:token` ou accès direct), lien public lecture seule.
 - Arbre démo public « Famille Dupont » (10 personnes), **auto-provisionné** au démarrage API si absent, réinitialisable par l'admin.
 - **Admin SMTP** : configuration email depuis `/admin/smtp` (table `SmtpSetting`, prioritaire sur les variables d'env).
+- **Admin OpenWA** : configuration WhatsApp OTP depuis `/admin/openwa` (table `OpenWaSetting`) — URL API, clé API, ID session, statut session, test d'envoi. Canal principal OTP WhatsApp, email SMTP en secours.
 - Compte admin prod auto-créé au démarrage via `ADMIN_EMAIL` / `ADMIN_PASSWORD` (`ensure-admin.js`).
 
 ### Corrections récentes notables
@@ -101,12 +102,14 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 - [x] Déploiement staging opérationnel : https://staging.geneamap.com + https://api-staging.geneamap.com (R2 ready).
 - [x] **Production déployée** (2026-07-05 soir) : ancienne app `/root/genea` arrêtée (backup `backups/legacy-genea-*.sql`), nouvelle stack `geneaia-*-prod` sur https://geneamap.com / https://api.geneamap.com (R2 `geneamap-prod` ready).
 - [ ] Finaliser Paystack sur le compte marchand (canaux internationaux/USD) — clés test renseignées sur staging (2026-07-05).
-- [ ] Choisir le fournisseur SMTP/SMS de production pour l'OTP (actuellement Mailpit en local).
+- [ ] Déployer le service OpenWA sur le VPS (Docker séparé) et connecter la session WhatsApp prod.
+- [ ] Choisir le fournisseur SMTP de production pour l'OTP email (secours ; Mailpit en local).
 - [ ] Protection de branche `main` sur GitHub (PR obligatoire).
 - [ ] Routes SEO `/fr` `/en` + hreflang (hors périmètre i18n phase 1).
 
 ## 8. Journal
 
+- **2026-07-05 (soir, OpenWA admin)** — Page admin `/admin/openwa` : table `OpenWaSetting`, API GET/PATCH + statut session + test WhatsApp. OTP : WhatsApp prioritaire (OpenWA), email SMTP secours.
 - **2026-07-05 (soir, responsive)** — Refonte responsive complète : SidePanel Sheet mobile, toolbar arbre compacte, menu hamburger marketing, dashboard/timeline/matches touch-friendly, admin tables colonnes adaptatives, pinch-to-zoom canvas, spec E2E viewport 375px. Build frontend vert.
 - **2026-07-05 (soir, layout réorganiser)** — Fix « Réorganiser » : parents placés au-dessus de la personne racine (générations top-down, vraies racines sans parents in-tree, directChildren assoupli si un seul parent référencé). 14 tests layout.
 - **2026-07-05 (soir, landing)** — Refonte page d'accueil : composants `marketing/*` (hero animé avec `AnimatedTreeHero`, stats strip, features bento, how-it-works, CTA final, footer), hooks `use-reveal` / `use-prefers-reduced-motion`, données statiques `marketing-tree-demo.ts`, ancres header sticky, i18n `marketing.json` étendu fr/en. Build frontend vert.

@@ -8,6 +8,9 @@ const prisma = require('./prisma');
 const { sendMail, isMailConfigured } = require('./mail');
 const { normalizePhone, isValidPhone, formatPhoneDisplay } = require('./phone');
 const { buildOtpEmail } = require('./otpTemplates');
+const { isOpenWaActive } = require('./openWaSettings');
+const { sendTextMessage } = require('./openWa');
+const { buildOtpWhatsappMessage } = require('./otpWhatsappTemplates');
 
 const OTP_EXPIRES_MINUTES = parseInt(process.env.OTP_EXPIRES_MINUTES || '10', 10);
 const OTP_MAX_ATTEMPTS = parseInt(process.env.OTP_MAX_ATTEMPTS || '5', 10);
@@ -23,7 +26,9 @@ function generateOtp() {
 }
 
 async function isOtpDeliveryAvailable() {
-  return (await isMailConfigured()) || process.env.NODE_ENV === 'development';
+  if (await isOpenWaActive()) return true;
+  if (await isMailConfigured()) return true;
+  return process.env.NODE_ENV === 'development';
 }
 
 const GENERIC_SENT_MESSAGE = 'Si un compte existe avec ce numéro, un code a été envoyé.';
@@ -36,6 +41,16 @@ async function sendLoginOtpEmail(user, code, phoneDisplay) {
     locale: user.locale,
   });
   await sendMail({ to: user.email, subject, text, html });
+}
+
+async function sendLoginOtpWhatsapp(user, code, phone, phoneDisplay) {
+  const text = buildOtpWhatsappMessage({
+    code,
+    name: user.name,
+    phoneDisplay,
+    locale: user.locale,
+  });
+  await sendTextMessage(phone, text);
 }
 
 async function requestLoginOtp(rawPhone, defaultCountry = 'CI') {
@@ -86,7 +101,17 @@ async function requestLoginOtp(rawPhone, defaultCountry = 'CI') {
   });
 
   let delivered = false;
-  if (user.email && (await isMailConfigured())) {
+
+  if (await isOpenWaActive()) {
+    try {
+      await sendLoginOtpWhatsapp(user, code, phone, phoneDisplay);
+      delivered = true;
+    } catch (err) {
+      console.error('[otp] OpenWA failed:', err.message);
+    }
+  }
+
+  if (!delivered && user.email && (await isMailConfigured())) {
     await sendLoginOtpEmail(user, code, phoneDisplay);
     delivered = true;
   }
@@ -101,7 +126,7 @@ async function requestLoginOtp(rawPhone, defaultCountry = 'CI') {
       ok: false,
       status: 503,
       code: 'OTP_UNAVAILABLE',
-      message: 'Envoi du code indisponible. Ajoutez un email à votre profil ou utilisez votre mot de passe.',
+      message: 'Envoi du code indisponible. Utilisez votre mot de passe ou contactez le support.',
     };
   }
 

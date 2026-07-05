@@ -252,3 +252,13 @@ model SmtpSetting {
   from      String?
   updatedAt DateTime @updatedAt
 }
+
+/// Configuration OpenWA WhatsApp (singleton id = "default"), modifiable via l'admin.
+model OpenWaSetting {
+  id        String   @id @default("default")
+  enabled   Boolean  @default(false)
+  baseUrl   String?
+  apiKey    String?
+  sessionId String?
+  updatedAt DateTime @updatedAt
+}

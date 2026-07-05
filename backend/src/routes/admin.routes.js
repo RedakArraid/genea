@@ -25,5 +25,9 @@ router.delete('/promo-codes/:id', adminController.deletePromoCode);
 router.get('/smtp', adminController.getSmtpSettings);
 router.patch('/smtp', adminController.updateSmtpSettings);
 router.post('/smtp/test', adminController.testSmtpSettings);
+router.get('/openwa', adminController.getOpenWaSettings);
+router.patch('/openwa', adminController.updateOpenWaSettings);
+router.get('/openwa/status', adminController.getOpenWaStatus);
+router.post('/openwa/test', adminController.testOpenWaSettings);
 
 module.exports = router;

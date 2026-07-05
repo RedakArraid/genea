@@ -218,3 +218,57 @@ export async function testSmtpSettings(to: string): Promise<{ message: string }>
   const { data } = await api.post<{ message: string }>("/admin/smtp/test", { to })
   return data
 }
+
+export interface AdminOpenWaSettings {
+  enabled: boolean
+  baseUrl: string
+  sessionId: string
+  hasApiKey: boolean
+  configured: boolean
+  source: "db" | "env" | "none"
+  updatedAt: string | null
+}
+
+export interface AdminOpenWaSessionStatus {
+  id: string
+  name: string
+  status: string
+  phone: string | null
+  pushName: string | null
+  connected: boolean
+  lastError: string | null
+  connectedAt: string | null
+  lastActive: string | null
+}
+
+export interface AdminOpenWaStatusResponse {
+  reachable: boolean
+  configured: boolean
+  message?: string
+  session?: AdminOpenWaSessionStatus
+}
+
+export async function fetchOpenWaSettings(): Promise<AdminOpenWaSettings> {
+  const { data } = await api.get<{ openwa: AdminOpenWaSettings }>("/admin/openwa")
+  return data.openwa
+}
+
+export async function updateOpenWaSettings(payload: {
+  enabled?: boolean
+  baseUrl?: string
+  apiKey?: string
+  sessionId?: string
+}): Promise<AdminOpenWaSettings> {
+  const { data } = await api.patch<{ openwa: AdminOpenWaSettings }>("/admin/openwa", payload)
+  return data.openwa
+}
+
+export async function fetchOpenWaStatus(): Promise<AdminOpenWaStatusResponse> {
+  const { data } = await api.get<AdminOpenWaStatusResponse>("/admin/openwa/status")
+  return data
+}
+
+export async function testOpenWaSettings(phone: string, phoneCountry = "CI"): Promise<{ message: string }> {
+  const { data } = await api.post<{ message: string }>("/admin/openwa/test", { phone, phoneCountry })
+  return data
+}
