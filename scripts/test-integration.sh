@@ -217,9 +217,24 @@ if [ -n "$TOKEN" ]; then
 
   if [ -n "$PERSONAL_TREE_ID" ] && [ -n "$DEMO_TOKEN" ]; then
     # Reset état collaboration (idempotent)
-    if [ -n "$DEMO_USER_ID" ]; then
-      curl -s -o /dev/null -X DELETE "$API/family-trees/$PERSONAL_TREE_ID/collaborators/$DEMO_USER_ID" -H "$AUTH"
-    fi
+    collab_ids=$(curl -s "$API/family-trees/$PERSONAL_TREE_ID/collaborators" -H "$AUTH" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+for c in d.get('collaborators',[]):
+    print(c['userId'])
+" 2>/dev/null || echo "")
+    for uid in $collab_ids; do
+      [ -n "$uid" ] && curl -s -o /dev/null -X DELETE "$API/family-trees/$PERSONAL_TREE_ID/collaborators/$uid" -H "$AUTH"
+    done
+    invite_ids=$(curl -s "$API/family-trees/$PERSONAL_TREE_ID/collaborators" -H "$AUTH" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+for i in d.get('invites',[]):
+    print(i['id'])
+" 2>/dev/null || echo "")
+    for iid in $invite_ids; do
+      [ -n "$iid" ] && curl -s -o /dev/null -X DELETE "$API/family-trees/$PERSONAL_TREE_ID/invites/$iid" -H "$AUTH"
+    done
 
     code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API/family-trees/$PERSONAL_TREE_ID/visibility" \
       -H "$AUTH" -H 'Content-Type: application/json' -d '{"visibility":"SHARED"}')

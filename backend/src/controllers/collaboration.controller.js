@@ -71,16 +71,6 @@ exports.inviteCollaborator = async (req, res, next) => {
     const owner = await prisma.user.findUnique({ where: { id: req.user.id } });
     const limits = getEffectivePlanLimits(owner);
 
-    const collabCount = await prisma.treeCollaborator.count({ where: { treeId } });
-    const pendingCount = await prisma.treeInvite.count({
-      where: { treeId, status: 'pending' },
-    });
-    if (collabCount + pendingCount >= limits.maxCollaborators) {
-      return res.status(403).json({
-        message: `Limite de collaborateurs atteinte pour le forfait ${limits.name}`,
-      });
-    }
-
     const normalizedEmail = email.toLowerCase().trim();
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
@@ -88,6 +78,24 @@ exports.inviteCollaborator = async (req, res, next) => {
 
     if (existingUser?.id === tree.ownerId) {
       return res.status(400).json({ message: 'Le propriétaire est déjà sur l\'arbre' });
+    }
+
+    const existingCollab = existingUser
+      ? await prisma.treeCollaborator.findUnique({
+          where: { treeId_userId: { treeId, userId: existingUser.id } },
+        })
+      : null;
+
+    if (!existingCollab) {
+      const collabCount = await prisma.treeCollaborator.count({ where: { treeId } });
+      const pendingCount = await prisma.treeInvite.count({
+        where: { treeId, status: 'pending' },
+      });
+      if (collabCount + pendingCount >= limits.maxCollaborators) {
+        return res.status(403).json({
+          message: `Limite de collaborateurs atteinte pour le forfait ${limits.name}`,
+        });
+      }
     }
 
     if (existingUser) {
