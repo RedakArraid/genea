@@ -130,6 +130,8 @@ exports.getMe = async (req, res, next) => {
         createdAt: true,
         updatedAt: true,
         plan: true,
+        planActive: true,
+        planExpiresAt: true,
         role: true,
       }
     });

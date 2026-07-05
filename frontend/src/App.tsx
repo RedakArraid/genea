@@ -13,6 +13,7 @@ import ProfilePage from "@/pages/profile-page"
 import FamilyTreePage from "@/pages/family-tree-page"
 import DemoPage from "@/pages/demo-page"
 import InvitePage from "@/pages/invite-page"
+import BillingCallbackPage from "@/pages/billing-callback-page"
 import TimelinePage from "@/pages/timeline-page"
 import MatchesPage from "@/pages/matches-page"
 import { AdminRoute } from "@/components/admin/admin-route"
@@ -24,6 +25,7 @@ import AdminTreesPage from "@/pages/admin/admin-trees-page"
 import AdminStoragePage from "@/pages/admin/admin-storage-page"
 import AdminDemoPage from "@/pages/admin/admin-demo-page"
 import AdminPlansPage from "@/pages/admin/admin-plans-page"
+import AdminPromoPage from "@/pages/admin/admin-promo-page"
 import NotFoundPage from "@/pages/not-found-page"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -57,6 +59,7 @@ export default function App() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/demo" element={<DemoPage />} />
           <Route path="/invite/:token" element={<InvitePage />} />
+          <Route path="/billing/callback" element={<BillingCallbackPage />} />
           <Route path="/tree/:id" element={<FamilyTreePage />} />
           <Route path="/login" element={<AuthRedirect><LoginPage /></AuthRedirect>} />
           <Route path="/register" element={<AuthRedirect><RegisterPage /></AuthRedirect>} />
@@ -81,6 +84,7 @@ export default function App() {
             <Route path="/admin/storage" element={<AdminStoragePage />} />
             <Route path="/admin/demo" element={<AdminDemoPage />} />
             <Route path="/admin/plans" element={<AdminPlansPage />} />
+            <Route path="/admin/promo" element={<AdminPromoPage />} />
           </Route>
         </Route>
 

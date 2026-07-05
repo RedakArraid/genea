@@ -150,3 +150,37 @@ export async function fetchAdminPlans(): Promise<{
   const { data } = await api.get("/admin/plans")
   return data
 }
+
+export interface PromoCode {
+  id: string
+  code: string
+  description?: string | null
+  discountType: "PERCENT" | "FIXED"
+  discountValue: number
+  maxUses?: number | null
+  usedCount: number
+  validFrom?: string | null
+  validUntil?: string | null
+  applicablePlans: PlanId[]
+  active: boolean
+  createdAt: string
+}
+
+export async function fetchPromoCodes(): Promise<PromoCode[]> {
+  const { data } = await api.get<{ promoCodes: PromoCode[] }>("/admin/promo-codes")
+  return data.promoCodes
+}
+
+export async function createPromoCode(payload: Record<string, unknown>): Promise<PromoCode> {
+  const { data } = await api.post<{ promoCode: PromoCode }>("/admin/promo-codes", payload)
+  return data.promoCode
+}
+
+export async function updatePromoCode(id: string, payload: Record<string, unknown>): Promise<PromoCode> {
+  const { data } = await api.patch<{ promoCode: PromoCode }>(`/admin/promo-codes/${id}`, payload)
+  return data.promoCode
+}
+
+export async function deletePromoCode(id: string): Promise<void> {
+  await api.delete(`/admin/promo-codes/${id}`)
+}

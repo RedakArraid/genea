@@ -7,6 +7,8 @@ export interface User {
   email: string
   name?: string | null
   plan?: PlanId
+  planActive?: boolean
+  planExpiresAt?: string | null
   role?: "USER" | "ADMIN"
   createdAt: string
   updatedAt?: string

@@ -109,12 +109,69 @@ model User {
   password           String
   name               String?
   plan               Plan               @default(SOLO)
+  planActive         Boolean            @default(false)
+  planExpiresAt      DateTime?
   role               UserRole           @default(USER)
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   FamilyTree         FamilyTree[]
   TreeCollaborator   TreeCollaborator[]
   TreeInviteSent     TreeInvite[]       @relation("InvitedBy")
+  Payment            Payment[]
+}
+
+enum PaymentProvider {
+  PAYSTACK
+  CINETPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum PromoDiscountType {
+  PERCENT
+  FIXED
+}
+
+model Payment {
+  id          String           @id @default(uuid())
+  userId      String
+  reference   String           @unique
+  provider    PaymentProvider
+  amount      Int
+  currency    String           @default("XOF")
+  plan        Plan
+  status      PaymentStatus    @default(PENDING)
+  promoCodeId String?
+  metadata    Json?
+  paidAt      DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  User        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  PromoCode   PromoCode?       @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model PromoCode {
+  id              String            @id @default(uuid())
+  code            String            @unique
+  description     String?
+  discountType    PromoDiscountType
+  discountValue   Int
+  maxUses         Int?
+  usedCount       Int               @default(0)
+  validFrom       DateTime?
+  validUntil      DateTime?
+  applicablePlans Plan[]
+  active          Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  Payment         Payment[]
 }
 
 model TreeCollaborator {

@@ -29,6 +29,8 @@ async function main() {
       password: hashedPassword,
       plan: 'PATRIMONY',
       role: 'ADMIN',
+      planActive: true,
+      planExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     },
   });
 
@@ -39,6 +41,8 @@ async function main() {
       password: hashedPassword,
       plan: 'PATRIMONY',
       role: 'USER',
+      planActive: true,
+      planExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     },
   });
 
@@ -49,6 +53,8 @@ async function main() {
       password: hashedPassword,
       plan: 'SOLO',
       role: 'USER',
+      planActive: true,
+      planExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
     },
   });
 

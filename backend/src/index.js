@@ -22,6 +22,8 @@ const edgeRoutes = require('./routes/edge.routes');
 const planRoutes = require('./routes/plan.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const documentRoutes = require('./routes/document.routes');
+const billingRoutes = require('./routes/billing.routes');
+const billingWebhookRoutes = require('./routes/billing-webhook.routes');
 const adminRoutes = require('./routes/admin.routes');
 const { initStorage } = require('./lib/storage');
 
@@ -52,6 +54,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use('/api/billing/webhooks', billingWebhookRoutes);
 app.use(morgan('dev'));
 
 // Routes de base
@@ -76,6 +79,7 @@ app.use('/api/relationships', relationshipRoutes);
 app.use('/api/node-positions', nodePositionRoutes);
 app.use('/api/edges', edgeRoutes);
 app.use('/api/plans', planRoutes);
+app.use('/api/billing', billingRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 

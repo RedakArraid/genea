@@ -2,10 +2,11 @@ import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
 import { fr } from "date-fns/locale"
-import { Plus, Trash2, Users, GitBranch, Share2 } from "lucide-react"
+import { Plus, Trash2, Users, GitBranch, Share2, CreditCard } from "lucide-react"
 import { toast } from "sonner"
+import { useAuthStore } from "@/stores/auth-store"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -24,6 +25,8 @@ import { Switch } from "@/components/ui/switch"
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
+  const planActive = user?.planActive ?? false
   const { trees, sharedTrees, isLoading, fetchTrees, createTree, deleteTree } = useFamilyTreeStore()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ name: "", description: "", isPublic: false })
@@ -60,12 +63,29 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8">
+      {!planActive && (
+        <Card className="border-primary/40 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <CreditCard className="size-5" />
+              Activez votre forfait pour créer un arbre
+            </CardTitle>
+            <CardDescription>
+              Choisissez l'Essai (2 500 FCFA, 25 fiches) ou un forfait annuel. Paiement sécurisé via Paystack (Orange Money, MTN, Wave, carte).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link to="/pricing" className={buttonVariants()}>Voir les tarifs</Link>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Mes arbres généalogiques</h1>
           <p className="text-muted-foreground">Créez et gérez vos lignées familiales</p>
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button onClick={() => setOpen(true)} disabled={!planActive}>
           <Plus className="mr-2 size-4" />
           Nouvel arbre
         </Button>
@@ -143,7 +163,7 @@ export default function DashboardPage() {
               <p className="font-medium">Aucun arbre pour le moment</p>
               <p className="text-sm text-muted-foreground">Créez votre premier arbre pour commencer</p>
             </div>
-            <Button onClick={() => setOpen(true)}>
+            <Button onClick={() => setOpen(true)} disabled={!planActive}>
               <Plus className="mr-2 size-4" />
               Créer un arbre
             </Button>

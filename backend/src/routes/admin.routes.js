@@ -18,5 +18,9 @@ router.get('/demo', adminController.getDemoInfo);
 router.post('/demo/reset', adminController.resetDemo);
 router.get('/storage', adminController.getStorage);
 router.get('/plans', adminController.getPlans);
+router.get('/promo-codes', adminController.listPromoCodes);
+router.post('/promo-codes', adminController.createPromoCode);
+router.patch('/promo-codes/:id', adminController.updatePromoCode);
+router.delete('/promo-codes/:id', adminController.deletePromoCode);
 
 module.exports = router;

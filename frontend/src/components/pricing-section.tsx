@@ -12,9 +12,9 @@ export function PricingSection() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="mb-10 text-center">
           <Badge variant="secondary" className="mb-3">Tarifs</Badge>
-          <h2 className="text-3xl font-bold tracking-tight">Gratuit pour commencer.</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Tarifs adaptés à la Côte d'Ivoire</h2>
           <p className="mt-2 text-muted-foreground">
-            Pas de carte bancaire requise. Vos données vous appartiennent, exportables à tout moment.
+            Essai à petit prix, puis forfaits annuels. Orange Money, MTN, Wave et carte via Paystack.
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
@@ -47,7 +47,7 @@ export function PricingSection() {
               </CardContent>
               <CardFooter>
                 <Link
-                  to="/register"
+                  to="/pricing"
                   className={cn(buttonVariants({ variant: plan.featured ? "default" : "outline" }), "w-full")}
                 >
                   {plan.cta}

@@ -8,6 +8,7 @@ import {
   LogOut,
   Shield,
   Sparkles,
+  Tag,
   Users,
 } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
@@ -35,6 +36,7 @@ const adminNav = [
   { title: "Stockage", href: "/admin/storage", icon: Database },
   { title: "Démo", href: "/admin/demo", icon: Sparkles },
   { title: "Forfaits", href: "/admin/plans", icon: CreditCard },
+  { title: "Codes promo", href: "/admin/promo", icon: Tag },
 ]
 
 export function AdminShell() {

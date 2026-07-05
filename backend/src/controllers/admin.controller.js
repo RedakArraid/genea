@@ -327,3 +327,92 @@ exports.getPlans = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.listPromoCodes = async (req, res, next) => {
+  try {
+    const codes = await prisma.promoCode.findMany({ orderBy: { createdAt: 'desc' } });
+    res.json({ promoCodes: codes });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.createPromoCode = async (req, res, next) => {
+  try {
+    const {
+      code,
+      description,
+      discountType,
+      discountValue,
+      maxUses,
+      validFrom,
+      validUntil,
+      applicablePlans = [],
+      active = true,
+    } = req.body;
+
+    if (!code?.trim()) {
+      return res.status(400).json({ message: 'Code requis' });
+    }
+    if (!['PERCENT', 'FIXED'].includes(discountType)) {
+      return res.status(400).json({ message: 'Type de réduction invalide' });
+    }
+    if (!discountValue || discountValue < 1) {
+      return res.status(400).json({ message: 'Valeur de réduction invalide' });
+    }
+    if (discountType === 'PERCENT' && discountValue > 100) {
+      return res.status(400).json({ message: 'Pourcentage max 100' });
+    }
+
+    const promo = await prisma.promoCode.create({
+      data: {
+        code: code.trim().toUpperCase(),
+        description,
+        discountType,
+        discountValue,
+        maxUses: maxUses ?? null,
+        validFrom: validFrom ? new Date(validFrom) : null,
+        validUntil: validUntil ? new Date(validUntil) : null,
+        applicablePlans: applicablePlans.filter((p) => ['SOLO', 'FAMILY', 'PATRIMONY'].includes(p)),
+        active,
+      },
+    });
+    res.status(201).json({ message: 'Code promo créé', promoCode: promo });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(400).json({ message: 'Ce code existe déjà' });
+    }
+    next(error);
+  }
+};
+
+exports.updatePromoCode = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const data = {};
+    ['description', 'discountType', 'discountValue', 'maxUses', 'active'].forEach((f) => {
+      if (req.body[f] !== undefined) data[f] = req.body[f];
+    });
+    if (req.body.validFrom !== undefined) data.validFrom = req.body.validFrom ? new Date(req.body.validFrom) : null;
+    if (req.body.validUntil !== undefined) data.validUntil = req.body.validUntil ? new Date(req.body.validUntil) : null;
+    if (req.body.applicablePlans !== undefined) {
+      data.applicablePlans = req.body.applicablePlans.filter((p) => ['SOLO', 'FAMILY', 'PATRIMONY'].includes(p));
+    }
+
+    const promo = await prisma.promoCode.update({ where: { id: req.params.id }, data });
+    res.json({ message: 'Code promo mis à jour', promoCode: promo });
+  } catch (error) {
+    if (error.code === 'P2025') return res.status(404).json({ message: 'Code introuvable' });
+    next(error);
+  }
+};
+
+exports.deletePromoCode = async (req, res, next) => {
+  try {
+    await prisma.promoCode.delete({ where: { id: req.params.id } });
+    res.json({ message: 'Code promo supprimé' });
+  } catch (error) {
+    if (error.code === 'P2025') return res.status(404).json({ message: 'Code introuvable' });
+    next(error);
+  }
+};

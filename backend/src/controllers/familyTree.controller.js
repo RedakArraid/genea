@@ -5,6 +5,7 @@
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { getPlanLimits } = require('../lib/plans');
+const { assertPlanEntitlement, getEffectivePlanLimits } = require('../lib/planAccess');
 const { requireTreeRead } = require('../lib/treeAccess');
 
 exports.getAllTrees = async (req, res, next) => {
@@ -97,7 +98,8 @@ exports.createTree = async (req, res, next) => {
     const userId = req.user.id;
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    const limits = getPlanLimits(user.plan);
+    assertPlanEntitlement(user);
+    const limits = getEffectivePlanLimits(user);
     const treeCount = await prisma.familyTree.count({
       where: { ownerId: userId, isDemo: false },
     });
