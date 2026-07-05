@@ -33,7 +33,9 @@ export function formatPhoneDisplay(phone: string | null | undefined, country: Co
 export function composePhone(localNumber: string, country: CountryCode = DEFAULT_COUNTRY): string {
   const entry = PHONE_COUNTRIES.find((c) => c.code === country)
   const dial = entry?.dial || "+225"
-  const local = localNumber.trim().replace(/^0+/, "")
-  if (local.startsWith("+")) return local
-  return `${dial}${local.startsWith("0") ? local.slice(1) : local}`
+  const digits = localNumber.trim().replace(/\D/g, "")
+  if (!digits) return ""
+  if (localNumber.trim().startsWith("+")) return localNumber.trim().replace(/\s/g, "")
+  const national = digits.replace(/^0+/, "")
+  return `${dial}${national}`
 }

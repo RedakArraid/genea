@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next"
 import type { CountryCode } from "libphonenumber-js"
 import { useAuthStore } from "@/stores/auth-store"
 import { PhoneInput } from "@/components/phone-input"
-import { composePhone, DEFAULT_COUNTRY } from "@/lib/phone"
+import { composePhone, DEFAULT_COUNTRY, normalizePhoneInput } from "@/lib/phone"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -41,7 +41,15 @@ export default function RegisterPage() {
     }
     setLoading(true)
     const composed = composePhone(phone, phoneCountry)
-    const result = await register(name, composed, password, email.trim() || undefined, phoneCountry)
+    const normalized =
+      normalizePhoneInput(composed, phoneCountry) ||
+      normalizePhoneInput(phone, phoneCountry)
+    if (!normalized) {
+      setLoading(false)
+      toast.error(t("register.invalidPhone"))
+      return
+    }
+    const result = await register(name, normalized, password, email.trim() || undefined, phoneCountry)
     setLoading(false)
     if (result.success) {
       toast.success(t("register.success"))

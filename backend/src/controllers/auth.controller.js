@@ -51,7 +51,7 @@ exports.register = async (req, res, next) => {
     const userLocale = ['fr', 'en'].includes(locale) ? locale : 'fr';
     const phone = normalizePhone(rawPhone, phoneCountry || 'CI');
     if (!phone || !isValidPhone(phone)) {
-      return sendError(res, 400, 'INVALID_PHONE_CI', 'Numéro de téléphone invalide (format CI : 07XXXXXXXX).');
+      return sendError(res, 400, 'INVALID_PHONE', 'Numéro de téléphone invalide.');
     }
 
     let normalizedEmail = null;

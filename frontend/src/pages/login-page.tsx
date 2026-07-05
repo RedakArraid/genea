@@ -7,7 +7,7 @@ import type { CountryCode } from "libphonenumber-js"
 import { useAuthStore } from "@/stores/auth-store"
 import api from "@/lib/api"
 import { PhoneInput } from "@/components/phone-input"
-import { composePhone, formatPhoneDisplay, DEFAULT_COUNTRY } from "@/lib/phone"
+import { composePhone, formatPhoneDisplay, DEFAULT_COUNTRY, normalizePhoneInput } from "@/lib/phone"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -44,7 +44,13 @@ export default function LoginPage() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    const result = await login(loginId, password)
+    const trimmed = loginId.trim()
+    let login = trimmed
+    if (!trimmed.includes("@")) {
+      const composed = composePhone(trimmed, DEFAULT_COUNTRY)
+      login = normalizePhoneInput(composed, DEFAULT_COUNTRY) || normalizePhoneInput(trimmed, DEFAULT_COUNTRY) || trimmed
+    }
+    const result = await login(login, password)
     setLoading(false)
     if (result.success) {
       toast.success(t("login.success"))
@@ -110,7 +116,7 @@ export default function LoginPage() {
                     type="text"
                     inputMode="tel"
                     autoComplete="username"
-                    placeholder="07XXXXXXXX"
+                    placeholder={t("login.loginPlaceholder")}
                     value={loginId}
                     onChange={(e) => setLoginId(e.target.value)}
                     required

@@ -6,7 +6,19 @@ const express = require('express');
 const { body } = require('express-validator');
 const authController = require('../controllers/auth.controller');
 const { isAuth } = require('../middleware/auth.middleware');
-const { looksLikePhone } = require('../lib/phone');
+const { looksLikePhone, DEFAULT_COUNTRY } = require('../lib/phone');
+
+const phoneValidator = body('phone')
+  .trim()
+  .notEmpty()
+  .withMessage('Le numéro de téléphone est requis')
+  .custom((value, { req }) => {
+    const country = req.body.phoneCountry || DEFAULT_COUNTRY;
+    if (!looksLikePhone(value, country)) {
+      throw new Error('Numéro de téléphone invalide');
+    }
+    return true;
+  });
 
 const loginValidator = body('login')
   .optional()
@@ -18,19 +30,8 @@ const loginValidator = body('login')
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(login)) {
         throw new Error('Email invalide');
       }
-    } else if (!looksLikePhone(login)) {
-      throw new Error('Numéro de téléphone invalide (ex. 07XXXXXXXX)');
-    }
-    return true;
-  });
-
-const phoneValidator = body('phone')
-  .trim()
-  .notEmpty()
-  .withMessage('Le numéro de téléphone est requis')
-  .custom((value) => {
-    if (!looksLikePhone(value)) {
-      throw new Error('Numéro invalide (format CI : 07XXXXXXXX)');
+    } else if (!looksLikePhone(login, req.body.phoneCountry || DEFAULT_COUNTRY)) {
+      throw new Error('Numéro de téléphone invalide');
     }
     return true;
   });
