@@ -51,7 +51,6 @@ export function AddPersonDialog({
   onClose,
   onSubmit,
   treeName,
-  treeId: _treeId,
   parentId,
   parent2Id,
   relationType,
@@ -186,7 +185,7 @@ interface EditPersonDialogProps {
   treeId: string
 }
 
-export function EditPersonDialog({ open, onClose, onSubmit, person, treeId: _treeId }: EditPersonDialogProps) {
+export function EditPersonDialog({ open, onClose, onSubmit, person }: EditPersonDialogProps) {
   const storageConfig = useStorageConfig()
   const [loading, setLoading] = useState(false)
   const [photoFile, setPhotoFile] = useState<File | null>(null)

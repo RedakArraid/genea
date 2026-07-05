@@ -14,7 +14,7 @@ function toApiPath(resolved: string): string {
   return resolved
 }
 
-interface AuthenticatedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+interface AuthenticatedImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> {
   src: string | null | undefined
   fallback?: React.ReactNode
 }

@@ -131,8 +131,6 @@ export function TreeCanvas({
   onSelect,
   hoverId,
   onHover,
-  canvasW: _canvasW = 1400,
-  canvasH: _canvasH = 1000,
   onOpenAdd,
   onOpenShare,
   onOpenTweaks,

@@ -129,11 +129,6 @@ function orderSpouseCluster(ids, byId) {
   return [...left, hub, ...right];
 }
 
-function clusterWidth(count, cardW, hGap) {
-  if (count <= 0) return 0;
-  return count * cardW + (count - 1) * hGap;
-}
-
 /**
  * Disposition pour arbres sans liens parent-enfant : clusters conjuguaux par génération.
  */
