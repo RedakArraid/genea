@@ -45,12 +45,15 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     const trimmed = loginId.trim()
-    let login = trimmed
+    let resolvedLogin = trimmed
     if (!trimmed.includes("@")) {
       const composed = composePhone(trimmed, DEFAULT_COUNTRY)
-      login = normalizePhoneInput(composed, DEFAULT_COUNTRY) || normalizePhoneInput(trimmed, DEFAULT_COUNTRY) || trimmed
+      resolvedLogin =
+        normalizePhoneInput(composed, DEFAULT_COUNTRY) ||
+        normalizePhoneInput(trimmed, DEFAULT_COUNTRY) ||
+        trimmed
     }
-    const result = await login(login, password)
+    const result = await login(resolvedLogin, password)
     setLoading(false)
     if (result.success) {
       toast.success(t("login.success"))
