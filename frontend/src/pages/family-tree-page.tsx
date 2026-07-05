@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
 import { useAuthStore } from "@/stores/auth-store"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
 import { normalizePersons, computeLayout } from "@/utils/tree-layout"
-import type { NormalizedPerson, Position, TreeTweaks } from "@/types"
+import type { NormalizedPerson, Person, Position, TreeTweaks } from "@/types"
 import { TreeCanvas } from "@/components/family-tree/tree-canvas"
 import { SidePanel } from "@/components/family-tree/side-panel"
 import {
   AddPersonDialog,
-  EditPersonDialog,
   ShareDialog,
   TreeSettingsSheet,
   AddRelationDialog,
@@ -22,6 +21,22 @@ import { uploadPersonPhoto, setPersonPhoto } from "@/lib/upload"
 interface FamilyTreePageProps {
   treeIdOverride?: string
   publicDemo?: boolean
+}
+
+function personForEdit(person: NormalizedPerson, treeId: string, raw?: Person): Person {
+  if (raw) return raw
+  return {
+    id: person.id,
+    firstName: person.given,
+    lastName: person.sur !== "—" ? person.sur : "",
+    birthDate: person.birthDate,
+    deathDate: person.deathDate,
+    birthPlace: person.place || null,
+    gender: null,
+    biography: person.bio?.fr || "",
+    photoUrl: person.photoUrl ?? null,
+    treeId,
+  }
 }
 
 export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: FamilyTreePageProps = {}) {
@@ -54,21 +69,26 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   const readOnly = !canWrite
   const canChangePhoto = canWrite
   const canShare = !isDemo && treeAccess?.role === "owner"
-  const pageHeight = "h-[calc(100vh-3.5rem)]"
+  const pageHeight = "h-full min-h-0"
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({})
   const [searchQuery, setSearchQuery] = useState("")
-  const [lastRelsHash, setLastRelsHash] = useState<string | null>(null)
+  const lastRelsHashRef = useRef<string | null>(null)
   const [fitRequestId, setFitRequestId] = useState(0)
+  const isDraggingCardRef = useRef(false)
+  const positionsRef = useRef(positions)
+  const positionsDirtyRef = useRef(false)
+  const positionsBootstrappedRef = useRef<string | null>(null)
+
+  positionsRef.current = positions
 
   const [isAddOpen, setIsAddOpen] = useState(false)
-  const [isEditOpen, setIsEditOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [isTweaksOpen, setIsTweaksOpen] = useState(false)
   const [isRelationOpen, setIsRelationOpen] = useState(false)
-  const [editingPersonData, setEditingPersonData] = useState<import("@/types").Person | null>(null)
+  const [relationPersonData, setRelationPersonData] = useState<Person | null>(null)
   const [addPersonRelData, setAddPersonRelData] = useState({ parentId: null as string | null, parent2Id: null as string | null, relType: null as string | null })
 
   const [tweaks, setTweaks] = useState<TreeTweaks>({
@@ -89,12 +109,16 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   }
 
   useEffect(() => {
+    positionsBootstrappedRef.current = null
+    positionsDirtyRef.current = false
+    lastRelsHashRef.current = null
+    setPositions({})
     if (treeId) fetchTreeById(treeId)
     return () => resetState()
   }, [treeId, fetchTreeById, resetState])
 
   useEffect(() => {
-    if (!currentTree?.Person?.length) return
+    if (!currentTree?.Person?.length || isDraggingCardRef.current) return
 
     const normalizedPeople = normalizePersons(currentTree.Person, currentTree.Relationship)
     const dbPositions: Record<string, { x: number; y: number }> = {}
@@ -107,7 +131,20 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
       .sort()
       .join("|")
 
-    const relsChanged = lastRelsHash !== null && lastRelsHash !== currentRelsHash
+    const personIds = normalizedPeople.map((p) => p.id).sort().join(",")
+    const bootstrapKey = `${currentTree.id}:${currentRelsHash}:${personIds}`
+    const relsChanged = lastRelsHashRef.current !== null && lastRelsHashRef.current !== currentRelsHash
+
+    if (positionsBootstrappedRef.current === bootstrapKey) {
+      lastRelsHashRef.current = currentRelsHash
+      return
+    }
+
+    if (positionsDirtyRef.current && !relsChanged) {
+      lastRelsHashRef.current = currentRelsHash
+      return
+    }
+
     const hasAllPositions = normalizedPeople.every((p: NormalizedPerson) => dbPositions[p.id])
     const needsLayout = relsChanged || !hasAllPositions || Object.keys(dbPositions).length === 0
 
@@ -120,8 +157,11 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         updateNodePositions(Object.entries(computed).map(([id, pos]) => ({ id, position: pos as Position })))
       }
     }
-    setLastRelsHash(currentRelsHash)
-  }, [currentTree])
+
+    positionsBootstrappedRef.current = bootstrapKey
+    positionsDirtyRef.current = false
+    lastRelsHashRef.current = currentRelsHash
+  }, [currentTree, tweaks.layout, tweaks.density, canWrite, updateNodePositions])
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", tweaks.theme === "dark")
@@ -136,7 +176,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   }, [location.search, positions])
 
   useEffect(() => {
-    if (!canWrite || Object.keys(positions).length === 0 || !currentTree) return
+    if (!canWrite || Object.keys(positions).length === 0 || !currentTree || isDraggingCardRef.current) return
     const handler = setTimeout(() => {
       const dbPositions: Record<string, { x: number; y: number }> = {}
       currentTree.NodePosition?.forEach((np) => {
@@ -180,15 +220,26 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     })
   }
 
-  const handleReorganize = () => {
-    if (!people.length) return
+  const applyReorganize = () => {
     const { positions: computed } = computeLayout(people, tweaks.layout, tweaks.density)
     setPositions(computed)
+    positionsDirtyRef.current = false
     if (!readOnly) {
       updateNodePositions(Object.entries(computed).map(([id, pos]) => ({ id, position: pos as Position })))
     }
     setFitRequestId((id) => id + 1)
     toast.success("Arbre réorganisé")
+  }
+
+  const handleReorganize = () => {
+    if (!people.length) return
+    if (
+      positionsDirtyRef.current &&
+      !confirm("Réorganiser recalculera toutes les positions et effacera vos déplacements manuels. Continuer ?")
+    ) {
+      return
+    }
+    applyReorganize()
   }
 
   const handleAddPerson = async (
@@ -232,54 +283,34 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         await addRelationship({ sourceId: relToId2, targetId: result.person.id, type: "parent" })
       }
       toast.success(`${result.person.firstName} ajouté(e)`)
-      fetchTreeById(treeId)
+      fetchTreeById(treeId, { silent: true })
       setIsAddOpen(false)
     } else {
       toast.error(result.message)
     }
   }
 
-  const handleEditPerson = (person: NormalizedPerson) => {
-    if (!canEditPerson) {
-      toast.info(
-        isDemo
-          ? "Les fiches personnes ne sont pas modifiables en démo"
-          : "Connectez-vous avec un compte autorisé pour modifier cette fiche"
-      )
-      return
-    }
-    const raw = currentTree?.Person?.find((p) => p.id === person.id)
-    if (raw) { setEditingPersonData(raw); setIsEditOpen(true) }
-  }
-
-  const handleEditSubmit = async (personId: string, formData: Record<string, string>, photoFile?: File | null) => {
-    if (photoFile && treeId) {
-      try {
-        const { url } = await uploadPersonPhoto(photoFile, treeId, personId)
-        await setPersonPhoto(personId, url)
-        toast.success("Photo mise à jour")
-        fetchTreeById(treeId)
-        setIsEditOpen(false)
-        if (!canEditPerson) return
-      } catch {
-        toast.error("Échec de l'upload photo")
-        return
-      }
-    }
+  const handleSidePanelSave = async (personId: string, formData: Record<string, string>) => {
     if (!canEditPerson) return
     const result = await updatePerson(personId, formData)
     if (result.success) {
-      toast.success("Personne mise à jour")
-      if (treeId) fetchTreeById(treeId)
-      setIsEditOpen(false)
-    } else toast.error(result.message)
+      if (treeId) fetchTreeById(treeId, { silent: true })
+    } else {
+      toast.error(result.message)
+      throw new Error(result.message)
+    }
   }
 
   const handleChangePhoto = async (personId: string, file: File) => {
     if (!treeId) return
-    const { url } = await uploadPersonPhoto(file, treeId, personId)
-    await setPersonPhoto(personId, url)
-    fetchTreeById(treeId)
+    try {
+      const { url } = await uploadPersonPhoto(file, treeId, personId)
+      await setPersonPhoto(personId, url)
+      await fetchTreeById(treeId, { silent: true })
+    } catch {
+      toast.error("Échec de l'upload photo")
+      throw new Error("photo upload failed")
+    }
   }
 
   const handleDeletePerson = async (personId: string) => {
@@ -289,7 +320,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     if (result.success) {
       toast.success("Personne supprimée")
       setSelectedId(null)
-      if (treeId) fetchTreeById(treeId)
+      if (treeId) fetchTreeById(treeId, { silent: true })
     } else toast.error(result.message)
   }
 
@@ -300,7 +331,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     const result = await addRelationship({ sourceId: source, targetId: target, type })
     if (result.success) {
       toast.success("Lien créé")
-      if (treeId) fetchTreeById(treeId)
+      if (treeId) fetchTreeById(treeId, { silent: true })
       setIsRelationOpen(false)
     } else toast.error(result.message)
   }
@@ -310,7 +341,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     const result = await deleteRelationship(relId)
     if (result.success) {
       toast.success("Lien supprimé")
-      if (treeId) fetchTreeById(treeId)
+      if (treeId) fetchTreeById(treeId, { silent: true })
     } else toast.error(result.message)
   }
 
@@ -387,6 +418,21 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           canDrag={canDrag}
           isDemo={isDemo}
           canShare={canShare}
+          onCardDragStateChange={(dragging, pending) => {
+            isDraggingCardRef.current = dragging
+            if (dragging) {
+              positionsDirtyRef.current = true
+              return
+            }
+            if (!canWrite) return
+            const snapshot = pending
+              ? { ...positionsRef.current, [pending.id]: { x: pending.x, y: pending.y } }
+              : positionsRef.current
+            if (Object.keys(snapshot).length === 0) return
+            updateNodePositions(
+              Object.entries(snapshot).map(([id, position]) => ({ id, position }))
+            )
+          }}
         />
       </div>
 
@@ -397,8 +443,11 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           currentTree={currentTree}
           onClose={() => setSelectedId(null)}
           onSelect={(id) => { setSelectedId(id); window.__focusOn?.(id) }}
-          onEdit={handleEditPerson}
-          onAddRelation={(p) => { setEditingPersonData(currentTree.Person?.find((x) => x.id === p.id) || null); setIsRelationOpen(true) }}
+          onSave={canEditPerson ? handleSidePanelSave : undefined}
+          onAddRelation={(p) => {
+            setRelationPersonData(currentTree.Person?.find((x) => x.id === p.id) || personForEdit(p, currentTree.id))
+            setIsRelationOpen(true)
+          }}
           onAddChildRelation={handleOpenAddModal}
           onDelete={handleDeletePerson}
           onDeleteRelation={handleDeleteRelation}
@@ -421,14 +470,6 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         relationType={addPersonRelData.relType}
       />
 
-      <EditPersonDialog
-        open={isEditOpen}
-        onClose={() => { setIsEditOpen(false); setEditingPersonData(null) }}
-        onSubmit={handleEditSubmit}
-        person={editingPersonData}
-        treeId={currentTree.id}
-      />
-
       <ShareDialog
         open={isShareOpen}
         onClose={() => setIsShareOpen(false)}
@@ -444,11 +485,11 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         onSetTweak={handleSetTweak}
       />
 
-      {isRelationOpen && editingPersonData && (
+      {isRelationOpen && relationPersonData && (
         <AddRelationDialog
           open={isRelationOpen}
-          onClose={() => { setIsRelationOpen(false); setEditingPersonData(null) }}
-          person={people.find((p: NormalizedPerson) => p.id === editingPersonData.id)!}
+          onClose={() => { setIsRelationOpen(false); setRelationPersonData(null) }}
+          person={people.find((p: NormalizedPerson) => p.id === relationPersonData.id)!}
           people={people}
           onSubmit={handleAddRelationSubmit}
         />

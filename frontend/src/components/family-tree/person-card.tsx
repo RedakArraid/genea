@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import { resolveMediaUrl } from "@/lib/upload"
+import { AuthenticatedImage } from "@/components/ui/authenticated-image"
 import { getCardDimensions } from "@/utils/tree-layout"
 import type { NormalizedPerson, PersonTone } from "@/types"
 import { useState, useEffect } from "react"
@@ -33,10 +33,13 @@ interface PersonCardProps {
   hideDates?: boolean
   hidePlaces?: boolean
   selected?: boolean
+  dragging?: boolean
   dim?: boolean
   highlight?: boolean
   onSelect?: (id: string) => void
   onDrag?: (id: string, pos: { x: number; y: number }) => void
+  onDragStart?: () => void
+  onDragEnd?: () => void
   onHover?: (id: string | null) => void
 }
 
@@ -49,10 +52,13 @@ export function PersonCard({
   hideDates = false,
   hidePlaces = false,
   selected = false,
+  dragging = false,
   dim = false,
   highlight = false,
   onSelect,
   onDrag,
+  onDragStart,
+  onDragEnd,
   onHover,
 }: PersonCardProps) {
   const tone = TONE_STYLES[person.tone] || TONE_STYLES.stone
@@ -60,8 +66,7 @@ export function PersonCard({
   const initials = getInitials(person.given, person.sur)
   const lifespan = getLifespan(person.born, person.died)
   const [photoFailed, setPhotoFailed] = useState(false)
-  const photoSrc = resolveMediaUrl(person.photoUrl)
-  const showPhoto = !hidePhotos && photoSrc && !photoFailed
+  const showPhoto = !hidePhotos && person.photoUrl && !photoFailed
 
   useEffect(() => {
     setPhotoFailed(false)
@@ -70,41 +75,59 @@ export function PersonCard({
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return
     e.stopPropagation()
+    e.preventDefault()
     if (!onDrag) {
       onSelect?.(person.id)
       return
     }
-    const el = e.currentTarget
-    el.setPointerCapture(e.pointerId)
+
     const startX = e.clientX
     const startY = e.clientY
-    const startPos = { ...pos }
+    const startPos = { x: pos.x, y: pos.y }
     let moved = false
+    let dragging = false
 
-    const onMove = (ev: Event) => {
-      const pev = ev as PointerEvent
-      const dx = (pev.clientX - startX) / scale
-      const dy = (pev.clientY - startY) / scale
-      if (!moved && Math.hypot(pev.clientX - startX, pev.clientY - startY) > 4) moved = true
-      if (moved) onDrag(person.id, { x: startPos.x + dx, y: startPos.y + dy })
+    const onMove = (ev: PointerEvent) => {
+      const dx = (ev.clientX - startX) / scale
+      const dy = (ev.clientY - startY) / scale
+      if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) > 4) {
+        moved = true
+        if (!dragging) {
+          dragging = true
+          onDragStart?.()
+        }
+      }
+      if (moved) {
+        onDrag(person.id, { x: startPos.x + dx, y: startPos.y + dy })
+      }
     }
 
-    const onUp = (ev: Event) => {
-      const pev = ev as PointerEvent
-      el.releasePointerCapture(pev.pointerId)
-      el.removeEventListener("pointermove", onMove)
-      el.removeEventListener("pointerup", onUp)
+    const endDrag = () => {
+      window.removeEventListener("pointermove", onMove)
+      window.removeEventListener("pointerup", onUp)
+      window.removeEventListener("pointercancel", onUp)
+      if (dragging) onDragEnd?.()
+    }
+
+    const onUp = () => {
       if (!moved && onSelect) onSelect(person.id)
+      endDrag()
     }
 
-    el.addEventListener("pointermove", onMove)
-    el.addEventListener("pointerup", onUp)
+    window.addEventListener("pointermove", onMove)
+    window.addEventListener("pointerup", onUp)
+    window.addEventListener("pointercancel", onUp)
+  }
+
+  const onDragStartPrevent = (e: React.DragEvent) => {
+    e.preventDefault()
   }
 
   return (
     <div
       className={cn(
-        "tree-person-card absolute z-[2] flex flex-col cursor-grab select-none rounded-lg border bg-card shadow-sm transition-opacity active:cursor-grabbing",
+        "tree-person-card absolute z-[2] flex flex-col cursor-grab select-none rounded-lg border bg-card shadow-sm transition-opacity active:cursor-grabbing touch-none",
+        dragging && "z-[30]",
         cardStyle !== "round" && cardStyle !== "minimal" && "w-[120px]",
         selected && "ring-2 ring-primary",
         highlight && "ring-2 ring-primary/50",
@@ -113,6 +136,7 @@ export function PersonCard({
       )}
       style={{ left: pos.x, top: pos.y, width: cardW, height: cardH }}
       onPointerDown={onPointerDown}
+      onDragStart={onDragStartPrevent}
       onMouseEnter={() => onHover?.(person.id)}
       onMouseLeave={() => onHover?.(null)}
     >
@@ -122,11 +146,17 @@ export function PersonCard({
             G{person.generation}
           </span>
           {showPhoto ? (
-            <img
-              src={photoSrc}
+            <AuthenticatedImage
+              src={person.photoUrl}
               alt={person.given}
-              className="size-full object-cover"
+              draggable={false}
+              className="pointer-events-none size-full object-cover"
               onError={() => setPhotoFailed(true)}
+              fallback={
+                <div className={cn("flex size-full items-center justify-center text-lg font-semibold", tone.fg)}>
+                  {initials}
+                </div>
+              }
             />
           ) : (
             <div className={cn("flex size-full items-center justify-center text-lg font-semibold", tone.fg)}>

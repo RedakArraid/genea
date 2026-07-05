@@ -53,7 +53,7 @@ export function AppShell() {
 
   const initials = user?.name
     ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-    : user?.email?.[0]?.toUpperCase() || "G"
+    : user?.phone?.slice(-2) || user?.email?.[0]?.toUpperCase() || "G"
 
   const handleLogout = () => {
     logout()
@@ -145,7 +145,7 @@ export function AppShell() {
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset>
+      <SidebarInset className="h-svh max-h-svh min-h-0 overflow-hidden">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-4" />
@@ -164,7 +164,12 @@ export function AppShell() {
             </div>
           </div>
         </header>
-        <main className={cn("flex-1", location.pathname.includes("/family-tree/") && !location.pathname.includes("/timeline") && !location.pathname.includes("/matches") ? "overflow-hidden" : "p-6")}>
+        <main className={cn(
+          "flex min-h-0 flex-1 flex-col",
+          location.pathname.includes("/family-tree/") && !location.pathname.includes("/timeline") && !location.pathname.includes("/matches")
+            ? "overflow-hidden"
+            : "p-6"
+        )}>
           <Outlet />
         </main>
       </SidebarInset>

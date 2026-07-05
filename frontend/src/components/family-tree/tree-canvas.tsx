@@ -16,6 +16,54 @@ import { cn } from "@/lib/utils"
 
 const TOOLBAR_H = 48
 const VIEW_PADDING = 40
+const CANVAS_PADDING = 80
+
+function computeConnectionBounds(
+  people: NormalizedPerson[],
+  positions: Record<string, { x: number; y: number }>,
+  cardW: number,
+  cardH: number,
+  connections: ReturnType<typeof buildConnections>
+) {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+
+  const include = (x: number, y: number) => {
+    minX = Math.min(minX, x)
+    minY = Math.min(minY, y)
+    maxX = Math.max(maxX, x)
+    maxY = Math.max(maxY, y)
+  }
+
+  for (const p of people) {
+    const pos = positions[p.id]
+    if (!pos) continue
+    include(pos.x, pos.y)
+    include(pos.x + cardW, pos.y + cardH)
+  }
+
+  for (const c of connections) {
+    if (c.midX != null && c.midY != null) include(c.midX, c.midY)
+  }
+
+  if (!isFinite(minX)) {
+    return { minX: 0, minY: 0, width: 1400, height: 1000 }
+  }
+
+  minX -= CANVAS_PADDING
+  minY -= CANVAS_PADDING
+  maxX += CANVAS_PADDING
+  maxY += CANVAS_PADDING
+
+  return {
+    minX,
+    minY,
+    width: Math.max(800, maxX - minX),
+    height: Math.max(600, maxY - minY),
+  }
+}
 
 function computeContentBounds(
   positions: Record<string, { x: number; y: number }>,
@@ -71,6 +119,7 @@ interface TreeCanvasProps {
   canDrag?: boolean
   isDemo?: boolean
   canShare?: boolean
+  onCardDragStateChange?: (dragging: boolean, pending?: { id: string; x: number; y: number }) => void
 }
 
 export function TreeCanvas({
@@ -82,8 +131,8 @@ export function TreeCanvas({
   onSelect,
   hoverId,
   onHover,
-  canvasW = 1400,
-  canvasH = 1000,
+  canvasW: _canvasW = 1400,
+  canvasH: _canvasH = 1000,
   onOpenAdd,
   onOpenShare,
   onOpenTweaks,
@@ -96,13 +145,20 @@ export function TreeCanvas({
   canDrag = true,
   isDemo = false,
   canShare = true,
+  onCardDragStateChange,
 }: TreeCanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const innerRef = useRef<HTMLDivElement>(null)
   const lastFitKeyRef = useRef<string | null>(null)
+  const isDraggingCardRef = useRef(false)
+  const dragRafRef = useRef<number | null>(null)
+  const pendingDragRef = useRef<{ id: string; x: number; y: number } | null>(null)
+  const positionsRef = useRef(positions)
+  positionsRef.current = positions
   const [pan, setPan] = useState({ x: 60, y: 40 })
   const [scale, setScale] = useState(0.85)
   const [panning, setPanning] = useState(false)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
 
   const layout = tweaks.layout || "vertical"
   const connStyle = tweaks.connStyle || "elbow"
@@ -126,14 +182,48 @@ export function TreeCanvas({
     [people, positions, connStyle, layout, cardW, cardH]
   )
 
+  const connectionBounds = useMemo(
+    () => computeConnectionBounds(people, positions, cardW, cardH, connections),
+    [people, positions, cardW, cardH, connections]
+  )
+
   const onCardDrag = useCallback(
     (id: string, np: { x: number; y: number }) => {
-      setPositions((prev) => ({ ...prev, [id]: np }))
+      pendingDragRef.current = { id, ...np }
+      if (dragRafRef.current != null) return
+      dragRafRef.current = requestAnimationFrame(() => {
+        dragRafRef.current = null
+        const pending = pendingDragRef.current
+        if (!pending) return
+        setPositions((prev) => ({ ...prev, [pending.id]: { x: pending.x, y: pending.y } }))
+      })
     },
     [setPositions]
   )
 
+  const onCardDragStart = useCallback((id: string) => {
+    isDraggingCardRef.current = true
+    setDraggingId(id)
+    onCardDragStateChange?.(true)
+  }, [onCardDragStateChange])
+
+  const onCardDragEnd = useCallback(() => {
+    const pending = pendingDragRef.current
+    if (pending) {
+      setPositions((prev) => ({ ...prev, [pending.id]: { x: pending.x, y: pending.y } }))
+      pendingDragRef.current = null
+    }
+    if (dragRafRef.current != null) {
+      cancelAnimationFrame(dragRafRef.current)
+      dragRafRef.current = null
+    }
+    isDraggingCardRef.current = false
+    setDraggingId(null)
+    onCardDragStateChange?.(false, pending ?? undefined)
+  }, [setPositions, onCardDragStateChange])
+
   const onPointerDownBg = (e: React.PointerEvent) => {
+    if (isDraggingCardRef.current) return
     const el = e.target as HTMLElement
     const isBackground =
       el === wrapRef.current ||
@@ -198,7 +288,7 @@ export function TreeCanvas({
     if (!r || people.length === 0) return
 
     const personIds = new Set(people.map((p) => p.id))
-    const bounds = computeContentBounds(positions, personIds, cardW, cardH)
+    const bounds = computeContentBounds(positionsRef.current, personIds, cardW, cardH)
     if (!bounds || bounds.width === 0 || bounds.height === 0) return
 
     const availW = r.width - VIEW_PADDING * 2
@@ -216,7 +306,7 @@ export function TreeCanvas({
       x: visibleCenterX - bounds.centerX * newScale,
       y: visibleCenterY - bounds.centerY * newScale,
     })
-  }, [people, positions, cardW, cardH])
+  }, [people, cardW, cardH])
 
   useEffect(() => {
     if (fitRequestId === 0) return
@@ -234,14 +324,14 @@ export function TreeCanvas({
 
     const frame = requestAnimationFrame(() => fitToView())
     return () => cancelAnimationFrame(frame)
-  }, [people, positions, layout, fitToView])
+  }, [people, layout, fitToView])
 
   useEffect(() => {
     const wrap = wrapRef.current
     if (!wrap || people.length === 0) return
 
     const observer = new ResizeObserver(() => {
-      if (lastFitKeyRef.current) fitToView()
+      if (lastFitKeyRef.current && !isDraggingCardRef.current) fitToView()
     })
     observer.observe(wrap)
     return () => observer.disconnect()
@@ -317,7 +407,7 @@ export function TreeCanvas({
           variant="outline"
           onClick={onReorganize}
           disabled={!onReorganize || people.length === 0 || (readOnly && !isDemo)}
-          title="Recalculer les positions et centrer l'arbre"
+          title="Recalculer automatiquement les positions (conjoint·es groupé·es, branches hiérarchiques) et centrer la vue"
         >
           <LayoutGrid className="mr-1 size-4" />
           Réorganiser
@@ -356,9 +446,10 @@ export function TreeCanvas({
       >
         <svg
           className="tree-connections pointer-events-none absolute left-0 top-0 z-[1]"
-          viewBox={`0 0 ${canvasW} ${canvasH}`}
-          width={canvasW}
-          height={canvasH}
+          viewBox={`${connectionBounds.minX} ${connectionBounds.minY} ${connectionBounds.width} ${connectionBounds.height}`}
+          width={connectionBounds.width}
+          height={connectionBounds.height}
+          style={{ left: connectionBounds.minX, top: connectionBounds.minY }}
         >
           {connections.map((c, i) => {
             const dim = lineage && !c.ids.every((id: string) => lineage.has(id))
@@ -412,10 +503,13 @@ export function TreeCanvas({
               hideDates={tweaks.hideDates}
               hidePlaces={tweaks.hidePlaces}
               selected={selectedId === p.id}
+              dragging={draggingId === p.id}
               dim={!!dim}
               highlight={!!hi}
               onSelect={onSelect}
               onDrag={canDrag ? onCardDrag : undefined}
+              onDragStart={canDrag ? () => onCardDragStart(p.id) : undefined}
+              onDragEnd={canDrag ? onCardDragEnd : undefined}
               onHover={onHover}
             />
           )

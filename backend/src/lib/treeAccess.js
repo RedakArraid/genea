@@ -5,6 +5,26 @@ const prisma = require('./prisma');
  * @returns {{ canRead: boolean, canWrite: boolean, canEditPerson: boolean, role: string, isDemo: boolean }}
  */
 async function resolveTreeAccess(userId, treeId) {
+  const tree = await prisma.familyTree.findUnique({
+    where: { id: treeId },
+    include: {
+      TreeCollaborator: {
+        where: { userId },
+        take: 1,
+      },
+    },
+  });
+
+  if (!tree) {
+    return { canRead: false, canWrite: false, canEditPerson: false, role: 'none', isDemo: false };
+  }
+
+  // Propriétaire : accès total (y compris si compte ADMIN)
+  if (userId && tree.ownerId === userId) {
+    return { canRead: true, canWrite: true, canEditPerson: true, role: 'owner', isDemo: false };
+  }
+
+  // Admin plateforme : lecture seule sur les arbres des autres utilisateurs
   if (userId) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -21,20 +41,6 @@ async function resolveTreeAccess(userId, treeId) {
     }
   }
 
-  const tree = await prisma.familyTree.findUnique({
-    where: { id: treeId },
-    include: {
-      TreeCollaborator: {
-        where: { userId },
-        take: 1,
-      },
-    },
-  });
-
-  if (!tree) {
-    return { canRead: false, canWrite: false, canEditPerson: false, role: 'none', isDemo: false };
-  }
-
   if (tree.isDemo) {
     return {
       canRead: true,
@@ -43,10 +49,6 @@ async function resolveTreeAccess(userId, treeId) {
       role: userId ? 'demo' : 'viewer',
       isDemo: true,
     };
-  }
-
-  if (tree.ownerId === userId) {
-    return { canRead: true, canWrite: true, canEditPerson: true, role: 'owner', isDemo: false };
   }
 
   const collab = tree.TreeCollaborator[0];

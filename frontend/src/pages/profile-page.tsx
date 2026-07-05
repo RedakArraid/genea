@@ -11,9 +11,16 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
+function formatPhoneDisplay(phone?: string | null) {
+  if (!phone) return ""
+  if (phone.startsWith("+225")) return `0${phone.slice(4)}`
+  return phone
+}
+
 export default function ProfilePage() {
   const { user, updateProfile } = useAuthStore()
   const [name, setName] = useState(user?.name || "")
+  const [phone, setPhone] = useState(formatPhoneDisplay(user?.phone))
   const [email, setEmail] = useState(user?.email || "")
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -24,7 +31,7 @@ export default function ProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    const payload: Record<string, string> = { name, email }
+    const payload: Record<string, string> = { name, phone, email }
     if (newPassword) {
       payload.currentPassword = currentPassword
       payload.newPassword = newPassword
@@ -54,8 +61,29 @@ export default function ProfilePage() {
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label htmlFor="phone">Téléphone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                inputMode="tel"
+                placeholder="07XXXXXXXX"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email">Email (optionnel)</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="vous@exemple.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Requis pour les paiements en ligne et la réception des codes OTP par email.
+              </p>
             </div>
             {user?.createdAt && (
               <p className="text-sm text-muted-foreground">

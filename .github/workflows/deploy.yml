@@ -1,8 +1,14 @@
-name: 🚀 GeneaIA CI/CD - Production Ready
+name: GeneaIA CI/CD
+
+# Flux : dev (tests) -> staging (tests + build + deploy staging) -> main (tests + build + deploy prod)
+# VPS Contabo : Traefik route geneamap.com / api.geneamap.com (prod)
+#               et staging.geneamap.com / api-staging.geneamap.com (staging).
+# Le compose déployé est celui du repo (docker-compose.staging.yml / docker-compose.prod.yml),
+# copié par scp. Les secrets applicatifs (R2, SMTP, DB...) vivent dans le .env du serveur.
 
 on:
   push:
-    branches: [ main, staging, develop ]
+    branches: [ main, staging, dev ]
   pull_request:
     branches: [ main, staging ]
   workflow_dispatch:
@@ -15,8 +21,8 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: 🧪 Tests et Qualité
-    
+    name: Tests et qualité
+
     services:
       postgres:
         image: postgres:15
@@ -32,10 +38,10 @@ jobs:
           - 5432:5432
 
     steps:
-    - name: 📥 Checkout code
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: 📦 Setup Node.js
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
@@ -44,34 +50,34 @@ jobs:
           backend/package-lock.json
           frontend/package-lock.json
 
-    - name: 🔧 Install dependencies
+    - name: Install dependencies
       run: |
         cd backend && npm ci
         cd ../frontend && npm ci
 
-    - name: 🏗️ Generate Prisma Client
+    - name: Generate Prisma Client
       run: |
         cd backend
         npx prisma generate
 
-    - name: 🗄️ Run database migrations
+    - name: Run database migrations
       run: |
         cd backend
         npx prisma migrate deploy
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneaia_test
 
-    - name: 🔍 Lint Backend
+    - name: Lint Backend
       run: |
         cd backend
-        npm run lint || echo "⚠️ Linting warnings detected"
+        npm run lint || echo "Linting warnings detected"
 
-    - name: 🔍 Lint Frontend
+    - name: Lint Frontend
       run: |
         cd frontend
-        npm run lint || echo "⚠️ Linting warnings detected"
+        npm run lint || echo "Linting warnings detected"
 
-    - name: 🧪 Backend Tests
+    - name: Backend Tests
       run: |
         cd backend
         npm test
@@ -80,100 +86,96 @@ jobs:
         JWT_SECRET: test-secret-key
         NODE_ENV: test
 
-    - name: 🧪 Frontend Tests
+    - name: Frontend Tests (layout engine)
       run: |
         cd frontend
-        npm test || echo "✅ Frontend tests completed"
+        npm test
 
-    - name: 🏗️ Build Frontend
+    - name: Build Frontend
       run: |
         cd frontend
         npm run build
       env:
         VITE_API_URL: http://localhost:3001/api
 
-    - name: 📊 Test Coverage
-      if: github.event_name == 'push'
-      run: |
-        echo "📊 Coverage reports would be uploaded here"
-        # Future: upload to codecov or similar
-
   build:
     needs: test
     runs-on: ubuntu-latest
-    name: 🐳 Build Docker Images
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/develop'
-    
+    name: Build images Docker
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/dev')
+
     permissions:
       contents: read
       packages: write
 
-    outputs:
-      backend-tag: ${{ steps.meta.outputs.backend-tag }}
-      frontend-tag: ${{ steps.meta.outputs.frontend-tag }}
-
     steps:
-    - name: 📥 Checkout code
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: 🐳 Setup Docker Buildx
+    - name: Setup Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: 🔐 Login to Container Registry
+    - name: Login to Container Registry
       uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: 🏷️ Generate metadata
-      id: meta
-      run: |
-        BRANCH_NAME=${{ github.ref_name }}
-        echo "backend-tag=${{ env.REGISTRY }}/${{ env.REPO_NAME }}-backend:${BRANCH_NAME}" >> $GITHUB_OUTPUT
-        echo "frontend-tag=${{ env.REGISTRY }}/${{ env.REPO_NAME }}-frontend:${BRANCH_NAME}" >> $GITHUB_OUTPUT
-
-    - name: 🏗️ Build and push Backend image
+    - name: Build and push Backend image
       uses: docker/build-push-action@v5
       with:
         context: ./backend
         file: ./backend/Dockerfile
         push: true
         tags: |
-          ${{ steps.meta.outputs.backend-tag }}
+          ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-backend:${{ github.ref_name }}
           ${{ github.ref_name == 'main' && format('{0}/{1}-backend:latest', env.REGISTRY, env.REPO_NAME) || '' }}
         cache-from: type=gha,scope=${{ github.ref_name }}-backend
         cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-backend
 
-    - name: 🏗️ Build and push Frontend image
+    - name: Build and push Frontend image
       uses: docker/build-push-action@v5
       with:
         context: ./frontend
         file: ./frontend/Dockerfile
         push: true
         tags: |
-          ${{ steps.meta.outputs.frontend-tag }}
+          ${{ env.REGISTRY }}/${{ env.REPO_NAME }}-frontend:${{ github.ref_name }}
           ${{ github.ref_name == 'main' && format('{0}/{1}-frontend:latest', env.REGISTRY, env.REPO_NAME) || '' }}
         cache-from: type=gha,scope=${{ github.ref_name }}-frontend
         cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-frontend
         build-args: |
-          VITE_API_URL=${{ 
-            github.ref_name == 'main' && 'http://168.231.86.179:8080/api' ||
-            github.ref_name == 'staging' && 'http://168.231.86.179:3011/api' ||
-            'http://localhost:3001/api'
+          VITE_API_URL=${{
+            github.ref_name == 'main' && 'https://api.geneamap.com/api' ||
+            github.ref_name == 'staging' && 'https://api-staging.geneamap.com/api' ||
+            'http://localhost:3002/api'
           }}
 
   deploy-staging:
     needs: [test, build]
     runs-on: ubuntu-latest
-    name: 🚀 Deploy to Staging
-    if: github.ref == 'refs/heads/staging'
-    environment: 
+    name: Deploy staging
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
+    environment:
       name: staging
-      url: http://168.231.86.179:3010
-    
+      url: https://staging.geneamap.com
+
     steps:
-    - name: 🚀 Deploy to Staging Server
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Copy compose file to server
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.STAGING_HOST }}
+        username: ${{ secrets.STAGING_USER }}
+        key: ${{ secrets.STAGING_SSH_KEY }}
+        port: 22
+        source: docker-compose.staging.yml
+        target: ${{ secrets.STAGING_PATH }}
+
+    - name: Deploy on server
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.STAGING_HOST }}
@@ -183,182 +185,67 @@ jobs:
         command_timeout: 10m
         script: |
           set -e
-          
-          # Variables
-          PROJECT_DIR="${{ secrets.STAGING_PATH }}"
-          TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
-          
-          echo "🚀 [${TIMESTAMP}] Starting staging deployment..."
-          
-          # Créer le dossier de déploiement
-          mkdir -p ${PROJECT_DIR}
-          cd ${PROJECT_DIR}
-          
-          # Backup de l'ancienne configuration
-          if [ -f docker-compose.yml ]; then
-            cp docker-compose.yml docker-compose.yml.backup.${TIMESTAMP}
-            echo "📋 Configuration sauvegardée"
+          cd ${{ secrets.STAGING_PATH }}
+
+          if [ ! -f .env ]; then
+            echo "ERREUR: .env manquant dans ${{ secrets.STAGING_PATH }} — créer le fichier (voir .env.production.example, variables STAGING_* + R2_*)"
+            exit 1
           fi
-          
-          # Créer la nouvelle configuration
-          cat > docker-compose.yml << 'EOF'
-          services:
-            postgres:
-              image: postgres:15-alpine
-              container_name: geneaia-db-staging
-              environment:
-                POSTGRES_DB: geneaia_staging
-                POSTGRES_USER: geneaia_staging
-                POSTGRES_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
-              volumes:
-                - postgres_staging_data:/var/lib/postgresql/data
-              restart: unless-stopped
-              healthcheck:
-                test: ["CMD-SHELL", "pg_isready -U geneaia_staging -d geneaia_staging"]
-                interval: 10s
-                timeout: 5s
-                retries: 5
-              networks:
-                - geneaia-staging
-          
-            backend:
-              image: ${{ needs.build.outputs.backend-tag }}
-              container_name: geneaia-backend-staging
-              environment:
-                - NODE_ENV=staging
-                - DATABASE_URL=postgresql://geneaia_staging:${{ secrets.STAGING_DB_PASSWORD }}@postgres:5432/geneaia_staging?schema=public
-                - JWT_SECRET=${{ secrets.STAGING_JWT_SECRET }}
-                - CORS_ORIGIN=http://168.231.86.179:3010
-                - PORT=3001
-              depends_on:
-                postgres:
-                  condition: service_healthy
-              restart: unless-stopped
-              ports:
-                - "3011:3001"
-              healthcheck:
-                test: ["CMD", "curl", "-f", "http://localhost:3001/api/health || exit 1"]
-                interval: 30s
-                timeout: 10s
-                retries: 3
-                start_period: 60s
-              networks:
-                - geneaia-staging
-          
-            frontend:
-              image: ${{ needs.build.outputs.frontend-tag }}
-              container_name: geneaia-frontend-staging
-              environment:
-                - VITE_API_URL=http://168.231.86.179:3011/api
-              restart: unless-stopped
-              ports:
-                - "3010:80"
-              networks:
-                - geneaia-staging
-          
-          volumes:
-            postgres_staging_data:
-              driver: local
-          
-          networks:
-            geneaia-staging:
-              driver: bridge
-          EOF
-          
-          echo "✅ Configuration créée"
-          
-          # Déploiement
-          echo "⏹️ Arrêt des anciens services..."
-          docker-compose down --remove-orphans || true
-          
-          echo "🐳 Pull des nouvelles images..."
-          docker-compose pull
-          
-          echo "🚀 Démarrage des services..."
-          docker-compose up -d
-          
-          # Attendre PostgreSQL
-          echo "⏳ Attente de PostgreSQL..."
-          for i in {1..30}; do
+
+          echo "Pull des images..."
+          docker compose -f docker-compose.staging.yml --env-file .env pull
+
+          echo "Démarrage des services..."
+          docker compose -f docker-compose.staging.yml --env-file .env up -d --remove-orphans
+
+          echo "Attente de PostgreSQL..."
+          for i in $(seq 1 30); do
             if docker exec geneaia-db-staging pg_isready -U geneaia_staging -d geneaia_staging >/dev/null 2>&1; then
-              echo "✅ PostgreSQL prêt!"
               break
             fi
-            echo "   Tentative $i/30..."
             sleep 2
           done
-          
-          # Initialiser la base de données
-          echo "🗄️ Initialisation de la base..."
-          docker exec geneaia-backend-staging npx prisma migrate deploy || echo "⚠️ Migration échouée"
-          docker exec geneaia-backend-staging npx prisma generate || echo "⚠️ Generate échoué"
-          
-          # Redémarrer le backend
-          echo "🔄 Redémarrage du backend..."
-          docker restart geneaia-backend-staging
-          sleep 15
-          
-          # Tests de santé
-          echo "🏥 Tests de santé..."
-          
-          # Test PostgreSQL
-          if docker exec geneaia-db-staging psql -U geneaia_staging -d geneaia_staging -c "SELECT 1;" >/dev/null 2>&1; then
-            echo "✅ PostgreSQL: OK"
-          else
-            echo "❌ PostgreSQL: FAILED"
-          fi
-          
-          # Test Backend
-          if curl -s -f http://localhost:3011/api/health >/dev/null 2>&1; then
-            echo "✅ Backend API: OK"
-          else
-            echo "⚠️ Backend API: Testing auth endpoint..."
-            if curl -s -X POST http://localhost:3011/api/auth/login -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' | grep -q "non trouvé\|not found"; then
-              echo "✅ Backend: OK (auth responding)"
-            else
-              echo "❌ Backend: FAILED"
-            fi
-          fi
-          
-          # Test Frontend
-          if curl -s -f http://localhost:3010 >/dev/null 2>&1; then
-            echo "✅ Frontend: OK"
-          else
-            echo "❌ Frontend: FAILED"
-          fi
-          
-          # Nettoyage
-          echo "🧹 Nettoyage..."
-          docker system prune -f || true
-          
-          echo "🎉 Déploiement staging terminé!"
-          echo "🌐 URLs disponibles:"
-          echo "   Frontend: http://168.231.86.179:3010"
-          echo "   Backend:  http://168.231.86.179:3011/api"
 
-    - name: 📝 Comment PR
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '🚀 **Staging déployé avec succès!**\n\n📱 Preview: http://168.231.86.179:3010\n🔧 API: http://168.231.86.179:3011/api'
-          })
+          echo "Migrations Prisma..."
+          docker exec geneaia-backend-staging npx prisma migrate deploy
+
+          echo "Health checks..."
+          sleep 10
+          docker exec geneaia-backend-staging curl -sf http://localhost:3001/api/health >/dev/null \
+            && echo "Backend: OK" || { echo "Backend: FAILED"; exit 1; }
+
+          docker image prune -f || true
+          echo "Déploiement staging terminé — https://staging.geneamap.com"
+
+    - name: Health check via Traefik
+      run: |
+        sleep 10
+        curl -sf https://api-staging.geneamap.com/api/health && echo "API publique: OK" || echo "API publique pas encore joignable (DNS/Traefik ?)"
 
   deploy-production:
     needs: [test, build]
     runs-on: ubuntu-latest
-    name: 🚀 Deploy to Production
-    if: github.ref == 'refs/heads/main'
-    environment: 
+    name: Deploy production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
       name: production
-      url: http://168.231.86.179:8080
-    
+      url: https://geneamap.com
+
     steps:
-    - name: 🚀 Deploy to Production Server
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Copy compose file to server
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.PROD_HOST }}
+        username: ${{ secrets.PROD_USER }}
+        key: ${{ secrets.PROD_SSH_KEY }}
+        port: 22
+        source: docker-compose.prod.yml
+        target: ${{ secrets.PROD_PATH }}
+
+    - name: Deploy on server
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.PROD_HOST }}
@@ -368,237 +255,49 @@ jobs:
         command_timeout: 15m
         script: |
           set -e
-          
-          # Variables
-          PROJECT_DIR="${{ secrets.PROD_PATH }}"
+          cd ${{ secrets.PROD_PATH }}
           TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
-          
-          echo "🚀 [${TIMESTAMP}] Starting production deployment..."
-          
-          # Créer le dossier de déploiement
-          mkdir -p ${PROJECT_DIR}
-          cd ${PROJECT_DIR}
-          
-          # Backup automatique de la base de données
+
+          if [ ! -f .env ]; then
+            echo "ERREUR: .env manquant dans ${{ secrets.PROD_PATH }} — créer le fichier (voir .env.production.example)"
+            exit 1
+          fi
+
           if docker exec geneaia-db-prod pg_isready -U geneaia_prod -d geneaia_production >/dev/null 2>&1; then
-            echo "💾 Sauvegarde de la base de données..."
+            echo "Sauvegarde de la base..."
             mkdir -p backups
             docker exec geneaia-db-prod pg_dump -U geneaia_prod -d geneaia_production > backups/backup_${TIMESTAMP}.sql
-            echo "✅ Backup créé: backups/backup_${TIMESTAMP}.sql"
+            echo "Backup: backups/backup_${TIMESTAMP}.sql"
           fi
-          
-          # Configuration Nginx
-          cat > nginx.conf << 'EOF'
-          events {
-              worker_connections 1024;
-          }
-          
-          http {
-              # Gzip compression
-              gzip on;
-              gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-              
-              # Rate limiting
-              limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
-              
-              upstream backend {
-                  server backend:3001;
-              }
-          
-              upstream frontend {
-                  server frontend:80;
-              }
-          
-              server {
-                  listen 80;
-                  server_name _;
-                  client_max_body_size 10M;
-          
-                  # Security headers
-                  add_header X-Frame-Options "SAMEORIGIN" always;
-                  add_header X-Content-Type-Options "nosniff" always;
-                  add_header X-XSS-Protection "1; mode=block" always;
-          
-                  # Frontend
-                  location / {
-                      proxy_pass http://frontend;
-                      proxy_set_header Host $host;
-                      proxy_set_header X-Real-IP $remote_addr;
-                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                      proxy_set_header X-Forwarded-Proto $scheme;
-                      
-                      # Cache static assets
-                      location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-                          expires 1y;
-                          add_header Cache-Control "public, immutable";
-                          proxy_pass http://frontend;
-                      }
-                  }
-          
-                  # API with rate limiting
-                  location /api/ {
-                      limit_req zone=api burst=20 nodelay;
-                      proxy_pass http://backend;
-                      proxy_set_header Host $host;
-                      proxy_set_header X-Real-IP $remote_addr;
-                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                      proxy_set_header X-Forwarded-Proto $scheme;
-                  }
-          
-                  # Health check
-                  location /health {
-                      access_log off;
-                      return 200 "healthy\n";
-                      add_header Content-Type text/plain;
-                  }
-              }
-          }
-          EOF
-          
-          # Configuration Docker Compose
-          cat > docker-compose.yml << 'EOF'
-          services:
-            postgres:
-              image: postgres:15-alpine
-              container_name: geneaia-db-prod
-              environment:
-                POSTGRES_DB: geneaia_production
-                POSTGRES_USER: geneaia_prod
-                POSTGRES_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
-              volumes:
-                - postgres_prod_data:/var/lib/postgresql/data
-                - ./backups:/backups
-              restart: unless-stopped
-              healthcheck:
-                test: ["CMD-SHELL", "pg_isready -U geneaia_prod -d geneaia_production"]
-                interval: 10s
-                timeout: 5s
-                retries: 5
-              networks:
-                - geneaia-production
-          
-            backend:
-              image: ${{ needs.build.outputs.backend-tag }}
-              container_name: geneaia-backend-prod
-              environment:
-                - NODE_ENV=production
-                - DATABASE_URL=postgresql://geneaia_prod:${{ secrets.PROD_DB_PASSWORD }}@postgres:5432/geneaia_production?schema=public
-                - JWT_SECRET=${{ secrets.PROD_JWT_SECRET }}
-                - CORS_ORIGIN=http://168.231.86.179:8080
-                - PORT=3001
-              depends_on:
-                postgres:
-                  condition: service_healthy
-              restart: unless-stopped
-              healthcheck:
-                test: ["CMD", "curl", "-f", "http://localhost:3001/api/health || exit 1"]
-                interval: 30s
-                timeout: 10s
-                retries: 3
-                start_period: 60s
-              networks:
-                - geneaia-production
-          
-            frontend:
-              image: ${{ needs.build.outputs.frontend-tag }}
-              container_name: geneaia-frontend-prod
-              environment:
-                - VITE_API_URL=http://168.231.86.179:8080/api
-              restart: unless-stopped
-              networks:
-                - geneaia-production
-          
-            nginx:
-              image: nginx:alpine
-              container_name: geneaia-nginx-prod
-              ports:
-                - "8080:80"
-              volumes:
-                - ./nginx.conf:/etc/nginx/nginx.conf:ro
-              depends_on:
-                - frontend
-                - backend
-              restart: unless-stopped
-              networks:
-                - geneaia-production
-          
-          volumes:
-            postgres_prod_data:
-              driver: local
-          
-          networks:
-            geneaia-production:
-              driver: bridge
-          EOF
-          
-          echo "✅ Configuration production créée"
-          
-          # Déploiement avec rollback si échec
-          echo "⏹️ Arrêt gracieux des services..."
-          docker-compose down || true
-          
-          echo "🐳 Pull des nouvelles images..."
-          docker-compose pull
-          
-          echo "🚀 Démarrage de la production..."
-          if ! docker-compose up -d; then
-            echo "❌ Échec du démarrage, rollback..."
-            if [ -f docker-compose.yml.backup.* ]; then
-              LATEST_BACKUP=$(ls -t docker-compose.yml.backup.* | head -1)
-              cp ${LATEST_BACKUP} docker-compose.yml
-              docker-compose up -d
-            fi
-            exit 1
-          fi
-          
-          # Attendre et initialiser
-          echo "⏳ Initialisation de la production..."
-          sleep 30
-          
-          docker exec geneaia-backend-prod npx prisma migrate deploy || echo "⚠️ Migration échouée"
-          docker exec geneaia-backend-prod npx prisma generate || echo "⚠️ Generate échoué"
-          docker restart geneaia-backend-prod
-          sleep 20
-          
-          # Tests de santé complets
-          echo "🏥 Tests de santé production..."
-          
-          # Test de l'application complète
-          if curl -s -f http://localhost:8080 >/dev/null 2>&1; then
-            echo "✅ Application production: OK"
-          else
-            echo "❌ Application production: FAILED"
-            exit 1
-          fi
-          
-          # Test API via Nginx
-          if curl -s -f http://localhost:8080/api/health >/dev/null 2>&1; then
-            echo "✅ API via Nginx: OK"
-          else
-            echo "⚠️ API health endpoint failed, testing auth..."
-            if curl -s -X POST http://localhost:8080/api/auth/login -H "Content-Type: application/json" -d '{"email":"test","password":"test"}' | grep -q "non trouvé\|not found"; then
-              echo "✅ API via Nginx: OK (auth responding)"
-            else
-              echo "❌ API via Nginx: FAILED"
-              exit 1
-            fi
-          fi
-          
-          # Nettoyage et monitoring
-          docker system prune -f || true
-          
-          echo "🎉 Déploiement production réussi!"
-          echo "🌐 Production URL: http://168.231.86.179:8080"
-          echo "💾 Backup disponible: backups/backup_${TIMESTAMP}.sql"
 
-    - name: 🎉 Success notification
-      if: success()
-      run: |
-        echo "🎉 Production deployment successful!"
-        echo "🌐 Live at: http://168.231.86.179:8080"
+          echo "Pull des images..."
+          docker compose -f docker-compose.prod.yml --env-file .env pull
 
-    - name: 😱 Failure notification
-      if: failure()
+          echo "Démarrage des services..."
+          docker compose -f docker-compose.prod.yml --env-file .env up -d --remove-orphans
+
+          echo "Attente de PostgreSQL..."
+          for i in $(seq 1 30); do
+            if docker exec geneaia-db-prod pg_isready -U geneaia_prod -d geneaia_production >/dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+          done
+
+          echo "Migrations Prisma..."
+          docker exec geneaia-backend-prod npx prisma migrate deploy
+
+          echo "Health checks..."
+          sleep 10
+          docker exec geneaia-backend-prod curl -sf http://localhost:3001/api/health >/dev/null \
+            && echo "Backend: OK" || { echo "Backend: FAILED"; exit 1; }
+
+          docker image prune -f || true
+          echo "Déploiement production terminé — https://geneamap.com"
+          echo "Backup: backups/backup_${TIMESTAMP}.sql"
+
+    - name: Health check via Traefik
       run: |
-        echo "❌ Production deployment failed!"
-        echo "🔍 Check logs and rollback if necessary"
+        sleep 10
+        curl -sf https://api.geneamap.com/api/health && echo "API publique: OK" || echo "API publique pas encore joignable (DNS/Traefik ?)"
+        curl -sf https://geneamap.com >/dev/null && echo "Frontend: OK" || echo "Frontend pas encore joignable"

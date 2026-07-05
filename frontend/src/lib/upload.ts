@@ -12,9 +12,17 @@ export interface UploadPhotoResult {
 export function resolveMediaUrl(url: string | null | undefined): string | null {
   if (!url) return null
   if (url.startsWith("data:")) return url
+  if (url.startsWith("blob:")) return url
   if (url.startsWith("http://") || url.startsWith("https://")) return url
   if (url.startsWith("/api/")) return `${API_BASE}${url}`
   return url
+}
+
+/** URLs servies par le proxy API — nécessitent le JWT (pas envoyé par <img>) */
+export function isProtectedMediaUrl(url: string | null | undefined): boolean {
+  if (!url) return false
+  const resolved = resolveMediaUrl(url) || url
+  return resolved.includes("/uploads/file/")
 }
 
 export async function uploadPersonPhoto(

@@ -1,12 +1,23 @@
-import { useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import { X, Focus, Pencil, Trash2, Baby, Camera } from "lucide-react"
-import type { FamilyTree, NormalizedPerson } from "@/types"
-import { resolveMediaUrl } from "@/lib/upload"
+import { X, Focus, Trash2, Baby, Camera, Save } from "lucide-react"
+import type { FamilyTree, NormalizedPerson, Person } from "@/types"
+import { todayIsoDate, validateBirthDate } from "@/lib/person-dates"
+import { AuthenticatedImage } from "@/components/ui/authenticated-image"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { PersonDocuments } from "@/components/family-tree/person-documents"
 
 interface SidePanelProps {
@@ -15,7 +26,7 @@ interface SidePanelProps {
   currentTree: FamilyTree
   onClose: () => void
   onSelect: (id: string) => void
-  onEdit: (person: NormalizedPerson) => void
+  onSave?: (personId: string, data: Record<string, string>) => Promise<void>
   onChangePhoto?: (personId: string, file: File) => Promise<void>
   onAddRelation: (person: NormalizedPerson) => void
   onAddChildRelation: (parentId: string, relType: string, parent2Id?: string) => void
@@ -35,13 +46,25 @@ function formatDate(dateStr: string | null) {
   }
 }
 
+function personToForm(person: NormalizedPerson, raw?: Person) {
+  return {
+    firstName: person.given || "",
+    lastName: person.sur && person.sur !== "—" ? person.sur : "",
+    birthDate: person.birthDate?.split("T")[0] || "",
+    birthPlace: person.place || "",
+    deathDate: person.deathDate?.split("T")[0] || "",
+    gender: raw?.gender || "",
+    biography: raw?.biography || person.bio?.fr || "",
+  }
+}
+
 export function SidePanel({
   person,
   people,
   currentTree,
   onClose,
   onSelect,
-  onEdit,
+  onSave,
   onChangePhoto,
   onAddRelation,
   onAddChildRelation,
@@ -52,6 +75,18 @@ export function SidePanel({
   canChangePhoto = false,
 }: SidePanelProps) {
   const photoInputRef = useRef<HTMLInputElement>(null)
+  const [form, setForm] = useState(() => {
+    const raw = currentTree.Person?.find((p) => p.id === person.id)
+    return personToForm(person, raw)
+  })
+  const [saving, setSaving] = useState(false)
+  const maxBirthDate = todayIsoDate()
+
+  useEffect(() => {
+    const raw = currentTree.Person?.find((p) => p.id === person.id)
+    setForm(personToForm(person, raw))
+  }, [person, currentTree.Person])
+
   const byId = Object.fromEntries(people.map((p) => [p.id, p]))
   const parents = (person.parentIds || []).map((id) => byId[id]).filter(Boolean)
   const spouses = (person.spouseIds || []).map((id) => byId[id]).filter(Boolean)
@@ -62,7 +97,11 @@ export function SidePanel({
       p.parentIds.length > 0 &&
       p.parentIds.some((pp) => person.parentIds.includes(pp))
   )
-  const photoSrc = resolveMediaUrl(person.photoUrl)
+  const photoFallback = (
+    <div className="flex size-full items-center justify-center text-lg font-semibold text-muted-foreground">
+      {(person.given[0] || "?").toUpperCase()}
+    </div>
+  )
 
   const handlePhotoPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -74,6 +113,24 @@ export function SidePanel({
       toast.error("Échec de l'upload photo")
     } finally {
       e.target.value = ""
+    }
+  }
+
+  const handleSave = async () => {
+    if (!onSave || !form.firstName.trim()) return
+    const birthError = validateBirthDate(form.birthDate)
+    if (birthError) {
+      toast.error(birthError)
+      return
+    }
+    setSaving(true)
+    try {
+      await onSave(person.id, form)
+      toast.success("Personne mise à jour")
+    } catch {
+      toast.error("Échec de la mise à jour")
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -140,7 +197,7 @@ export function SidePanel({
   )
 
   return (
-    <div className="flex w-80 shrink-0 flex-col border-l bg-background">
+    <div className="flex h-full min-h-0 w-80 shrink-0 flex-col border-l bg-background">
       <div className="flex items-center justify-between border-b p-4">
         <Badge variant="secondary">G{person.generation}</Badge>
         <Button variant="ghost" size="icon" onClick={onClose}>
@@ -152,22 +209,49 @@ export function SidePanel({
         <div className="flex flex-col gap-4 p-4">
           <div className="flex items-start gap-3">
             <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-muted">
-              {photoSrc ? (
-                <img src={photoSrc} alt={person.given} className="size-full object-cover" />
+              {person.photoUrl ? (
+                <AuthenticatedImage
+                  src={person.photoUrl}
+                  alt={person.given}
+                  className="size-full object-cover"
+                  fallback={photoFallback}
+                />
               ) : (
-                <div className="flex size-full items-center justify-center text-lg font-semibold text-muted-foreground">
-                  {(person.given[0] || "?").toUpperCase()}
-                </div>
+                photoFallback
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-semibold">
-                {person.given}{person.sur && person.sur !== "—" ? ` ${person.sur}` : ""}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {person.born || "?"}–{person.died || ""}
-                {person.place ? ` · ${person.place}` : ""}
-              </p>
+              {canEditInfo && !readOnly ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="side-first-name" className="text-xs">Prénom</Label>
+                    <Input
+                      id="side-first-name"
+                      data-testid="edit-first-name"
+                      value={form.firstName}
+                      onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="side-last-name" className="text-xs">Nom</Label>
+                    <Input
+                      id="side-last-name"
+                      value={form.lastName}
+                      onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-lg font-semibold">
+                    {person.given}{person.sur && person.sur !== "—" ? ` ${person.sur}` : ""}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {person.born || "?"}–{person.died || ""}
+                    {person.place ? ` · ${person.place}` : ""}
+                  </p>
+                </>
+              )}
               {canChangePhoto && onChangePhoto && (
                 <>
                   <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoPick} />
@@ -182,16 +266,70 @@ export function SidePanel({
 
           <Separator />
 
-          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-            <span className="text-muted-foreground">Naissance</span>
-            <span>{formatDate(person.birthDate) || person.born || "?"}</span>
-            {(person.deathDate || person.died) && (
-              <>
-                <span className="text-muted-foreground">Décès</span>
-                <span>{formatDate(person.deathDate) || person.died}</span>
-              </>
-            )}
-          </div>
+          {canEditInfo && !readOnly ? (
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="side-birth-date" className="text-xs">Naissance</Label>
+                  <Input
+                    id="side-birth-date"
+                    type="date"
+                    max={maxBirthDate}
+                    value={form.birthDate}
+                    onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="side-death-date" className="text-xs">Décès</Label>
+                  <Input
+                    id="side-death-date"
+                    type="date"
+                    value={form.deathDate}
+                    onChange={(e) => setForm({ ...form, deathDate: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="side-birth-place" className="text-xs">Lieu de naissance</Label>
+                <Input
+                  id="side-birth-place"
+                  value={form.birthPlace}
+                  onChange={(e) => setForm({ ...form, birthPlace: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs">Genre</Label>
+                <Select value={form.gender || undefined} onValueChange={(v) => v && setForm({ ...form, gender: v })}>
+                  <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Homme</SelectItem>
+                    <SelectItem value="female">Femme</SelectItem>
+                    <SelectItem value="other">Autre</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="side-biography" className="text-xs">Biographie</Label>
+                <Textarea
+                  id="side-biography"
+                  value={form.biography}
+                  onChange={(e) => setForm({ ...form, biography: e.target.value })}
+                  rows={2}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+              <span className="text-muted-foreground">Naissance</span>
+              <span>{formatDate(person.birthDate) || person.born || "?"}</span>
+              {(person.deathDate || person.died) && (
+                <>
+                  <span className="text-muted-foreground">Décès</span>
+                  <span>{formatDate(person.deathDate) || person.died}</span>
+                </>
+              )}
+            </div>
+          )}
 
           <Separator />
 
@@ -227,13 +365,22 @@ export function SidePanel({
         {!readOnly && (
           <>
             <div className="flex gap-2">
-              {canEditInfo && (
-                <Button className="flex-1" onClick={() => onEdit(person)}>
-                  <Pencil className="mr-1 size-4" />
-                  Éditer
+              {canEditInfo && onSave && (
+                <Button
+                  className="flex-1"
+                  data-testid="save-person-btn"
+                  onClick={handleSave}
+                  disabled={saving || !form.firstName.trim()}
+                >
+                  <Save className="mr-1 size-4" />
+                  {saving ? "Enregistrement…" : "Enregistrer"}
                 </Button>
               )}
-              <Button className={canEditInfo ? "flex-1" : "w-full"} variant={canEditInfo ? "outline" : "default"} onClick={() => onAddRelation(person)}>
+              <Button
+                className={canEditInfo && onSave ? "flex-1" : "w-full"}
+                variant={canEditInfo && onSave ? "outline" : "default"}
+                onClick={() => onAddRelation(person)}
+              >
                 Lier
               </Button>
             </div>

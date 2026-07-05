@@ -4,6 +4,48 @@
 
 Application de généalogie moderne permettant de créer, visualiser et partager des arbres généalogiques de manière interactive.
 
+## 🐳 Démarrage Docker
+
+Si les ports par défaut (3001, 5173) sont déjà utilisés sur votre machine :
+
+```bash
+cp .env.example .env
+# Éditez .env : GENEAIA_BACKEND_HOST_PORT=3002, GENEAIA_FRONTEND_HOST_PORT=5174
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+# Alignez VITE_API_URL et CORS_ORIGIN sur les mêmes ports
+
+docker compose up -d --build
+docker compose exec backend npx prisma db seed
+```
+
+**Accès (ports par défaut du `.env.example`) :**
+- Frontend : http://localhost:5174
+- API : http://localhost:3002
+- MinIO console : http://localhost:9001
+- Mailpit (emails OTP) : http://localhost:8025
+
+Comptes de test : `0700000001` / `password123` — admin : `0700000010` / `password123`
+
+## 📦 Stockage fichiers (MinIO / S3)
+
+Les photos de profil et documents sont stockés dans **MinIO** (compatible S3). En local Docker, le bucket `geneaia` est créé automatiquement au démarrage du backend.
+
+| Variable | Rôle |
+|----------|------|
+| `S3_ENDPOINT` | URL interne MinIO (`http://minio:9000` dans Docker) |
+| `API_PUBLIC_URL` | Base des URLs proxy (`/api/uploads/file/...`) |
+| `STORAGE_USE_PROXY` | `true` (défaut) — fichiers servis via l'API, pas MinIO direct |
+
+**Vérification rapide :**
+```bash
+curl http://localhost:3002/api/uploads/status
+chmod +x scripts/test-storage.sh
+API_URL=http://localhost:3002/api ./scripts/test-storage.sh
+```
+
+**Production** : le VPS utilise Cloudflare R2 (pas de MinIO). Copiez `.env.production.example` vers `.env` sur le serveur et configurez `R2_*`, `SMTP_*`. Voir [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md) et [docs/CLOUDFLARE_R2.md](docs/CLOUDFLARE_R2.md).
+
 ## 🚀 Démarrage Rapide
 
 ### Prérequis
@@ -36,7 +78,7 @@ npm run dev
 - Backend API : http://localhost:3001
 
 ### Connexion de Test
-- Email : `test@example.com`
+- Téléphone : `0700000001`
 - Mot de passe : `password123`
 
 ## 🔧 Corrections Appliquées
@@ -260,7 +302,7 @@ npm install
 - React
 - Vite
 - React Router
-- ReactFlow (visualisation d'arbres)
+- Canvas généalogique custom (layout-engine)
 - TailwindCSS
 - Framer Motion (animations)
 - Zustand (gestion de l'état)

@@ -132,7 +132,7 @@ async function ensureBucketPolicy(s3) {
 
 async function initStorage() {
   if (!isEnabled()) {
-    console.warn('MinIO/S3 non configuré — stockage fichiers désactivé');
+    console.warn('Stockage S3 non configuré — stockage fichiers désactivé');
     return false;
   }
 
@@ -140,17 +140,24 @@ async function initStorage() {
   let created = false;
   try {
     await s3.send(new HeadBucketCommand({ Bucket: bucket }));
-  } catch {
+  } catch (err) {
+    if (!storageConfig.autoInit) {
+      // Mode R2/S3 externe : le bucket doit exister (créé dans le dashboard).
+      console.error(`Bucket "${bucket}" inaccessible (${err.message}) — stockage désactivé. Créez le bucket ou vérifiez les credentials.`);
+      return false;
+    }
     await s3.send(new CreateBucketCommand({ Bucket: bucket }));
     created = true;
   }
 
-  await ensureBucketPolicy(s3);
+  if (storageConfig.autoInit) {
+    await ensureBucketPolicy(s3);
+  }
 
   ready = true;
   const cfg = getPublicConfig();
   const access = storageConfig.useProxy ? getProxyBaseUrl() : getMinioBaseUrl();
-  console.log(`MinIO prêt — bucket "${bucket}" (accès: ${access})${created ? ' [créé]' : ''}`);
+  console.log(`Stockage S3 prêt — bucket "${bucket}" (accès: ${access})${created ? ' [créé]' : ''}`);
   console.log(`  Photos: ${cfg.prefixes.photos}/ · Documents: ${cfg.prefixes.documents}/`);
   return true;
 }

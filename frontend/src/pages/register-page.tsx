@@ -17,8 +17,8 @@ export default function RegisterPage() {
     : "/login"
   const { register } = useAuthStore()
   const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirm, setConfirm] = useState("")
   const [loading, setLoading] = useState(false)
@@ -34,7 +34,7 @@ export default function RegisterPage() {
       return
     }
     setLoading(true)
-    const result = await register(name, email, password, phone.trim() || undefined)
+    const result = await register(name, phone, password, email.trim() || undefined)
     setLoading(false)
     if (result.success) {
       toast.success("Compte créé avec succès")
@@ -61,11 +61,7 @@ export default function RegisterPage() {
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="phone">Téléphone (optionnel)</Label>
+              <Label htmlFor="phone">Téléphone</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -73,6 +69,17 @@ export default function RegisterPage() {
                 placeholder="07XXXXXXXX"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email">Email (optionnel)</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="vous@exemple.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">

@@ -14,6 +14,20 @@ const {
   canEditPersonInfo,
 } = require('../middleware/treeAccess.middleware');
 
+const birthDateValidator = body('birthDate')
+  .optional({ checkFalsy: true })
+  .isISO8601()
+  .toDate()
+  .withMessage('Format de date de naissance invalide')
+  .custom((value) => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (value > today) {
+      throw new Error('La date de naissance ne peut pas être dans le futur');
+    }
+    return true;
+  });
+
 const router = express.Router();
 
 router.get('/tree/:treeId', optionalAuth, canReadTree, personController.getAllPersons);
@@ -27,7 +41,7 @@ router.post(
   [
     body('firstName').trim().notEmpty().withMessage('Le prénom est requis'),
     body('lastName').trim().notEmpty().withMessage('Le nom de famille est requis'),
-    body('birthDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Format de date de naissance invalide'),
+    birthDateValidator,
     body('birthPlace').optional(),
     body('deathDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Format de date de décès invalide'),
     body('occupation').optional(),
@@ -53,7 +67,7 @@ router.put(
   [
     body('firstName').optional().trim().notEmpty().withMessage('Le prénom ne peut pas être vide'),
     body('lastName').optional().trim().notEmpty().withMessage('Le nom de famille ne peut pas être vide'),
-    body('birthDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Format de date de naissance invalide'),
+    birthDateValidator,
     body('birthPlace').optional(),
     body('deathDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Format de date de décès invalide'),
     body('occupation').optional(),

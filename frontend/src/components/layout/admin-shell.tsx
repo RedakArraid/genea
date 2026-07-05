@@ -67,9 +67,19 @@ export function AdminShell() {
                   const active = item.exact
                     ? location.pathname === item.href
                     : location.pathname.startsWith(item.href)
+                  const navId = item.href === "/admin" ? "dashboard" : item.href.split("/").pop()!
                   return (
                     <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton render={<Link to={item.href} />} isActive={active}>
+                      <SidebarMenuButton
+                        render={
+                          <Link
+                            to={item.href}
+                            data-testid={`admin-nav-${navId}`}
+                            aria-label={`Admin — ${item.title}`}
+                          />
+                        }
+                        isActive={active}
+                      >
                         <item.icon />
                         <span>{item.title}</span>
                       </SidebarMenuButton>

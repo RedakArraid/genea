@@ -1,4 +1,7 @@
-version: '3.8'
+# Production — VPS Contabo (Traefik + Let's Encrypt)
+# Domaines : geneamap.com (frontend) / api.geneamap.com (backend)
+# Stockage : Cloudflare R2 (bucket geneamap-prod) — voir docs/CLOUDFLARE_R2.md
+# Déployé dans /root/geneaia/ avec un fichier .env (voir .env.production.example)
 
 services:
   postgres:
@@ -7,10 +10,12 @@ services:
     environment:
       POSTGRES_DB: geneaia_production
       POSTGRES_USER: geneaia_prod
-      POSTGRES_PASSWORD: ${PROD_DB_PASSWORD:-prod456password}
+      POSTGRES_PASSWORD: ${PROD_DB_PASSWORD:?PROD_DB_PASSWORD requis}
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
       - ./backups:/backups
+    networks:
+      - internal
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U geneaia_prod -d geneaia_production"]
@@ -23,87 +28,79 @@ services:
     container_name: geneaia-backend-prod
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://geneaia_prod:${PROD_DB_PASSWORD:-prod456password}@postgres:5432/geneaia_production?schema=public
-      - JWT_SECRET=${PROD_JWT_SECRET:-prod_jwt_secret_abc123xyz}
-      - CORS_ORIGIN=http://168.231.86.179:8080
+      - DATABASE_URL=postgresql://geneaia_prod:${PROD_DB_PASSWORD}@postgres:5432/geneaia_production?schema=public
+      - JWT_SECRET=${PROD_JWT_SECRET:?PROD_JWT_SECRET requis}
       - PORT=3001
-      - S3_ENDPOINT=http://minio:9000
-      - S3_ACCESS_KEY=${MINIO_ROOT_USER:-geneaia_minio}
-      - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-geneaia_minio_password}
-      - S3_BUCKET=geneaia
-      - S3_REGION=us-east-1
-      - S3_PUBLIC_URL=${S3_PUBLIC_URL:-http://168.231.86.179:9000/geneaia}
-      - API_PUBLIC_URL=http://168.231.86.179:8080
-      - FRONTEND_URL=${FRONTEND_URL:-http://168.231.86.179:8080}
-      - PAYSTACK_SECRET_KEY=${PAYSTACK_SECRET_KEY:-}
-      - PAYSTACK_PUBLIC_KEY=${PAYSTACK_PUBLIC_KEY:-}
-      - CINETPAY_API_KEY=${CINETPAY_API_KEY:-}
-      - CINETPAY_SITE_ID=${CINETPAY_SITE_ID:-}
+      - CORS_ORIGIN=https://geneamap.com
+      - FRONTEND_URL=https://geneamap.com
+      - API_PUBLIC_URL=https://api.geneamap.com
+      # ─── Cloudflare R2 ───
+      - S3_ENDPOINT=${R2_ENDPOINT:?R2_ENDPOINT requis}
+      - S3_ACCESS_KEY=${R2_ACCESS_KEY:?R2_ACCESS_KEY requis}
+      - S3_SECRET_KEY=${R2_SECRET_KEY:?R2_SECRET_KEY requis}
+      - S3_BUCKET=geneamap-prod
+      - S3_REGION=auto
+      - STORAGE_AUTO_INIT=false
       - STORAGE_USE_PROXY=true
       - STORAGE_PHOTO_PREFIX=photos
       - STORAGE_DOCUMENT_PREFIX=documents
       - STORAGE_PHOTO_MAX_MB=5
       - STORAGE_DOCUMENT_MAX_MB=20
+      # ─── Paiements ───
+      - PAYSTACK_SECRET_KEY=${PAYSTACK_SECRET_KEY:-}
+      - PAYSTACK_PUBLIC_KEY=${PAYSTACK_PUBLIC_KEY:-}
+      - CINETPAY_API_KEY=${CINETPAY_API_KEY:-}
+      - CINETPAY_SITE_ID=${CINETPAY_SITE_ID:-}
+      # ─── SMTP / OTP ───
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-GeneaIA <noreply@geneamap.com>}
+      - OTP_EXPIRES_MINUTES=${OTP_EXPIRES_MINUTES:-10}
     volumes:
       - ./logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+    networks:
+      - internal
+      - traefik_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-
-  minio:
-    image: minio/minio:latest
-    container_name: geneaia-minio-prod
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-geneaia_minio}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-geneaia_minio_password}
-    volumes:
-      - minio_prod_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik_network
+      - traefik.http.routers.geneaia-api.rule=Host(`api.geneamap.com`)
+      - traefik.http.routers.geneaia-api.entrypoints=websecure
+      - traefik.http.routers.geneaia-api.tls.certresolver=mytlschallenge
+      - traefik.http.services.geneaia-api.loadbalancer.server.port=3001
 
   frontend:
     image: ghcr.io/redakarraid/geneaia-frontend:latest
     container_name: geneaia-frontend-prod
-    environment:
-      - VITE_API_URL=http://168.231.86.179:8080/api
+    networks:
+      - traefik_network
     restart: unless-stopped
-
-  nginx:
-    image: nginx:alpine
-    container_name: geneaia-nginx-prod
-    ports:
-      - "8080:80"
-      - "8443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      # - ./ssl:/etc/nginx/ssl:ro  # Pour HTTPS plus tard
-    depends_on:
-      - frontend
-      - backend
-    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik_network
+      - traefik.http.routers.geneaia-front.rule=Host(`geneamap.com`) || Host(`www.geneamap.com`)
+      - traefik.http.routers.geneaia-front.entrypoints=websecure
+      - traefik.http.routers.geneaia-front.tls.certresolver=mytlschallenge
+      - traefik.http.services.geneaia-front.loadbalancer.server.port=80
 
 volumes:
   postgres_prod_data:
     driver: local
-  minio_prod_data:
-    driver: local
 
 networks:
-  default:
-    name: geneaia-production
+  internal:
+    name: geneaia-prod-internal
+  traefik_network:
+    external: true

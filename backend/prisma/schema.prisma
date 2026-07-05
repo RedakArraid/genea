@@ -103,10 +103,28 @@ model Relationship {
   Person_Relationship_targetIdToPerson Person   @relation("Relationship_targetIdToPerson", fields: [targetId], references: [id], onDelete: Cascade)
 }
 
+enum OtpPurpose {
+  LOGIN
+}
+
+model OtpCode {
+  id         String     @id @default(uuid())
+  phone      String
+  codeHash   String
+  purpose    OtpPurpose @default(LOGIN)
+  attempts   Int        @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime   @default(now())
+
+  @@index([phone, purpose])
+  @@index([expiresAt])
+}
+
 model User {
   id                 String             @id @default(uuid())
-  email              String             @unique
-  phone              String?            @unique
+  phone              String             @unique
+  email              String?            @unique
   password           String
   name               String?
   plan               Plan               @default(SOLO)

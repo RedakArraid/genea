@@ -71,10 +71,118 @@ function orderRowWithSpouses(row) {
   return ordered;
 }
 
+function hasParentChildLinks(people) {
+  return people.some((p) => (p.parentIds || []).length > 0);
+}
+
+function buildSpouseComponents(row, byId) {
+  const rowIds = new Set(row.map((p) => p.id));
+  const visited = new Set();
+  const components = [];
+
+  for (const p of row) {
+    if (visited.has(p.id)) continue;
+    const component = [];
+    const queue = [p.id];
+    visited.add(p.id);
+
+    while (queue.length) {
+      const id = queue.shift();
+      component.push(id);
+      const person = byId[id];
+      for (const sId of person.spouseIds || []) {
+        if (!rowIds.has(sId) || visited.has(sId)) continue;
+        const spouse = byId[sId];
+        if (spouse && spouse.generation === person.generation) {
+          visited.add(sId);
+          queue.push(sId);
+        }
+      }
+    }
+    components.push(component);
+  }
+
+  return components;
+}
+
+function orderSpouseCluster(ids, byId) {
+  if (ids.length <= 2) return [...ids].sort();
+
+  let hub = ids[0];
+  let maxSpouses = -1;
+  for (const id of ids) {
+    const p = byId[id];
+    const spouseCount = (p.spouseIds || []).filter((sId) => ids.includes(sId)).length;
+    if (spouseCount > maxSpouses) {
+      maxSpouses = spouseCount;
+      hub = id;
+    }
+  }
+
+  const spouses = ids.filter((id) => id !== hub).sort();
+  const left = [];
+  const right = [];
+  spouses.forEach((sId, i) => {
+    if (i % 2 === 0) left.push(sId);
+    else right.push(sId);
+  });
+  return [...left, hub, ...right];
+}
+
+function clusterWidth(count, cardW, hGap) {
+  if (count <= 0) return 0;
+  return count * cardW + (count - 1) * hGap;
+}
+
+/**
+ * Disposition pour arbres sans liens parent-enfant : clusters conjuguaux par génération.
+ */
+function computeSpouseOnlyLayout(people, density = 'spacious') {
+  const hGap = density === 'compact' ? H_GAP_COMPACT : H_GAP_SPACIOUS;
+  const vGap = density === 'compact' ? V_GAP_COMPACT : V_GAP_SPACIOUS;
+  const branchGap = hGap * BRANCH_GAP_RATIO;
+  const cardW = CARD_W;
+  const cardH = CARD_H;
+  const byId = Object.fromEntries(people.map((p) => [p.id, p]));
+  const positions = {};
+  const byGen = groupByGeneration(people);
+  let y = 40;
+
+  for (const g of Array.from(byGen.keys()).sort((a, b) => a - b)) {
+    const row = byGen.get(g);
+    const components = buildSpouseComponents(row, byId);
+    let x = 40;
+
+    for (const component of components) {
+      const ordered = orderSpouseCluster(component, byId);
+      for (const id of ordered) {
+        positions[id] = { x, y };
+        x += cardW + hGap;
+      }
+      if (ordered.length > 0) {
+        x -= hGap;
+        x += branchGap * 2;
+      }
+    }
+
+    y += cardH + vGap;
+  }
+
+  const allPos = Object.values(positions);
+  if (allPos.length === 0) return { positions: {}, canvasW: 800, canvasH: 600 };
+
+  const maxX = Math.max(...allPos.map((pos) => pos.x)) + cardW + 40;
+  const maxY = Math.max(...allPos.map((pos) => pos.y)) + cardH + 40;
+  return { positions, canvasW: maxX, canvasH: maxY };
+}
+
 /**
  * Disposition verticale par unités familiales — chaque branche sous ses parents.
  */
 function computeVerticalPedigree(people, density = 'spacious') {
+  if (!hasParentChildLinks(people)) {
+    return computeSpouseOnlyLayout(people, density);
+  }
   const hGap = density === 'compact' ? H_GAP_COMPACT : H_GAP_SPACIOUS;
   const vGap = density === 'compact' ? V_GAP_COMPACT : V_GAP_SPACIOUS;
   const branchGap = hGap * BRANCH_GAP_RATIO;

@@ -12,8 +12,8 @@ const loginValidator = body('login')
   .optional()
   .trim()
   .custom((value, { req }) => {
-    const login = value || req.body.email;
-    if (!login) throw new Error('Email ou téléphone requis');
+    const login = value || req.body.phone || req.body.email;
+    if (!login) throw new Error('Téléphone ou email requis');
     if (login.includes('@')) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(login)) {
         throw new Error('Email invalide');
@@ -24,23 +24,29 @@ const loginValidator = body('login')
     return true;
   });
 
+const phoneValidator = body('phone')
+  .trim()
+  .notEmpty()
+  .withMessage('Le numéro de téléphone est requis')
+  .custom((value) => {
+    if (!looksLikePhone(value)) {
+      throw new Error('Numéro invalide (format CI : 07XXXXXXXX)');
+    }
+    return true;
+  });
+
 const router = express.Router();
 
 router.post(
   '/register',
   [
     body('name').trim().notEmpty().withMessage('Le nom est requis'),
-    body('email').isEmail().withMessage('Veuillez fournir un email valide'),
-    body('phone')
+    phoneValidator,
+    body('email')
       .optional({ values: 'falsy' })
       .trim()
-      .custom((value) => {
-        if (!value) return true;
-        if (!looksLikePhone(value)) {
-          throw new Error('Numéro invalide (format CI : 07XXXXXXXX)');
-        }
-        return true;
-      }),
+      .isEmail()
+      .withMessage('Veuillez fournir un email valide'),
     body('password')
       .isLength({ min: 6 })
       .withMessage('Le mot de passe doit contenir au moins 6 caractères'),
@@ -58,5 +64,21 @@ router.post(
 );
 
 router.get('/me', isAuth, authController.getMe);
+
+router.get('/otp/status', authController.otpStatus);
+
+router.post('/otp/request', [phoneValidator], authController.requestOtp);
+
+router.post(
+  '/otp/verify',
+  [
+    phoneValidator,
+    body('code')
+      .trim()
+      .matches(/^\d{6}$/)
+      .withMessage('Le code doit contenir 6 chiffres'),
+  ],
+  authController.verifyOtp,
+);
 
 module.exports = router;

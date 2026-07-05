@@ -109,9 +109,13 @@ export default function AdminUserDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Link to="/admin/users" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+        <Link
+          to="/admin/users"
+          data-testid="admin-users-back"
+          className={buttonVariants({ variant: "ghost", size: "sm" })}
+        >
           <ArrowLeft className="mr-1 size-4" />
-          Utilisateurs
+          Liste des utilisateurs
         </Link>
       </div>
 

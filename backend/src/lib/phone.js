@@ -30,4 +30,11 @@ function isValidCiPhone(phone) {
   return /^\+2250\d{9}$/.test(phone);
 }
 
-module.exports = { normalizePhone, looksLikePhone, isValidCiPhone };
+/** Affiche +2250700000001 → 0700000001 */
+function formatPhoneDisplay(phone) {
+  if (!phone) return '';
+  if (phone.startsWith('+225')) return `0${phone.slice(4)}`;
+  return phone;
+}
+
+module.exports = { normalizePhone, looksLikePhone, isValidCiPhone, formatPhoneDisplay };

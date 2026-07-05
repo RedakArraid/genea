@@ -1,299 +1,82 @@
-# 🚀 GeneaIA - CI/CD Production Ready
+# GeneaIA — CI/CD
 
-## 📋 Configuration automatique
+Pipeline GitHub Actions : [.github/workflows/deploy.yml](.github/workflows/deploy.yml).
+Guide de déploiement complet : [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md).
 
-Cette configuration CI/CD est optimisée pour la production avec :
+## Architecture
 
-- ✅ **Sécurité** : Mots de passe générés, secrets GitHub, headers sécurisés
-- ✅ **Performance** : Cache Docker, compression gzip, optimisations Nginx  
-- ✅ **Fiabilité** : Health checks, rollback automatique, backups
-- ✅ **Monitoring** : Tests de santé complets, logs détaillés
-- ✅ **Scalabilité** : Rate limiting, compression, cache des assets
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Serveur 168.231.86.179                  │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────────┐    ┌──────────────────────────────────┐ │
-│  │   STAGING       │    │         PRODUCTION               │ │
-│  │                 │    │                                  │ │
-│  │ Frontend :3010  │    │     Nginx :8080                  │ │
-│  │ Backend  :3011  │    │       ↓                          │ │
-│  │ Postgres        │    │ Frontend + Backend + Postgres    │ │
-│  └─────────────────┘    └──────────────────────────────────┘ │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 🔧 Installation rapide
-
-### 1. Configuration automatique
-```bash
-# Exécuter le script de configuration
-chmod +x setup-cicd.sh
-./setup-cicd.sh
-```
-
-### 2. Générer les clés SSH
-```bash
-# Générer une clé SSH dédiée
-./generate-ssh-key.sh
-
-# Copier la clé sur le serveur
-ssh-copy-id -i ~/.ssh/geneaia-deploy.pub root@168.231.86.179
-```
-
-### 3. Configurer GitHub Secrets
-Copier tous les secrets depuis `secrets-github.txt` dans :
-**GitHub** → **Settings** → **Secrets and variables** → **Actions**
-
-### 4. Tester le déploiement
-```bash
-git add .
-git commit -m "🚀 Setup: production-ready CI/CD"
-git push origin staging
-```
-
-## 📊 Environnements
-
-| Environnement | Déclencheur | URL | Description |
-|---------------|-------------|-----|-------------|
-| **Staging** | Push sur `staging` | http://168.231.86.179:3010 | Tests et preview |
-| **Production** | Push sur `main` | http://168.231.86.179:8080 | Application live |
-
-## 🔐 Sécurité
-
-### Mots de passe générés automatiquement
-- Complexité : 25 caractères alphanumériques
-- Unique pour chaque environnement
-- Stockés dans GitHub Secrets
-
-### Headers de sécurité (Production)
-```nginx
-X-Frame-Options: SAMEORIGIN
-X-Content-Type-Options: nosniff  
-X-XSS-Protection: 1; mode=block
-```
-
-### Rate limiting
-- API : 10 requêtes/seconde par IP
-- Burst : 20 requêtes maximum
-
-## ⚡ Performance
-
-### Cache et compression
-- **Gzip** : Compression automatique des assets
-- **Cache** : Assets statiques cachés 1 an
-- **Docker** : Cache des layers pour builds rapides
-
-### Optimisations Nginx
-- Compression gzip activée
-- Cache des assets statiques
-- Headers de performance optimisés
-
-## 🛡️ Fiabilité
-
-### Health checks automatiques
-- **PostgreSQL** : Vérification de connexion
-- **Backend** : Test des endpoints API
-- **Frontend** : Vérification de disponibilité
-
-### Rollback automatique
-- Backup automatique avant déploiement production
-- Rollback en cas d'échec de démarrage
-- Sauvegarde des configurations précédentes
-
-### Backups
-- **Base de données** : Backup automatique avant chaque déploiement production
-- **Configuration** : Backup des docker-compose.yml
-- **Rétention** : Backups horodatés
-
-## 🔍 Monitoring et logs
-
-### Tests de santé
-```bash
-# Staging
-curl http://168.231.86.179:3010      # Frontend
-curl http://168.231.86.179:3011/api  # Backend
-
-# Production  
-curl http://168.231.86.179:8080      # App complète
-curl http://168.231.86.179:8080/api  # API via Nginx
-```
-
-### Logs détaillés
-- Timestamps sur toutes les opérations
-- Tests de santé après chaque déploiement
-- Logs d'erreur avec contexte
-
-## 🚀 Workflow de développement
-
-### Branches et déploiements
 ```mermaid
-graph LR
-    A[develop] --> B[staging]
-    B --> C[Pull Request]
-    C --> D[main]
-    D --> E[production]
-    
-    B -.-> F[Auto-deploy staging]
-    D -.-> G[Auto-deploy production]
+flowchart LR
+  devB[dev] -->|merge| stagingB[staging]
+  stagingB -->|merge apres validation| mainB[main]
+
+  devB -.->|push: tests + build| ghcr[Images GHCR :dev]
+  stagingB -.->|push: tests + build + deploy| stagingEnv[staging.geneamap.com]
+  mainB -.->|push: tests + build + deploy| prodEnv[geneamap.com]
 ```
 
-### Processus recommandé
-1. **Développement** sur `develop`
-2. **Merge** vers `staging` → Déploiement automatique
-3. **Test** sur staging : http://168.231.86.179:3010
-4. **Pull Request** de `staging` vers `main`
-5. **Merge** → Déploiement automatique en production
+| Branche | Déclencheur | Jobs | Cible |
+|---|---|---|---|
+| `dev` | push | tests + build images `:dev` | — (pas de déploiement) |
+| `staging` | push | tests + build `:staging` + deploy | https://staging.geneamap.com |
+| `main` | push | tests + build `:latest` + deploy | https://geneamap.com |
+| PR → staging/main | pull_request | tests uniquement | — |
 
-## 📝 Secrets GitHub requis
+## Ce que fait le pipeline
 
-### Staging
-```
-STAGING_HOST=168.231.86.179
-STAGING_USER=root
-STAGING_SSH_KEY=<clé_privée_complète>
-STAGING_PATH=/var/www/geneaia-staging
-STAGING_DB_PASSWORD=<généré_automatiquement>
-STAGING_JWT_SECRET=<généré_automatiquement>
-```
+### Job `test` (toutes branches)
+- Postgres 15 de service, `npm ci` backend + frontend
+- Prisma generate + migrate deploy
+- Lint backend/frontend (non bloquant)
+- Tests Jest backend, tests layout frontend
+- Build frontend Vite
 
-### Production
-```
-PROD_HOST=168.231.86.179
-PROD_USER=root
-PROD_SSH_KEY=<clé_privée_complète>
-PROD_PATH=/var/www/geneaia-production
-PROD_DB_PASSWORD=<généré_automatiquement>
-PROD_JWT_SECRET=<généré_automatiquement>
-```
+### Job `build` (push sur dev/staging/main)
+- Images Docker poussées sur GHCR :
+  - `ghcr.io/redakarraid/geneaia-backend:<branche>` (+ `latest` sur main)
+  - `ghcr.io/redakarraid/geneaia-frontend:<branche>` (+ `latest` sur main)
+- `VITE_API_URL` cuit au build : `https://api.geneamap.com/api` (main), `https://api-staging.geneamap.com/api` (staging)
 
-## 🔧 Commandes utiles
+### Jobs `deploy-*` (push sur staging/main)
+1. **scp** du compose du repo (`docker-compose.staging.yml` / `docker-compose.prod.yml`) vers le VPS — **plus de compose inline**, une seule source de vérité.
+2. Vérification que `.env` existe sur le serveur (sinon échec explicite).
+3. `docker compose pull` + `up -d --remove-orphans`.
+4. Migrations Prisma (`migrate deploy`) — échec bloquant.
+5. Health check interne (backend) puis externe via Traefik (`https://api*.geneamap.com/api/health`).
+6. Backup Postgres automatique avant chaque déploiement production.
 
-### Débogage sur le serveur
-```bash
-# Se connecter au serveur
-ssh -i ~/.ssh/geneaia-deploy root@168.231.86.179
+## Secrets GitHub requis
 
-# Logs staging
-cd /var/www/geneaia-staging
-docker-compose logs -f
+| Secret | Valeur |
+|---|---|
+| `STAGING_HOST` / `PROD_HOST` | `178.238.229.159` (VPS Contabo) |
+| `STAGING_USER` / `PROD_USER` | `root` |
+| `STAGING_SSH_KEY` / `PROD_SSH_KEY` | clé privée SSH |
+| `STAGING_PATH` | `/root/geneaia-staging` |
+| `PROD_PATH` | `/root/geneaia` |
 
-# Logs production
-cd /var/www/geneaia-production
-docker-compose logs -f
+Les secrets applicatifs (DB, JWT, **R2**, SMTP, Paystack) sont dans le `.env` **sur le serveur** (voir [.env.production.example](.env.production.example)) — jamais dans GitHub ni dans le repo.
 
-# État des services
-docker ps
-docker-compose ps
-```
+## Stockage
 
-### Maintenance
-```bash
-# Restart des services
-docker-compose restart backend
-docker-compose restart frontend
+- Local : MinIO (compose local), `STORAGE_AUTO_INIT=true`.
+- VPS : **Cloudflare R2** (`geneamap-staging` / `geneamap-prod`), `STORAGE_AUTO_INIT=false`, proxy API activé. Setup : [docs/CLOUDFLARE_R2.md](docs/CLOUDFLARE_R2.md).
 
-# Reset complet staging (sans perte production)
-docker-compose down
-docker volume rm geneaia-staging_postgres_staging_data
-docker-compose up -d
+## Protection des branches
 
-# Backup manuel production
-docker exec geneaia-db-prod pg_dump -U geneaia_prod -d geneaia_production > backup_manual.sql
-```
+À configurer sur GitHub (Settings → Branches) :
+- `main` : PR obligatoire + status check « Tests et qualité » requis.
+- `staging` : status check requis (optionnel).
 
-### Tests manuels
-```bash
-# Test complet de l'API
-curl -X POST http://168.231.86.179:3011/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@test.com","password":"test123"}'
+## Dépannage
 
-# Test health check
-curl http://168.231.86.179:8080/health
-```
+1. Workflow rouge au deploy → vérifier les secrets SSH et que `.env` existe dans le dossier cible.
+2. Health check externe KO → DNS pas propagé ou Traefik sans certificat ; vérifier `docker logs traefik` sur le VPS.
+3. Stockage KO → `bash scripts/check-r2.sh` avec les credentials du `.env`.
+4. Rollback base : backups dans `/root/geneaia/backups/backup_<timestamp>.sql`.
 
-## 🆘 Dépannage
+## Évolutions futures
 
-### Erreur de déploiement
-1. **Vérifier les secrets GitHub** sont tous configurés
-2. **Tester la connexion SSH** manuellement
-3. **Voir les logs** du workflow GitHub Actions
-4. **Se connecter au serveur** et vérifier les logs Docker
-
-### Erreur de base de données
-```bash
-# Reset de la base staging
-docker-compose down
-docker volume rm geneaia-staging_postgres_staging_data
-docker-compose up -d
-
-# Vérifier la connexion
-docker exec -it geneaia-db-staging psql -U geneaia_staging -d geneaia_staging
-```
-
-### Erreur SSL/certificats (futur)
-```bash
-# Configuration Let's Encrypt (à ajouter plus tard)
-# Cette configuration est prête pour l'ajout de SSL automatique
-```
-
-## 📈 Métriques et performance
-
-### Temps de déploiement
-- **Staging** : ~3-5 minutes
-- **Production** : ~5-8 minutes (avec backup)
-
-### Disponibilité
-- **Health checks** : Toutes les 30 secondes
-- **Restart automatique** : En cas d'échec
-- **Rollback** : Automatique si déploiement échoue
-
-## 🔮 Évolutions futures
-
-### Améliorations prévues
-- [ ] **SSL/HTTPS** automatique avec Let's Encrypt
-- [ ] **Monitoring** avancé (Prometheus + Grafana)
-- [ ] **Logs centralisés** (ELK Stack)
-- [ ] **Notifications** Slack/Discord
-- [ ] **Tests d'intégration** automatisés
-- [ ] **Scaling horizontal** avec Docker Swarm/Kubernetes
-
-### Sécurité avancée
-- [ ] **WAF** (Web Application Firewall)
-- [ ] **Scan de vulnérabilités** automatique
-- [ ] **Rotation automatique** des secrets
-- [ ] **Audit logs** complets
-
-## 🎯 Support
-
-### Documentation
-- **README principal** : Instructions de base
-- **INSTRUCTIONS.md** : Guide détaillé d'installation
-- **secrets-github.txt** : Secrets à configurer
-
-### Contacts
-- **Issues GitHub** : Pour les bugs et améliorations
-- **Pull Requests** : Pour les contributions
-- **Documentation** : Mise à jour continue
-
----
-
-## ✅ Checklist de mise en production
-
-- [ ] Exécuter `./setup-cicd.sh`
-- [ ] Générer les clés SSH avec `./generate-ssh-key.sh`
-- [ ] Configurer tous les secrets GitHub
-- [ ] Tester le déploiement staging
-- [ ] Vérifier les URLs staging (3010, 3011)
-- [ ] Merger vers main
-- [ ] Vérifier le déploiement production (8080)
-- [ ] Valider les backups automatiques
-- [ ] Documenter les accès pour l'équipe
-
-**🎉 Votre CI/CD est maintenant prêt pour la production !**
+- [ ] Job E2E Playwright sur stack Docker éphémère (PR vers main)
+- [ ] Notifications de déploiement (Slack/Discord/Telegram)
+- [ ] Monitoring (Uptime Kuma déjà présent sur le VPS — ajouter les URLs geneamap.com)

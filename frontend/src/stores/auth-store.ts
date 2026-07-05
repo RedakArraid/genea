@@ -10,7 +10,9 @@ interface AuthState {
   isLoading: boolean
   checkAuth: () => Promise<void>
   login: (login: string, password: string) => Promise<{ success: boolean; message?: string }>
-  register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; message?: string }>
+  requestOtp: (phone: string) => Promise<{ success: boolean; message?: string }>
+  verifyOtp: (phone: string, code: string) => Promise<{ success: boolean; message?: string }>
+  register: (name: string, phone: string, password: string, email?: string) => Promise<{ success: boolean; message?: string }>
   logout: () => void
   updateProfile: (data: Record<string, unknown>) => Promise<{ success: boolean; message?: string }>
   upgradePlan: (plan: import("@/types").PlanId) => Promise<{ success: boolean; message?: string }>
@@ -65,13 +67,39 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  register: async (name, email, password, phone) => {
+  requestOtp: async (phone) => {
+    try {
+      const { data } = await api.post("/auth/otp/request", { phone })
+      return { success: true, message: data.message }
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        "Impossible d'envoyer le code"
+      return { success: false, message }
+    }
+  },
+
+  verifyOtp: async (phone, code) => {
+    try {
+      const { data } = await api.post("/auth/otp/verify", { phone, code })
+      localStorage.setItem("token", data.token)
+      set({ user: data.user, isAuthenticated: true, isAdmin: data.user?.role === "ADMIN" })
+      return { success: true }
+    } catch (error: unknown) {
+      const message =
+        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        "Code invalide"
+      return { success: false, message }
+    }
+  },
+
+  register: async (name, phone, password, email) => {
     try {
       const { data } = await api.post("/auth/register", {
         name,
-        email,
+        phone,
         password,
-        ...(phone ? { phone } : {}),
+        ...(email?.trim() ? { email: email.trim() } : {}),
       })
       localStorage.setItem("token", data.token)
       set({ user: data.user, isAuthenticated: true, isAdmin: data.user?.role === "ADMIN" })

@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { todayIsoDate, validateBirthDate } from "@/lib/person-dates"
 import { Trash2, UserPlus, Link2 } from "lucide-react"
 import type { NormalizedPerson, TreeTweaks, TreeVisibility, TreeCollaborator, TreeInvite } from "@/types"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
 import { buildInviteUrl } from "@/lib/invite-url"
 import { useStorageConfig, photoMaxBytes } from "@/hooks/use-storage-config"
 import { resolveMediaUrl } from "@/lib/upload"
+import { AuthenticatedImage } from "@/components/ui/authenticated-image"
 import {
   Dialog,
   DialogContent,
@@ -70,6 +72,11 @@ export function AddPersonDialog({
 
   const handleSubmit = async () => {
     if (!form.firstName.trim()) return
+    const birthError = validateBirthDate(form.birthDate)
+    if (birthError) {
+      toast.error(birthError)
+      return
+    }
     setLoading(true)
     await onSubmit(form, parentId, relationType, parent2Id, photoFile)
     setLoading(false)
@@ -92,6 +99,8 @@ export function AddPersonDialog({
   const relLabel =
     relationType === "child" ? "enfant" : relationType === "parent" ? "parent" : relationType === "spouse" ? "conjoint·e" : null
 
+  const maxBirthDate = todayIsoDate()
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
@@ -113,7 +122,7 @@ export function AddPersonDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Naissance</Label>
-              <Input type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
+              <Input type="date" max={maxBirthDate} value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Décès</Label>
@@ -143,7 +152,11 @@ export function AddPersonDialog({
             <Label>Photo</Label>
             <div className="flex items-center gap-3">
               {photoPreview && (
-                <img src={photoPreview} alt="Aperçu" className="size-14 rounded-lg object-cover" />
+                photoPreview.startsWith("blob:") ? (
+                  <img src={photoPreview} alt="Aperçu" className="size-14 rounded-lg object-cover" />
+                ) : (
+                  <AuthenticatedImage src={photoPreview} alt="Aperçu" className="size-14 rounded-lg object-cover" />
+                )
               )}
               <Input type="file" accept="image/*" onChange={handlePhotoChange} />
             </div>
@@ -207,8 +220,15 @@ export function EditPersonDialog({ open, onClose, onSubmit, person, treeId: _tre
     setPhotoPreview(URL.createObjectURL(file))
   }
 
+  const maxBirthDate = todayIsoDate()
+
   const handleSubmit = async () => {
     if (!person) return
+    const birthError = validateBirthDate(form.birthDate)
+    if (birthError) {
+      toast.error(birthError)
+      return
+    }
     setLoading(true)
     await onSubmit(person.id, form, photoFile)
     setLoading(false)
@@ -234,7 +254,7 @@ export function EditPersonDialog({ open, onClose, onSubmit, person, treeId: _tre
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Naissance</Label>
-              <Input type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
+              <Input type="date" max={maxBirthDate} value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Décès</Label>
@@ -264,7 +284,11 @@ export function EditPersonDialog({ open, onClose, onSubmit, person, treeId: _tre
             <Label>Photo</Label>
             <div className="flex items-center gap-3">
               {photoPreview && (
-                <img src={photoPreview} alt="Aperçu" className="size-14 rounded-lg object-cover" />
+                photoPreview.startsWith("blob:") ? (
+                  <img src={photoPreview} alt="Aperçu" className="size-14 rounded-lg object-cover" />
+                ) : (
+                  <AuthenticatedImage src={photoPreview} alt="Aperçu" className="size-14 rounded-lg object-cover" />
+                )
               )}
               <Input type="file" accept="image/*" onChange={handlePhotoChange} />
             </div>
@@ -522,34 +546,47 @@ interface TreeSettingsSheetProps {
   onSetTweak: (key: keyof TreeTweaks, val: string | boolean) => void
 }
 
+const DENSITY_LABELS: Record<TreeTweaks["density"], string> = {
+  spacious: "Aérée",
+  compact: "Compacte",
+}
+
+const CONN_STYLE_LABELS: Record<TreeTweaks["connStyle"], string> = {
+  elbow: "Équerre",
+  curve: "Courbe",
+  straight: "Droite",
+}
+
 export function TreeSettingsSheet({ open, onClose, tweaks, onSetTweak }: TreeSettingsSheetProps) {
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent>
+      <SheetContent className="sm:max-w-md">
         <SheetHeader>
           <SheetTitle>Réglages d'affichage</SheetTitle>
         </SheetHeader>
-        <div className="mt-6 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <Label>Thème sombre</Label>
-            <Switch checked={tweaks.theme === "dark"} onCheckedChange={(v) => onSetTweak("theme", v ? "dark" : "light")} />
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center justify-between gap-4">
+            <Label className="min-w-0 flex-1">Thème sombre</Label>
+            <Switch className="shrink-0" checked={tweaks.theme === "dark"} onCheckedChange={(v) => onSetTweak("theme", v ? "dark" : "light")} />
           </div>
-          <div className="flex items-center justify-between">
-            <Label>Masquer les dates</Label>
-            <Switch checked={tweaks.hideDates} onCheckedChange={(v) => onSetTweak("hideDates", v)} />
+          <div className="flex items-center justify-between gap-4">
+            <Label className="min-w-0 flex-1">Masquer les dates</Label>
+            <Switch className="shrink-0" checked={tweaks.hideDates} onCheckedChange={(v) => onSetTweak("hideDates", v)} />
           </div>
-          <div className="flex items-center justify-between">
-            <Label>Masquer les lieux</Label>
-            <Switch checked={tweaks.hidePlaces} onCheckedChange={(v) => onSetTweak("hidePlaces", v)} />
+          <div className="flex items-center justify-between gap-4">
+            <Label className="min-w-0 flex-1">Masquer les lieux</Label>
+            <Switch className="shrink-0" checked={tweaks.hidePlaces} onCheckedChange={(v) => onSetTweak("hidePlaces", v)} />
           </div>
-          <div className="flex items-center justify-between">
-            <Label>Masquer les photos</Label>
-            <Switch checked={tweaks.hidePhotos} onCheckedChange={(v) => onSetTweak("hidePhotos", v)} />
+          <div className="flex items-center justify-between gap-4">
+            <Label className="min-w-0 flex-1">Masquer les photos</Label>
+            <Switch className="shrink-0" checked={tweaks.hidePhotos} onCheckedChange={(v) => onSetTweak("hidePhotos", v)} />
           </div>
           <div className="flex flex-col gap-2">
             <Label>Densité</Label>
             <Select value={tweaks.density} onValueChange={(v) => v && onSetTweak("density", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full">
+                <SelectValue>{DENSITY_LABELS[tweaks.density]}</SelectValue>
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="spacious">Aérée</SelectItem>
                 <SelectItem value="compact">Compacte</SelectItem>
@@ -559,7 +596,9 @@ export function TreeSettingsSheet({ open, onClose, tweaks, onSetTweak }: TreeSet
           <div className="flex flex-col gap-2">
             <Label>Style de connexion</Label>
             <Select value={tweaks.connStyle} onValueChange={(v) => v && onSetTweak("connStyle", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full">
+                <SelectValue>{CONN_STYLE_LABELS[tweaks.connStyle]}</SelectValue>
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="elbow">Équerre</SelectItem>
                 <SelectItem value="curve">Courbe</SelectItem>

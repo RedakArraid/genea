@@ -91,7 +91,11 @@ export default function AdminDashboardPage() {
             <CardTitle>Dernières inscriptions</CardTitle>
             <CardDescription>5 comptes les plus récents</CardDescription>
           </div>
-          <Link to="/admin/users" className={buttonVariants({ variant: "outline", size: "sm" })}>
+          <Link
+            to="/admin/users"
+            data-testid="admin-dashboard-recent-users"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
             Voir tout
           </Link>
         </CardHeader>
@@ -116,11 +120,11 @@ export default function AdminDashboardPage() {
       </Card>
 
       <div className="flex flex-wrap gap-2">
-        <Link to="/admin/users" className={buttonVariants()}>
+        <Link to="/admin/users" data-testid="admin-dashboard-manage-users" className={buttonVariants()}>
           <Users className="mr-2 size-4" />
-          Gérer utilisateurs
+          Gérer les comptes
         </Link>
-        <Link to="/admin/demo" className={buttonVariants({ variant: "outline" })}>
+        <Link to="/admin/demo" data-testid="admin-dashboard-reset-demo" className={buttonVariants({ variant: "outline" })}>
           <Sparkles className="mr-2 size-4" />
           Réinitialiser démo
         </Link>

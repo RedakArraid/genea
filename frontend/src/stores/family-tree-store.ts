@@ -10,7 +10,7 @@ interface FamilyTreeState {
   isLoading: boolean
   error: string | null
   fetchTrees: () => Promise<void>
-  fetchTreeById: (treeId: string) => Promise<void>
+  fetchTreeById: (treeId: string, options?: { silent?: boolean }) => Promise<void>
   fetchCollaborators: (treeId: string) => Promise<{ collaborators: TreeCollaborator[]; invites: TreeInvite[] } | null>
   inviteCollaborator: (
     treeId: string,
@@ -63,8 +63,9 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
     }
   },
 
-  fetchTreeById: async (treeId) => {
-    set({ isLoading: true, error: null })
+  fetchTreeById: async (treeId, options) => {
+    const silent = options?.silent ?? false
+    if (!silent) set({ isLoading: true, error: null })
     try {
       const { data } = await api.get(`/family-trees/${treeId}`)
       set({ currentTree: data.tree, treeAccess: data.access ?? null, isLoading: false })
@@ -204,19 +205,41 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
     try {
       const { data } = await api.get(`/node-positions/tree/${treeId}`)
       const existing = data.nodePositions || []
+      const saved: import("@/types").NodePosition[] = []
 
       for (const pos of nodePositions) {
         const found = existing.find((p: { nodeId: string }) => p.nodeId === pos.id)
         if (found) {
-          await api.put(`/node-positions/${found.id}`, { x: pos.position.x, y: pos.position.y })
+          const { data: updated } = await api.put(`/node-positions/${found.id}`, {
+            x: pos.position.x,
+            y: pos.position.y,
+          })
+          if (updated.nodePosition) saved.push(updated.nodePosition)
         } else {
-          await api.post("/node-positions", {
+          const { data: created } = await api.post("/node-positions", {
             nodeId: pos.id,
             treeId,
             x: pos.position.x,
             y: pos.position.y,
           })
+          if (created.nodePosition) saved.push(created.nodePosition)
         }
+      }
+
+      if (saved.length > 0) {
+        set((state) => {
+          if (!state.currentTree) return {}
+          const byNodeId = new Map(
+            (state.currentTree.NodePosition || []).map((np) => [np.nodeId, np])
+          )
+          for (const np of saved) byNodeId.set(np.nodeId, np)
+          return {
+            currentTree: {
+              ...state.currentTree,
+              NodePosition: Array.from(byNodeId.values()),
+            },
+          }
+        })
       }
     } catch (error) {
       console.error("Erreur positions:", error)

@@ -26,7 +26,27 @@ router.put(
   isAuth,
   [
     body('name').optional().trim().notEmpty().withMessage('Le nom ne peut pas être vide'),
-    body('email').optional().isEmail().withMessage('Email invalide'),
+    body('phone')
+      .optional()
+      .trim()
+      .custom((value) => {
+        if (!value) return true;
+        const { looksLikePhone } = require('../lib/phone');
+        if (!looksLikePhone(value)) {
+          throw new Error('Numéro invalide (format CI : 07XXXXXXXX)');
+        }
+        return true;
+      }),
+    body('email')
+      .optional({ values: 'falsy' })
+      .trim()
+      .custom((value) => {
+        if (!value) return true;
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          throw new Error('Email invalide');
+        }
+        return true;
+      }),
     body('currentPassword').optional(),
     body('newPassword')
       .optional()

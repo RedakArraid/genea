@@ -36,6 +36,9 @@ const storageConfig = {
   publicUrl: process.env.S3_PUBLIC_URL || '',
   apiPublicUrl: (process.env.API_PUBLIC_URL || 'http://localhost:3001').replace(/\/$/, ''),
   useProxy: process.env.STORAGE_USE_PROXY !== 'false',
+  // true (MinIO local) : crée le bucket + policy publique au démarrage.
+  // false (Cloudflare R2 / S3 externe) : le bucket doit exister, HeadBucket seulement.
+  autoInit: process.env.STORAGE_AUTO_INIT !== 'false',
 
   prefixes: {
     photos: process.env.STORAGE_PHOTO_PREFIX || 'photos',

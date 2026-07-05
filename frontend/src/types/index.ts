@@ -4,8 +4,8 @@ export type CollaboratorRole = "VIEWER" | "EDITOR"
 
 export interface User {
   id: string
-  email: string
-  phone?: string | null
+  phone: string
+  email?: string | null
   name?: string | null
   plan?: PlanId
   planActive?: boolean
@@ -28,7 +28,7 @@ export interface TreeCollaborator {
   treeId: string
   userId: string
   role: CollaboratorRole
-  User: { id: string; email: string; name?: string | null }
+  User: { id: string; phone: string; email?: string | null; name?: string | null }
 }
 
 export interface TreeInvite {

@@ -47,6 +47,12 @@ exports.initializeCheckout = async (req, res, next) => {
     }
 
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user.email) {
+      return res.status(400).json({
+        message: 'Ajoutez une adresse email à votre profil pour effectuer un paiement en ligne.',
+      });
+    }
+
     const baseAmount = getPlanPriceXof(plan);
     let promo = null;
     if (promoCode) {
@@ -76,7 +82,7 @@ exports.initializeCheckout = async (req, res, next) => {
         description: `GeneaIA — Forfait ${PLANS[plan].name}`,
         notifyUrl,
         returnUrl: callbackUrl,
-        customerName: user.name || user.email,
+        customerName: user.name || user.phone,
         customerEmail: user.email,
       },
     });
