@@ -44,13 +44,13 @@ export default function TimelinePage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">{t("timeline.kicker", { tree: currentTree.name })}</p>
           <h1 className="text-2xl font-bold">{t("timeline.title")}</h1>
         </div>
         <Input
-          className="max-w-xs"
+          className="w-full sm:max-w-xs"
           placeholder={t("canvas.searchPlaceholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}

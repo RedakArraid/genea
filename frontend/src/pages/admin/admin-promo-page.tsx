@@ -130,27 +130,28 @@ export default function AdminPromoPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Codes promo</h1>
           <p className="text-muted-foreground">
             Réductions par marché ou campagne — créez un code par pays/région (ex. lancement France, partenaire Sénégal).
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="w-full shrink-0 sm:w-auto">
           <Plus className="mr-2 size-4" />
           Nouveau code
         </Button>
       </div>
 
-      <div className="rounded-md border">
+      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div className="rounded-md border min-w-[320px]">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Code</TableHead>
-              <TableHead>Réduction</TableHead>
-              <TableHead>Utilisations</TableHead>
-              <TableHead>Validité</TableHead>
+              <TableHead className="hidden sm:table-cell">Réduction</TableHead>
+              <TableHead className="hidden md:table-cell">Utilisations</TableHead>
+              <TableHead className="hidden lg:table-cell">Validité</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -158,16 +159,23 @@ export default function AdminPromoPage() {
           <TableBody>
             {codes.map((promo) => (
               <TableRow key={promo.id}>
-                <TableCell className="font-mono font-medium">{promo.code}</TableCell>
-                <TableCell>
+                <TableCell className="font-mono font-medium">
+                  {promo.code}
+                  <p className="mt-0.5 font-sans text-xs font-normal text-muted-foreground md:hidden">
+                    {promo.discountType === "PERCENT" ? `${promo.discountValue}%` : `${promo.discountValue} USD`}
+                    {" · "}
+                    {promo.usedCount}{promo.maxUses != null ? `/${promo.maxUses}` : ""} util.
+                  </p>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">
                   {promo.discountType === "PERCENT"
                     ? `${promo.discountValue}%`
                     : `${promo.discountValue} USD`}
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell">
                   {promo.usedCount}{promo.maxUses != null ? ` / ${promo.maxUses}` : ""}
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden lg:table-cell">
                   {promo.validUntil
                     ? formatMediumDate(promo.validUntil)
                     : "—"}
@@ -197,6 +205,7 @@ export default function AdminPromoPage() {
           </TableBody>
         </Table>
       </div>
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -220,7 +229,7 @@ export default function AdminPromoPage() {
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Type</Label>
                 <Select value={form.discountType} onValueChange={(v) => v && setForm({ ...form, discountType: v as "PERCENT" | "FIXED" })}>

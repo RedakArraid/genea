@@ -87,12 +87,12 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
-        <Button onClick={() => setOpen(true)} disabled={!planActive}>
+        <Button onClick={() => setOpen(true)} disabled={!planActive} className="w-full sm:w-auto">
           <Plus className="mr-2 size-4" />
           {t("newTree")}
         </Button>
@@ -224,7 +224,7 @@ export default function DashboardPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="opacity-0 transition-opacity group-hover:opacity-100"
+                      className="min-h-9 min-w-9 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
                       onClick={() => handleDelete(tree.id, tree.name)}
                     >
                       <Trash2 className="size-4 text-destructive" />

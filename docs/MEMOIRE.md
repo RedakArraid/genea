@@ -39,6 +39,7 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 - Billing **100 % international** : Paystack USD uniquement (carte). Codes promo par marché/campagne via l'admin.
 - **Internationalisation fr/en** : i18next (namespaces `common`, `auth`, `marketing`, `tree`, `dashboard`, `billing`, `errors`), sélecteur FR/EN (header marketing, app connectée, profil), champ `User.locale` synchronisé au login.
 - **Landing page dynamique** : hero split avec aperçu arbre animé (layout engine + données statiques Famille Dupont), sections marketing (stats, features bento, how-it-works, CTA), scroll-reveal CSS, header sticky avec ancres `#fonctionnalites` / `#prix`.
+- **Responsive mobile/tablette** : SidePanel en Sheet overlay (<768px), toolbar canvas compacte (menu ⋮), header marketing hamburger, pages app/admin adaptées, pinch-to-zoom canvas.
 - **Téléphone international** : `libphonenumber-js` (back + front), indicatif par défaut +225, sélecteur à l'inscription/connexion/profil.
 - Erreurs API avec **codes stables** (`INVALID_PHONE`, `PLAN_LIMIT_REACHED`, …) traduits côté frontend ; templates email OTP fr/en selon `user.locale`.
 
@@ -106,6 +107,8 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 
 ## 8. Journal
 
+- **2026-07-05 (soir, responsive)** — Refonte responsive complète : SidePanel Sheet mobile, toolbar arbre compacte, menu hamburger marketing, dashboard/timeline/matches touch-friendly, admin tables colonnes adaptatives, pinch-to-zoom canvas, spec E2E viewport 375px. Build frontend vert.
+- **2026-07-05 (soir, layout réorganiser)** — Fix « Réorganiser » : parents placés au-dessus de la personne racine (générations top-down, vraies racines sans parents in-tree, directChildren assoupli si un seul parent référencé). 14 tests layout.
 - **2026-07-05 (soir, landing)** — Refonte page d'accueil : composants `marketing/*` (hero animé avec `AnimatedTreeHero`, stats strip, features bento, how-it-works, CTA final, footer), hooks `use-reveal` / `use-prefers-reduced-motion`, données statiques `marketing-tree-demo.ts`, ancres header sticky, i18n `marketing.json` étendu fr/en. Build frontend vert.
 - **2026-07-05 (soir, billing preview)** — Fix `POST /api/billing/preview` 400 en boucle sur `/pricing` : cause = code promo invalide (ex. `GENEA2026`) renvoyait 400 à chaque frappe × 4 forfaits. Preview renvoie désormais 200 + `promoError` ; frontend affiche les prix localement et n'appelle l'API qu'avec un code promo (debounce 400 ms).
 - **2026-07-05 (soir, pricing intl)** — Billing 100 % international : Paystack USD seul, CinetPay retiré ; codes promo par marché (description admin). Tarifs $5 / $30/an / $50/an ou $5/mois.

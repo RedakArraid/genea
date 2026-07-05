@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo, useCallback } from "react"
-import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2 } from "lucide-react"
+import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2, MoreVertical } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { PersonCard } from "./person-card"
 import { buildConnections, computeLineage, getCardDimensions } from "@/utils/tree-layout"
@@ -13,6 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
 const TOOLBAR_H = 48
@@ -157,6 +165,10 @@ export function TreeCanvas({
   positionsRef.current = positions
   const [pan, setPan] = useState({ x: 60, y: 40 })
   const [scale, setScale] = useState(0.85)
+  const panRef = useRef(pan)
+  const scaleRef = useRef(scale)
+  panRef.current = pan
+  scaleRef.current = scale
   const [panning, setPanning] = useState(false)
   const [draggingId, setDraggingId] = useState<string | null>(null)
 
@@ -274,6 +286,68 @@ export function TreeCanvas({
     return () => wrap.removeEventListener("wheel", onWheel)
   }, [onWheel])
 
+  useEffect(() => {
+    const wrap = wrapRef.current
+    if (!wrap) return
+
+    const touches = new Map<number, { x: number; y: number }>()
+    let pinchStartDist = 0
+    let pinchStartScale = 1
+    let pinchStartPan = { x: 0, y: 0 }
+    let pinchCenter = { x: 0, y: 0 }
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (isDraggingCardRef.current) return
+      for (const touch of e.changedTouches) {
+        touches.set(touch.identifier, { x: touch.clientX, y: touch.clientY })
+      }
+      if (touches.size === 2) {
+        const pts = [...touches.values()]
+        pinchStartDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
+        pinchStartScale = scaleRef.current
+        pinchStartPan = { ...panRef.current }
+        pinchCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+      }
+    }
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (touches.size < 2 || pinchStartDist === 0) return
+      e.preventDefault()
+      for (const touch of e.changedTouches) {
+        touches.set(touch.identifier, { x: touch.clientX, y: touch.clientY })
+      }
+      const pts = [...touches.values()]
+      if (pts.length < 2) return
+      const newDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
+      const newScale = Math.max(0.2, Math.min(2.5, pinchStartScale * (newDist / pinchStartDist)))
+      const rect = wrap.getBoundingClientRect()
+      const mx = pinchCenter.x - rect.left
+      const my = pinchCenter.y - rect.top
+      const wx = (mx - pinchStartPan.x) / pinchStartScale
+      const wy = (my - pinchStartPan.y) / pinchStartScale
+      setScale(newScale)
+      setPan({ x: mx - wx * newScale, y: my - wy * newScale })
+    }
+
+    const onTouchEnd = (e: TouchEvent) => {
+      for (const touch of e.changedTouches) {
+        touches.delete(touch.identifier)
+      }
+      if (touches.size < 2) pinchStartDist = 0
+    }
+
+    wrap.addEventListener("touchstart", onTouchStart, { passive: true })
+    wrap.addEventListener("touchmove", onTouchMove, { passive: false })
+    wrap.addEventListener("touchend", onTouchEnd)
+    wrap.addEventListener("touchcancel", onTouchEnd)
+    return () => {
+      wrap.removeEventListener("touchstart", onTouchStart)
+      wrap.removeEventListener("touchmove", onTouchMove)
+      wrap.removeEventListener("touchend", onTouchEnd)
+      wrap.removeEventListener("touchcancel", onTouchEnd)
+    }
+  }, [])
+
   const jumpTo = useCallback(
     (wx: number, wy: number) => {
       const r = wrapRef.current?.getBoundingClientRect()
@@ -367,8 +441,78 @@ export function TreeCanvas({
       className={cn("relative size-full overflow-hidden bg-muted/20", panning && "cursor-grabbing")}
       onPointerDown={onPointerDownBg}
     >
-      <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 border-b bg-background/95 p-2 backdrop-blur">
-        <div className="relative flex-1 max-w-xs">
+      <div className="absolute inset-x-0 top-0 z-10 border-b bg-background/95 p-2 backdrop-blur">
+        {/* Mobile toolbar */}
+        <div className="flex items-center gap-2 md:hidden">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Input
+              className="pl-8"
+              placeholder={t("canvas.searchPlaceholder")}
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button size="sm" variant="outline" className="shrink-0" />}
+            >
+              <MoreVertical className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>{t("canvas.generationPlaceholder")}</DropdownMenuLabel>
+              {generationOptions.map((opt) => (
+                <DropdownMenuItem
+                  key={opt.value}
+                  onClick={() => onSetTweak("generation", opt.value)}
+                >
+                  {opt.label}
+                  {genFilter === opt.value ? " ✓" : ""}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>{t("canvas.layoutLabel", { defaultValue: "Layout" })}</DropdownMenuLabel>
+              {(["vertical", "horizontal", "radial"] as const).map((l) => (
+                <DropdownMenuItem key={l} onClick={() => onSetTweak("layout", l)}>
+                  {l === "vertical" ? "↓ Vertical" : l === "horizontal" ? "→ Horizontal" : "◎ Radial"}
+                  {layout === l ? " ✓" : ""}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={onReorganize}
+                disabled={!onReorganize || people.length === 0 || (readOnly && !isDemo)}
+              >
+                <LayoutGrid className="mr-2 size-4" />
+                {t("canvas.reorganize")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={fitToView}>
+                <Maximize2 className="mr-2 size-4" />
+                {t("canvas.center")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onOpenTweaks}>
+                <Settings className="mr-2 size-4" />
+                {t("canvas.settings", { defaultValue: "Paramètres" })}
+              </DropdownMenuItem>
+              {!readOnly && canShare && (
+                <DropdownMenuItem onClick={onOpenShare}>
+                  <Share2 className="mr-2 size-4" />
+                  {t("canvas.share")}
+                </DropdownMenuItem>
+              )}
+              {!readOnly && (
+                <DropdownMenuItem onClick={() => onOpenAdd()}>
+                  <Plus className="mr-2 size-4" />
+                  {t("canvas.add")}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Desktop toolbar */}
+        <div className="hidden items-center gap-2 md:flex">
+        <div className="relative max-w-xs flex-1">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
           <Input
             className="pl-8"
@@ -437,6 +581,7 @@ export function TreeCanvas({
             {t("canvas.add")}
           </Button>
         )}
+        </div>
       </div>
 
       <div

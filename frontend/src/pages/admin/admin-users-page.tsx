@@ -122,8 +122,9 @@ export default function AdminUsersPage() {
         onPageChange={setPage}
         loading={loading}
         filters={
-          <Select value={planFilter} onValueChange={(v) => v && (setPlanFilter(v), setPage(1))}>
-            <SelectTrigger className="w-[160px]">
+          <div className="flex flex-wrap gap-2">
+            <Select value={planFilter} onValueChange={(v) => v && (setPlanFilter(v), setPage(1))}>
+              <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue placeholder="Forfait" />
             </SelectTrigger>
             <SelectContent>
@@ -133,18 +134,20 @@ export default function AdminUsersPage() {
               <SelectItem value="PATRIMONY">Patrimoine</SelectItem>
             </SelectContent>
           </Select>
+          </div>
         }
       >
-        <div className="rounded-md border">
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div className="rounded-md border min-w-[320px]">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Email</TableHead>
-                <TableHead>Nom</TableHead>
-                <TableHead>Forfait</TableHead>
-                <TableHead>Rôle</TableHead>
-                <TableHead>Arbres</TableHead>
-                <TableHead>Inscription</TableHead>
+                <TableHead className="hidden md:table-cell">Nom</TableHead>
+                <TableHead className="hidden md:table-cell">Forfait</TableHead>
+                <TableHead className="hidden lg:table-cell">Rôle</TableHead>
+                <TableHead className="hidden lg:table-cell">Arbres</TableHead>
+                <TableHead className="hidden xl:table-cell">Inscription</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -155,14 +158,17 @@ export default function AdminUsersPage() {
                     <Link to={`/admin/users/${user.id}`} className="hover:underline">
                       {user.email}
                     </Link>
+                    <p className="text-xs text-muted-foreground md:hidden">
+                      {user.name || "—"} · {getPlanById(user.plan).name}
+                    </p>
                   </TableCell>
-                  <TableCell>{user.name || "—"}</TableCell>
-                  <TableCell>{getPlanById(user.plan).name}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">{user.name || "—"}</TableCell>
+                  <TableCell className="hidden md:table-cell">{getPlanById(user.plan).name}</TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>{user.role}</Badge>
                   </TableCell>
-                  <TableCell>{user.treeCount ?? 0}</TableCell>
-                  <TableCell>{formatMediumDate(user.createdAt)}</TableCell>
+                  <TableCell className="hidden lg:table-cell">{user.treeCount ?? 0}</TableCell>
+                  <TableCell className="hidden xl:table-cell">{formatMediumDate(user.createdAt)}</TableCell>
                   <TableCell className="text-right">
                     <Link to={`/admin/users/${user.id}`} className={buttonVariants({ variant: "ghost", size: "icon" })}>
                       <Eye className="size-4" />
@@ -190,6 +196,7 @@ export default function AdminUsersPage() {
               )}
             </TableBody>
           </Table>
+        </div>
         </div>
       </AdminDataTable>
 

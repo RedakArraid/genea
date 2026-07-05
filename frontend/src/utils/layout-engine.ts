@@ -200,7 +200,8 @@ function computeVerticalPedigree(people, density = 'spacious') {
     const out = [];
     for (const c of people) {
       if (!c.parentIds.includes(p.id)) continue;
-      if (spouse && !c.parentIds.includes(spouse.id)) continue;
+      // Exiger le conjoint comme co-parent seulement si l'enfant référence les deux parents
+      if (spouse && c.parentIds.length >= 2 && !c.parentIds.includes(spouse.id)) continue;
       out.push(c.id);
     }
     return out.sort();
@@ -310,12 +311,9 @@ function computeVerticalPedigree(people, density = 'spacious') {
     return Math.max(totalW, coupleWidth(spouse));
   }
 
-  const minGen = Math.min(...people.map((p) => p.generation));
-  const roots = people.filter(
-    (p) =>
-      p.generation === minGen &&
-      (!p.parentIds.length || !p.parentIds.some((pid) => byId[pid]))
-  );
+  const roots = people
+    .filter((p) => !(p.parentIds || []).some((pid) => byId[pid]))
+    .sort((a, b) => a.generation - b.generation || a.id.localeCompare(b.id));
 
   const seenRoots = new Set();
   let x = 40;
@@ -812,62 +810,78 @@ export function normalizePersons(apiPersons, apiRelationships = []) {
     };
   });
 
-  // 2. Deuxième passe : calcul dynamique des générations par propagation BFS
-  const peopleMap = Object.fromEntries(people.map(p => [p.id, p]));
-  const visited = new Set();
-  const generations = {};
-
-  people.forEach(startPerson => {
-    if (visited.has(startPerson.id)) return;
-
-    const queue = [{ id: startPerson.id, gen: 1 }];
-    visited.add(startPerson.id);
-
-    while (queue.length > 0) {
-      const { id, gen } = queue.shift();
-      generations[id] = gen;
-
-      const p = peopleMap[id];
-      if (!p) continue;
-
-      // Conjoints = même génération
-      p.spouseIds.forEach(sId => {
-        if (!visited.has(sId)) {
-          visited.add(sId);
-          queue.push({ id: sId, gen });
-        }
-      });
-
-      // Enfants = parent.generation + 1
-      const children = people.filter(c => c.parentIds.includes(id));
-      children.forEach(c => {
-        if (!visited.has(c.id)) {
-          visited.add(c.id);
-          queue.push({ id: c.id, gen: gen + 1 });
-        }
-      });
-
-      // Parents = enfant.generation - 1
-      p.parentIds.forEach(pId => {
-        if (!visited.has(pId)) {
-          visited.add(pId);
-          queue.push({ id: pId, gen: gen - 1 });
-        }
-      });
-    }
-  });
-
-  // Shift global pour que le min commence à 1
-  const genValues = Object.values(generations);
-  if (genValues.length > 0) {
-    const minGen = Math.min(...genValues);
-    const shift = 1 - minGen;
-    people.forEach(p => {
-      p.generation = (generations[p.id] || 1) + shift;
-    });
-  }
+  // 2. Générations cohérentes : parent toujours au-dessus de l'enfant
+  assignGenerations(people);
 
   return people;
+}
+
+/** Top-down depuis les racines réelles : parent.generation < enfant.generation. */
+function assignGenerations(people) {
+  const byId = Object.fromEntries(people.map((p) => [p.id, p]));
+  const gens = {};
+
+  const roots = people.filter((p) => !(p.parentIds || []).some((pid) => byId[pid]));
+  const queue = [...roots];
+  roots.forEach((p) => {
+    gens[p.id] = 1;
+  });
+
+  while (queue.length > 0) {
+    const id = queue.shift();
+    const gen = gens[id];
+    const p = byId[id];
+    if (!p) continue;
+
+    for (const sid of p.spouseIds || []) {
+      if (!byId[sid]) continue;
+      if (gens[sid] == null) {
+        gens[sid] = gen;
+        queue.push(sid);
+      } else if (gens[sid] !== gen) {
+        gens[sid] = Math.max(gens[sid], gen);
+        queue.push(sid);
+      }
+    }
+
+    for (const c of people) {
+      if (!(c.parentIds || []).includes(id)) continue;
+      const childGen = gen + 1;
+      if (gens[c.id] == null) {
+        gens[c.id] = childGen;
+        queue.push(c.id);
+      } else if (gens[c.id] < childGen) {
+        gens[c.id] = childGen;
+        queue.push(c.id);
+      }
+    }
+  }
+
+  for (const p of people) {
+    if (gens[p.id] == null) gens[p.id] = 1;
+  }
+
+  let changed = true;
+  let iter = 0;
+  while (changed && iter < people.length * 4) {
+    changed = false;
+    iter += 1;
+    for (const p of people) {
+      for (const pid of p.parentIds || []) {
+        if (!byId[pid]) continue;
+        if (gens[pid] >= gens[p.id]) {
+          gens[pid] = gens[p.id] - 1;
+          changed = true;
+        }
+      }
+    }
+  }
+
+  const minGen = Math.min(...Object.values(gens));
+  const shift = 1 - minGen;
+  people.forEach((p) => {
+    p.generation = gens[p.id] + shift;
+  });
 }
 
 // Tons cycliques basés sur l'ID

@@ -1,7 +1,7 @@
 /**
  * Tests unitaires du moteur de layout (frontend)
  */
-import { computeLayout, buildConnections } from '../frontend/src/utils/tree-layout.ts'
+import { computeLayout, buildConnections, normalizePersons } from '../frontend/src/utils/tree-layout.ts'
 
 const people = [
   { id: 'a', generation: 1, parentIds: [], spouseIds: ['b'], given: 'Jean', sur: 'Dupont' },
@@ -55,6 +55,27 @@ ok(
 ok(
   'multi-conjoints — ordre [s1][hub][s2]',
   msPos.s1.x < msPos.hub.x && msPos.hub.x < msPos.s2.x
+)
+
+console.log('\n--- Racine avec parents ---')
+const rootWithParents = normalizePersons(
+  [
+    { id: 'root', firstName: 'Root', lastName: 'X', treeId: 't' },
+    { id: 'p1', firstName: 'Pere', lastName: 'X', treeId: 't' },
+    { id: 'p2', firstName: 'Mere', lastName: 'X', treeId: 't' },
+  ],
+  [
+    { id: 'r1', type: 'parent', sourceId: 'p1', targetId: 'root' },
+    { id: 'r2', type: 'child', sourceId: 'root', targetId: 'p1' },
+    { id: 'r3', type: 'spouse', sourceId: 'p1', targetId: 'p2' },
+  ]
+)
+const { positions: rwpPos } = computeLayout(rootWithParents, 'vertical', 'spacious')
+ok('parents au-dessus de la racine (y plus petit)', rwpPos.p1.y < rwpPos.root.y && rwpPos.p2.y < rwpPos.root.y)
+ok(
+  'générations cohérentes (parents G1, enfant G2)',
+  rootWithParents.find((p) => p.id === 'p1')?.generation === 1 &&
+    rootWithParents.find((p) => p.id === 'root')?.generation === 2
 )
 
 console.log(`\n=== Résultat layout : ${pass} passés, ${fail} échoués ===`)

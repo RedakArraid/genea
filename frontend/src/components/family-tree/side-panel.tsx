@@ -19,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { PersonDocuments } from "@/components/family-tree/person-documents"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface SidePanelProps {
   person: NormalizedPerson
@@ -55,7 +57,7 @@ function personToForm(person: NormalizedPerson, raw?: Person) {
   }
 }
 
-export function SidePanel({
+function SidePanelContent({
   person,
   people,
   currentTree,
@@ -195,7 +197,7 @@ export function SidePanel({
   )
 
   return (
-    <div className="flex h-full min-h-0 w-80 shrink-0 flex-col border-l bg-background">
+    <>
       <div className="flex items-center justify-between border-b p-4">
         <Badge variant="secondary">G{person.generation}</Badge>
         <Button variant="ghost" size="icon" onClick={onClose}>
@@ -266,7 +268,7 @@ export function SidePanel({
 
           {canEditInfo && !readOnly ? (
             <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="side-birth-date" className="text-xs">{t("person.birthDate")}</Label>
                   <Input
@@ -389,6 +391,30 @@ export function SidePanel({
           </>
         )}
       </div>
-    </div>
+    </>
+  )
+}
+
+export function SidePanel(props: SidePanelProps) {
+  const isMobile = useIsMobile()
+
+  if (isMobile) {
+    return (
+      <Sheet open onOpenChange={(open) => !open && props.onClose()}>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          className="flex h-[85vh] max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-full"
+        >
+          <SidePanelContent {...props} />
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
+  return (
+    <aside className="flex h-full min-h-0 w-80 shrink-0 flex-col border-l bg-background">
+      <SidePanelContent {...props} />
+    </aside>
   )
 }

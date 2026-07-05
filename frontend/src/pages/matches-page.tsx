@@ -18,7 +18,7 @@ export default function MatchesPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">{t("matches.kicker")}</p>
           <h1 className="text-2xl font-bold">{t("matches.title")}</h1>
@@ -26,7 +26,7 @@ export default function MatchesPage() {
             {t("matches.subtitle")}
           </p>
         </div>
-        <Button variant="outline" onClick={() => setPrivacyEnabled(!privacyEnabled)}>
+        <Button variant="outline" className="w-full shrink-0 sm:w-auto" onClick={() => setPrivacyEnabled(!privacyEnabled)}>
           {t("matches.privacy")}
         </Button>
       </div>

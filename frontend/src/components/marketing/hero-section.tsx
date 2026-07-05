@@ -14,7 +14,7 @@ export function HeroSection() {
   return (
     <section className="relative overflow-hidden border-b">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,oklch(0.92_0_0),transparent)]" />
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 lg:grid-cols-2 lg:items-center lg:py-24">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:items-center lg:py-24">
         <div className="flex flex-col gap-6">
           <Badge variant="secondary" className="w-fit animate-in fade-in slide-in-from-bottom-2 duration-500">
             {t("hero.badge")}

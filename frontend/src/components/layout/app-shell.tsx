@@ -177,7 +177,7 @@ export function AppShell() {
           "flex min-h-0 flex-1 flex-col",
           location.pathname.includes("/family-tree/") && !location.pathname.includes("/timeline") && !location.pathname.includes("/matches")
             ? "overflow-hidden"
-            : "p-6"
+            : "p-4 sm:p-6"
         )}>
           <Outlet />
         </main>

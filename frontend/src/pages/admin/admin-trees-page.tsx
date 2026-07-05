@@ -74,9 +74,9 @@ export default function AdminTreesPage() {
         onPageChange={setPage}
         loading={loading}
         filters={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Select value={demoFilter} onValueChange={(v) => v && (setDemoFilter(v), setPage(1))}>
-              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Démo" /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder="Démo" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous</SelectItem>
                 <SelectItem value="true">Démo</SelectItem>
@@ -84,7 +84,7 @@ export default function AdminTreesPage() {
               </SelectContent>
             </Select>
             <Select value={visibilityFilter} onValueChange={(v) => v && (setVisibilityFilter(v), setPage(1))}>
-              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Visibilité" /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder="Visibilité" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes</SelectItem>
                 <SelectItem value="PRIVATE">Privé</SelectItem>
@@ -95,15 +95,16 @@ export default function AdminTreesPage() {
           </div>
         }
       >
-        <div className="rounded-md border">
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div className="rounded-md border min-w-[320px]">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Nom</TableHead>
-                <TableHead>Propriétaire</TableHead>
+                <TableHead className="hidden md:table-cell">Propriétaire</TableHead>
                 <TableHead>Personnes</TableHead>
-                <TableHead>Visibilité</TableHead>
-                <TableHead>MAJ</TableHead>
+                <TableHead className="hidden md:table-cell">Visibilité</TableHead>
+                <TableHead className="hidden lg:table-cell">MAJ</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -111,17 +112,18 @@ export default function AdminTreesPage() {
               {trees.map((tree) => (
                 <TableRow key={tree.id}>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
                       <span className="font-medium">{tree.name}</span>
                       {tree.isDemo && <Badge>Démo</Badge>}
+                      <span className="text-xs text-muted-foreground md:hidden">{tree.User?.email ?? "—"}</span>
                     </div>
                   </TableCell>
-                  <TableCell>{tree.User?.email ?? "—"}</TableCell>
+                  <TableCell className="hidden md:table-cell">{tree.User?.email ?? "—"}</TableCell>
                   <TableCell>{tree._count?.Person ?? 0}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <Badge variant="outline">{tree.visibility}</Badge>
                   </TableCell>
-                  <TableCell>{formatMediumDate(tree.updatedAt)}</TableCell>
+                  <TableCell className="hidden lg:table-cell">{formatMediumDate(tree.updatedAt)}</TableCell>
                   <TableCell className="text-right">
                     <Link
                       to={tree.isDemo ? "/demo" : `/tree/${tree.id}`}
@@ -143,6 +145,7 @@ export default function AdminTreesPage() {
               )}
             </TableBody>
           </Table>
+        </div>
         </div>
       </AdminDataTable>
     </div>

@@ -1,0 +1,26 @@
+import { test, expect } from "@playwright/test"
+
+test.describe("Responsive mobile", () => {
+  test.use({ viewport: { width: 375, height: 812 } })
+
+  test("landing — menu mobile et sections empilées", async ({ page }) => {
+    await page.goto("/")
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
+    await page.getByRole("button", { name: /menu/i }).click()
+    await expect(page.getByRole("link", { name: /démo|demo/i })).toBeVisible()
+    await expect(page.getByRole("link", { name: /tarifs|pricing/i })).toBeVisible()
+  })
+
+  test("login — formulaire sans débordement horizontal", async ({ page }) => {
+    await page.goto("/login")
+    await expect(page.getByRole("tab", { name: /mot de passe|password/i })).toBeVisible()
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
+    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth)
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1)
+  })
+
+  test("demo — canvas visible sur mobile", async ({ page }) => {
+    await page.goto("/demo")
+    await expect(page.getByPlaceholder(/recherch|search/i)).toBeVisible({ timeout: 15000 })
+  })
+})

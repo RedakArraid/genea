@@ -201,14 +201,15 @@ export default function AdminUserDetailPage() {
           <CardDescription>{user.FamilyTree?.length ?? 0} arbre(s)</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <div className="rounded-md border min-w-[280px]">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Nom</TableHead>
                   <TableHead>Personnes</TableHead>
-                  <TableHead>Visibilité</TableHead>
-                  <TableHead>Créé le</TableHead>
+                  <TableHead className="hidden md:table-cell">Visibilité</TableHead>
+                  <TableHead className="hidden lg:table-cell">Créé le</TableHead>
                   <TableHead className="text-right">Voir</TableHead>
                 </TableRow>
               </TableHeader>
@@ -216,14 +217,15 @@ export default function AdminUserDetailPage() {
                 {(user.FamilyTree ?? []).map((tree) => (
                   <TableRow key={tree.id}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
                         <span className="font-medium">{tree.name}</span>
                         {tree.isDemo && <Badge>Démo</Badge>}
+                        <span className="text-xs text-muted-foreground md:hidden">{tree.visibility}</span>
                       </div>
                     </TableCell>
                     <TableCell>{tree._count?.Person ?? 0}</TableCell>
-                    <TableCell><Badge variant="outline">{tree.visibility}</Badge></TableCell>
-                    <TableCell>{formatMediumDate(tree.createdAt)}</TableCell>
+                    <TableCell className="hidden md:table-cell"><Badge variant="outline">{tree.visibility}</Badge></TableCell>
+                    <TableCell className="hidden lg:table-cell">{formatMediumDate(tree.createdAt)}</TableCell>
                     <TableCell className="text-right">
                       <Link
                         to={tree.isDemo ? "/demo" : `/tree/${tree.id}`}
@@ -244,6 +246,7 @@ export default function AdminUserDetailPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
           </div>
         </CardContent>
       </Card>

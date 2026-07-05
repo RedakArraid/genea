@@ -65,15 +65,16 @@ export default function AdminStoragePage() {
           <CardDescription>10 uploads les plus récents</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <div className="rounded-md border min-w-[320px]">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Titre</TableHead>
-                  <TableHead>Personne</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Taille</TableHead>
-                  <TableHead>Date</TableHead>
+                  <TableHead className="hidden md:table-cell">Personne</TableHead>
+                  <TableHead className="hidden md:table-cell">Type</TableHead>
+                  <TableHead className="hidden lg:table-cell">Taille</TableHead>
+                  <TableHead className="hidden md:table-cell">Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -83,12 +84,15 @@ export default function AdminStoragePage() {
                       <div>
                         <p className="font-medium">{doc.title}</p>
                         <p className="text-xs text-muted-foreground">{doc.fileName}</p>
+                        <p className="text-xs text-muted-foreground md:hidden">
+                          {doc.Person.firstName} {doc.Person.lastName} · {formatDateTime(doc.createdAt)}
+                        </p>
                       </div>
                     </TableCell>
-                    <TableCell>{doc.Person.firstName} {doc.Person.lastName}</TableCell>
-                    <TableCell><Badge variant="outline">{doc.category}</Badge></TableCell>
-                    <TableCell>{formatBytes(doc.sizeBytes)}</TableCell>
-                    <TableCell>{formatDateTime(doc.createdAt)}</TableCell>
+                    <TableCell className="hidden md:table-cell">{doc.Person.firstName} {doc.Person.lastName}</TableCell>
+                    <TableCell className="hidden md:table-cell"><Badge variant="outline">{doc.category}</Badge></TableCell>
+                    <TableCell className="hidden lg:table-cell">{formatBytes(doc.sizeBytes)}</TableCell>
+                    <TableCell className="hidden md:table-cell">{formatDateTime(doc.createdAt)}</TableCell>
                   </TableRow>
                 ))}
                 {!loading && !info?.recentDocuments?.length && (
@@ -98,6 +102,7 @@ export default function AdminStoragePage() {
                 )}
               </TableBody>
             </Table>
+          </div>
           </div>
         </CardContent>
       </Card>
