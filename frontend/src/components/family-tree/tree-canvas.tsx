@@ -666,37 +666,42 @@ export function TreeCanvas({
           connections
             .filter((c) => c.kind === "spouse" && c.midX != null && c.midY != null)
             .map((c, i) => (
-              <DropdownMenu key={`spouse-add-${i}`}>
-                <DropdownMenuTrigger
-                  render={
-                    <button
-                      type="button"
-                      title={t("canvas.addChild")}
-                      className="absolute z-[10] flex size-[22px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-2 border-primary bg-primary text-sm font-bold text-primary-foreground shadow-md pointer-events-auto hover:scale-110"
-                      style={{ left: c.midX, top: c.midY }}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  }
-                >
-                  +
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center">
-                  <DropdownMenuItem
-                    onClick={() => onOpenAdd(c.ids[0], "child", c.ids[1])}
+              <div
+                key={`spouse-add-${i}`}
+                className="absolute z-[10] pointer-events-none"
+                style={{ left: c.midX, top: c.midY }}
+              >
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <button
+                        type="button"
+                        title={t("canvas.addChild")}
+                        className="pointer-events-auto flex size-[22px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-2 border-primary bg-primary text-sm font-bold text-primary-foreground shadow-md hover:scale-110"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    }
                   >
-                    <UserPlus className="size-4" />
-                    {t("relations.newChild")}
-                  </DropdownMenuItem>
-                  {onLinkExistingChild && (
+                    +
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="z-[200]">
                     <DropdownMenuItem
-                      onClick={() => onLinkExistingChild([c.ids[0], c.ids[1]])}
+                      onClick={() => queueMicrotask(() => onOpenAdd(c.ids[0], "child", c.ids[1]))}
                     >
-                      <Link2 className="size-4" />
-                      {t("relations.linkExistingChild")}
+                      <UserPlus className="size-4" />
+                      {t("relations.newChild")}
                     </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    {onLinkExistingChild && (
+                      <DropdownMenuItem
+                        onClick={() => queueMicrotask(() => onLinkExistingChild([c.ids[0], c.ids[1]]))}
+                      >
+                        <Link2 className="size-4" />
+                        {t("relations.linkExistingChild")}
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ))}
       </div>
 

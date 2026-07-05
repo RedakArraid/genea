@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import { X, Focus, Trash2, Baby, Camera, Save, ChevronDown, Link2, UserPlus } from "lucide-react"
+import { X, Focus, Trash2, Camera, Save } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { FamilyTree, NormalizedPerson, Person } from "@/types"
 import { todayIsoDate, validateBirthDate } from "@/lib/person-dates"
@@ -20,13 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { PersonDocuments } from "@/components/family-tree/person-documents"
+import { ChildAddMenu } from "@/components/family-tree/child-add-menu"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 interface SidePanelProps {
@@ -62,6 +57,81 @@ function personToForm(person: NormalizedPerson, raw?: Person) {
     gender: raw?.gender || "",
     biography: raw?.biography || person.bio?.fr || "",
   }
+}
+
+interface RelSectionProps {
+  title: string
+  readOnly?: boolean
+  onAdd?: () => void
+  childAddMenu?: { onNewChild: () => void; onLinkExisting: () => void }
+  children: React.ReactNode
+  addButtonLabel: string
+}
+
+function RelSection({ title, readOnly, onAdd, childAddMenu, children, addButtonLabel }: RelSectionProps) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</span>
+        {!readOnly && childAddMenu && (
+          <ChildAddMenu
+            onNewChild={childAddMenu.onNewChild}
+            onLinkExisting={childAddMenu.onLinkExisting}
+          />
+        )}
+        {onAdd && !readOnly && !childAddMenu && (
+          <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={onAdd}>
+            {addButtonLabel}
+          </Button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1">{children}</div>
+    </div>
+  )
+}
+
+interface RelChipProps {
+  person: NormalizedPerson
+  relative: NormalizedPerson
+  relType?: string
+  relId: string | null | undefined
+  readOnly?: boolean
+  onSelect: (id: string) => void
+  onDeleteRelation: (relId: string) => void
+  onAddChildRelation: (parentId: string, relType: string, parent2Id?: string) => void
+  onLinkExistingChild: (parentIds: string[]) => void
+}
+
+function RelChip({
+  person,
+  relative,
+  relType,
+  relId,
+  readOnly,
+  onSelect,
+  onDeleteRelation,
+  onAddChildRelation,
+  onLinkExistingChild,
+}: RelChipProps) {
+  return (
+    <div className="inline-flex items-center gap-1">
+      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onSelect(relative.id)}>
+        {relative.given} {relative.sur !== "—" ? relative.sur : ""}
+      </Button>
+      {!readOnly && relType === "spouse" && (
+        <ChildAddMenu
+          compact
+          onNewChild={() => onAddChildRelation(person.id, "child", relative.id)}
+          onLinkExisting={() => onLinkExistingChild([person.id, relative.id])}
+        />
+      )}
+      {!readOnly && relId && (
+        <Button variant="ghost" size="icon" className="size-7 text-destructive" onClick={() => onDeleteRelation(relId)}>
+          <X className="size-3" />
+        </Button>
+      )}
+    </div>
+  )
 }
 
 function SidePanelContent({
@@ -169,96 +239,19 @@ function SidePanelContent({
     return null
   }
 
-  const ChildAddMenu = ({
-    onNewChild,
-    onLinkExisting,
-    compact = false,
-  }: {
-    onNewChild: () => void
-    onLinkExisting: () => void
-    compact?: boolean
-  }) => (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          compact ? (
-            <Button variant="ghost" size="icon" className="size-7" title={t("relations.newChild")} />
-          ) : (
-            <Button variant="ghost" size="sm" className="h-6 gap-1 px-2 text-xs" />
-          )
-        }
-      >
-        {compact ? <Baby className="size-3" /> : (
-          <>
-            {t("relations.addButton")}
-            <ChevronDown className="size-3" />
-          </>
-        )}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={onNewChild}>
-          <UserPlus className="size-4" />
-          {t("relations.newChild")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onLinkExisting}>
-          <Link2 className="size-4" />
-          {t("relations.linkExistingChild")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-
-  const RelChip = ({ p, relType }: { p: NormalizedPerson; relType?: string }) => {
-    const relId = relType ? findRelId(p.id, relType) : null
-    return (
-      <div className="inline-flex items-center gap-1">
-        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onSelect(p.id)}>
-          {p.given} {p.sur !== "—" ? p.sur : ""}
-        </Button>
-        {!readOnly && relType === "spouse" && (
-          <ChildAddMenu
-            compact
-            onNewChild={() => onAddChildRelation(person.id, "child", p.id)}
-            onLinkExisting={() => onLinkExistingChild([person.id, p.id])}
-          />
-        )}
-        {!readOnly && relId && (
-          <Button variant="ghost" size="icon" className="size-7 text-destructive" onClick={() => onDeleteRelation(relId)}>
-            <X className="size-3" />
-          </Button>
-        )}
-      </div>
-    )
-  }
-
-  const Section = ({
-    title,
-    onAdd,
-    childAddMenu,
-    children,
-  }: {
-    title: string
-    onAdd?: () => void
-    childAddMenu?: { onNewChild: () => void; onLinkExisting: () => void }
-    children: React.ReactNode
-  }) => (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</span>
-        {!readOnly && childAddMenu && (
-          <ChildAddMenu
-            onNewChild={childAddMenu.onNewChild}
-            onLinkExisting={childAddMenu.onLinkExisting}
-          />
-        )}
-        {onAdd && !readOnly && !childAddMenu && (
-          <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={onAdd}>
-            {t("relations.addButton")}
-          </Button>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-1">{children}</div>
-    </div>
+  const renderRelChip = (relative: NormalizedPerson, relType?: string) => (
+    <RelChip
+      key={relative.id}
+      person={person}
+      relative={relative}
+      relType={relType}
+      relId={relType ? findRelId(relative.id, relType) : null}
+      readOnly={readOnly}
+      onSelect={onSelect}
+      onDeleteRelation={onDeleteRelation}
+      onAddChildRelation={onAddChildRelation}
+      onLinkExistingChild={onLinkExistingChild}
+    />
   )
 
   return (
@@ -398,36 +391,45 @@ function SidePanelContent({
 
           <Separator />
 
-          <Section title={t("relations.parents")} onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "parent")}>
-            {parents.length ? parents.map((p) => <RelChip key={p.id} p={p} relType="parent" />) : <span className="text-xs text-muted-foreground">{t("relations.unknown")}</span>}
-          </Section>
+          <RelSection
+            title={t("relations.parents")}
+            readOnly={readOnly}
+            addButtonLabel={t("relations.addButton")}
+            onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "parent")}
+          >
+            {parents.length ? parents.map((p) => renderRelChip(p, "parent")) : <span className="text-xs text-muted-foreground">{t("relations.unknown")}</span>}
+          </RelSection>
 
-          <Section title={t("relations.spouse")} onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "spouse")}>
-            {spouses.length ? spouses.map((p) => <RelChip key={p.id} p={p} relType="spouse" />) : <span className="text-xs text-muted-foreground">{t("relations.none")}</span>}
-          </Section>
+          <RelSection
+            title={t("relations.spouse")}
+            readOnly={readOnly}
+            addButtonLabel={t("relations.addButton")}
+            onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "spouse")}
+          >
+            {spouses.length ? spouses.map((p) => renderRelChip(p, "spouse")) : <span className="text-xs text-muted-foreground">{t("relations.none")}</span>}
+          </RelSection>
 
-          <Section
+          <RelSection
             title={t("relations.children", { count: children.length })}
+            readOnly={readOnly}
+            addButtonLabel={t("relations.addButton")}
             childAddMenu={
               readOnly
                 ? undefined
                 : {
-                    onNewChild: () =>
-                      onAddChildRelation(person.id, "child", spouses[0]?.id),
+                    onNewChild: () => onAddChildRelation(person.id, "child", spouses[0]?.id),
                     onLinkExisting: () =>
-                      onLinkExistingChild(
-                        spouses.length > 0 ? [person.id, spouses[0].id] : [person.id]
-                      ),
+                      onLinkExistingChild(spouses.length > 0 ? [person.id, spouses[0].id] : [person.id]),
                   }
             }
           >
-            {children.length ? children.map((p) => <RelChip key={p.id} p={p} relType="child" />) : <span className="text-xs text-muted-foreground">{t("relations.none")}</span>}
-          </Section>
+            {children.length ? children.map((p) => renderRelChip(p, "child")) : <span className="text-xs text-muted-foreground">{t("relations.none")}</span>}
+          </RelSection>
 
           {siblings.length > 0 && (
-            <Section title={t("relations.siblings", { count: siblings.length })}>
-              {siblings.map((p) => <RelChip key={p.id} p={p} />)}
-            </Section>
+            <RelSection title={t("relations.siblings", { count: siblings.length })} readOnly addButtonLabel={t("relations.addButton")}>
+              {siblings.map((p) => renderRelChip(p))}
+            </RelSection>
           )}
 
           <Separator />

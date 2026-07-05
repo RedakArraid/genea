@@ -110,6 +110,7 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 
 ## 8. Journal
 
+- **2026-07-05 (nuit, fix menu ajouter enfant)** — Fix menu « + Ajouter » (nouvel enfant / lier existant) : extraction `ChildAddMenu`, `RelSection` et `RelChip` hors du render de `SidePanelContent` (évite remontage React qui fermait le dropdown) ; `queueMicrotask` sur les actions menu ; arête mariage canvas wrappée en `absolute` + z-index.
 - **2026-07-05 (soir, lier enfant existant)** — Menu « Nouvel enfant / Lier existant » (panneau latéral, icône bébé conjoint, arête mariage) ; dialogue `LinkExistingChildDialog` ; fix direction parent/enfant dans « Lier ».
 - **2026-07-05 (soir, OpenWA admin)** — Page admin `/admin/openwa` : table `OpenWaSetting`, API GET/PATCH + statut session + test WhatsApp. OTP : WhatsApp prioritaire (OpenWA), email SMTP secours.
 - **2026-07-05 (soir, responsive)** — Refonte responsive complète : SidePanel Sheet mobile, toolbar arbre compacte, menu hamburger marketing, dashboard/timeline/matches touch-friendly, admin tables colonnes adaptatives, pinch-to-zoom canvas, spec E2E viewport 375px. Build frontend vert.
