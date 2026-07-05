@@ -32,9 +32,9 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Exposer le port
 EXPOSE 80
 
-# Health check simple
+# Health check simple (127.0.0.1 : nginx n'écoute qu'en IPv4, localhost résout en ::1)
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1/ || exit 1
 
 # Démarrer Nginx
 CMD ["nginx", "-g", "daemon off;"]
