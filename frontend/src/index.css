@@ -128,3 +128,50 @@
     @apply font-sans;
     }
 }
+
+@keyframes marketing-tree-drift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-10px, -6px) scale(1.015);
+  }
+}
+
+@keyframes marketing-tree-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 oklch(0.205 0 0 / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 4px oklch(0.205 0 0 / 0.12);
+  }
+}
+
+@keyframes marketing-tree-lines-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.marketing-tree-drift {
+  animation: marketing-tree-drift 8s ease-in-out infinite;
+}
+
+.marketing-tree-pulse {
+  animation: marketing-tree-pulse 2.5s ease-in-out infinite;
+}
+
+.marketing-tree-lines-in {
+  animation: marketing-tree-lines-in 1.2s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-tree-drift,
+  .marketing-tree-pulse,
+  .marketing-tree-lines-in {
+    animation: none;
+  }
+}

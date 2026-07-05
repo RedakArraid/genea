@@ -1,11 +1,22 @@
 {
   "hero": {
     "badge": "Modern genealogy",
-    "title": "Build and explore your family history",
-    "subtitle": "GeneaIA lets you create interactive family trees, add complex relationships and visualize your lineage at a glance.",
+    "title": "Your family story, alive and shareable",
+    "subtitle": "Build interactive trees, enrich every member and invite your family — all on a canvas designed for genealogy.",
     "ctaAuth": "My trees",
     "ctaGuest": "Create a free account",
-    "ctaDemo": "View the demo"
+    "ctaDemo": "View the demo",
+    "anchorFeatures": "Features",
+    "anchorPricing": "Pricing"
+  },
+  "stats": {
+    "canvas": "Interactive canvas",
+    "collaboration": "Family collaboration",
+    "export": "GEDCOM export"
+  },
+  "featuresSection": {
+    "title": "Everything to build your tree",
+    "subtitle": "Simple, powerful tools to document, explore and pass on your lineage."
   },
   "features": {
     "trees": {
@@ -23,6 +34,36 @@
     "privacy": {
       "title": "Protected data",
       "description": "Your trees belong to you. Secure authentication and granular access control."
+    }
+  },
+  "howItWorks": {
+    "title": "How it works",
+    "steps": {
+      "1": {
+        "title": "Create your tree",
+        "description": "Sign up for free and add the first members of your family."
+      },
+      "2": {
+        "title": "Enrich profiles",
+        "description": "Dates, places, photos and relationships — everything in one canvas."
+      },
+      "3": {
+        "title": "Share with family",
+        "description": "Invite relatives to view or co-edit the tree securely."
+      }
+    }
+  },
+  "finalCta": {
+    "title": "Ready to explore your roots?",
+    "subtitle": "Join GeneaIA for free or try the demo tree without signing up.",
+    "ctaPrimary": "Get started for free"
+  },
+  "footer": {
+    "links": {
+      "demo": "Demo",
+      "pricing": "Pricing",
+      "login": "Log in",
+      "register": "Sign up"
     }
   },
   "demo": {

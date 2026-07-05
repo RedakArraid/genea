@@ -6,12 +6,21 @@ import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { useReveal } from "@/hooks/use-reveal"
 
 export function PricingSection() {
   const { t } = useTranslation("billing")
+  const { ref, visible } = useReveal<HTMLElement>()
 
   return (
-    <section id="prix" className="border-t bg-muted/20 py-20">
+    <section
+      id="prix"
+      ref={ref}
+      className={cn(
+        "scroll-mt-20 border-t bg-muted/20 py-20",
+        visible && "animate-in fade-in slide-in-from-bottom-3 duration-700"
+      )}
+    >
       <div className="mx-auto max-w-6xl px-6">
         <div className="mb-10 text-center">
           <Badge variant="secondary" className="mb-3">{t("pricing.sectionBadge")}</Badge>

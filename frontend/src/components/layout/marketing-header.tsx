@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { LogOut, TreePine } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
@@ -14,15 +14,37 @@ interface MarketingHeaderProps {
 export function MarketingHeader({ variant = "default" }: MarketingHeaderProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const { isAuthenticated, logout } = useAuthStore()
+  const isHome = location.pathname === "/"
 
   const handleLogout = () => {
     logout()
     navigate("/")
   }
 
+  const featuresLink = isHome ? (
+    <a href="#fonctionnalites" className="text-muted-foreground transition-colors hover:text-foreground">
+      {t("nav.features")}
+    </a>
+  ) : (
+    <Link to="/#fonctionnalites" className="text-muted-foreground transition-colors hover:text-foreground">
+      {t("nav.features")}
+    </Link>
+  )
+
+  const pricingLink = isHome ? (
+    <a href="#prix" className="text-muted-foreground transition-colors hover:text-foreground">
+      {t("nav.pricing")}
+    </a>
+  ) : (
+    <Link to="/#prix" className="text-muted-foreground transition-colors hover:text-foreground">
+      {t("nav.pricing")}
+    </Link>
+  )
+
   return (
-    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-6">
         <Link to="/" className="flex shrink-0 items-center gap-2 font-semibold">
           <TreePine className="size-5" />
@@ -30,12 +52,11 @@ export function MarketingHeader({ variant = "default" }: MarketingHeaderProps) {
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm sm:flex">
+          {featuresLink}
           <Link to="/demo" className="text-muted-foreground transition-colors hover:text-foreground">
             {t("nav.demo")}
           </Link>
-          <Link to="/pricing" className="text-muted-foreground transition-colors hover:text-foreground">
-            {t("nav.pricing")}
-          </Link>
+          {pricingLink}
         </nav>
 
         <div className="flex items-center gap-2">

@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import {
   Select,
@@ -204,7 +203,7 @@ export function SidePanel({
         </Button>
       </div>
 
-      <ScrollArea className="flex-1">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
         <div className="flex flex-col gap-4 p-4">
           <div className="flex items-start gap-3">
             <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-muted">
@@ -354,7 +353,7 @@ export function SidePanel({
 
           <PersonDocuments personId={person.id} readOnly={readOnly} />
         </div>
-      </ScrollArea>
+      </div>
 
       <div className="flex flex-col gap-2 border-t p-4">
         <Button variant="outline" className="w-full" onClick={() => window.__focusOn?.(person.id)}>

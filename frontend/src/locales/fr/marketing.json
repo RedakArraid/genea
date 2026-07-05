@@ -1,11 +1,22 @@
 {
   "hero": {
     "badge": "Généalogie moderne",
-    "title": "Construisez et explorez votre histoire familiale",
-    "subtitle": "GeneaIA vous permet de créer des arbres généalogiques interactifs, d'ajouter des relations complexes et de visualiser votre lignée en un coup d'œil.",
+    "title": "Votre histoire familiale, vivante et partageable",
+    "subtitle": "Créez des arbres interactifs, enrichissez chaque membre et invitez votre famille — le tout sur un canvas pensé pour la généalogie.",
     "ctaAuth": "Mes arbres",
     "ctaGuest": "Créer un compte gratuit",
-    "ctaDemo": "Voir la démo"
+    "ctaDemo": "Voir la démo",
+    "anchorFeatures": "Fonctionnalités",
+    "anchorPricing": "Tarifs"
+  },
+  "stats": {
+    "canvas": "Canvas interactif",
+    "collaboration": "Collaboration familiale",
+    "export": "Export GEDCOM"
+  },
+  "featuresSection": {
+    "title": "Tout pour construire votre arbre",
+    "subtitle": "Des outils simples et puissants pour documenter, explorer et transmettre votre lignée."
   },
   "features": {
     "trees": {
@@ -23,6 +34,36 @@
     "privacy": {
       "title": "Données protégées",
       "description": "Vos arbres vous appartiennent. Authentification sécurisée et contrôle d'accès granulaire."
+    }
+  },
+  "howItWorks": {
+    "title": "Comment ça marche",
+    "steps": {
+      "1": {
+        "title": "Créez votre arbre",
+        "description": "Inscrivez-vous gratuitement et ajoutez les premiers membres de votre famille."
+      },
+      "2": {
+        "title": "Enrichissez les fiches",
+        "description": "Dates, lieux, photos et relations — tout est centralisé sur le canvas."
+      },
+      "3": {
+        "title": "Partagez en famille",
+        "description": "Invitez vos proches à consulter ou co-éditer l'arbre en toute sécurité."
+      }
+    }
+  },
+  "finalCta": {
+    "title": "Prêt à explorer vos racines ?",
+    "subtitle": "Rejoignez GeneaIA gratuitement ou découvrez l'arbre démo sans inscription.",
+    "ctaPrimary": "Commencer gratuitement"
+  },
+  "footer": {
+    "links": {
+      "demo": "Démo",
+      "pricing": "Tarifs",
+      "login": "Connexion",
+      "register": "S'inscrire"
     }
   },
   "demo": {
