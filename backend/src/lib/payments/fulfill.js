@@ -1,7 +1,7 @@
 const crypto = require('crypto');
-const prisma = require('./prisma');
-const { getPlanLimits } = require('./plans');
-const { incrementPromoUsage } = require('./promo');
+const prisma = require('../prisma');
+const { getPlanLimits } = require('../plans');
+const { incrementPromoUsage } = require('../promo');
 
 async function fulfillPayment(paymentId) {
   const payment = await prisma.payment.findUnique({ where: { id: paymentId } });

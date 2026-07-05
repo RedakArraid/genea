@@ -2,8 +2,10 @@
  * Upload de fichiers vers MinIO
  */
 
+const prisma = require('../lib/prisma');
 const storage = require('../lib/storage');
 const { resolveTreeAccess } = require('../lib/treeAccess');
+const { assertMediaAssetLimit } = require('../lib/planAccess');
 const { storageConfig } = require('../config/storage.config');
 
 exports.canReadUploadedFile = async (req, res, next) => {
@@ -50,11 +52,35 @@ exports.uploadPhoto = async (req, res, next) => {
       return res.status(400).json({ message: validation.message });
     }
 
+    const tree = await prisma.familyTree.findUnique({
+      where: { id: treeId },
+      select: { ownerId: true },
+    });
+    if (!tree) {
+      return res.status(404).json({ message: 'Arbre non trouvé' });
+    }
+
+    let replacingExistingPhoto = false;
+    if (personId) {
+      const person = await prisma.person.findUnique({
+        where: { id: personId },
+        select: { photoUrl: true, treeId: true },
+      });
+      if (person?.treeId === treeId && person.photoUrl) {
+        replacingExistingPhoto = true;
+      }
+    }
+
+    await assertMediaAssetLimit(tree.ownerId, { replacingExistingPhoto });
+
     const key = storage.buildPhotoKey(treeId, personId, req.file.originalname);
     const { url, key: objectKey } = await storage.uploadBuffer(key, req.file.buffer, req.file.mimetype);
 
     res.status(201).json({ url, key: objectKey });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     next(error);
   }
 };

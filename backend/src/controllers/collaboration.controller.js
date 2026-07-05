@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const prisma = require('../lib/prisma');
-const { getPlanLimits } = require('../lib/plans');
+const { getEffectivePlanLimits } = require('../lib/planAccess');
 const { resolveTreeAccess, requireTreeRead, requireTreeWrite } = require('../lib/treeAccess');
 
 exports.getTreeAccess = async (req, res, next) => {
@@ -69,7 +69,7 @@ exports.inviteCollaborator = async (req, res, next) => {
     }
 
     const owner = await prisma.user.findUnique({ where: { id: req.user.id } });
-    const limits = getPlanLimits(owner.plan);
+    const limits = getEffectivePlanLimits(owner);
 
     const collabCount = await prisma.treeCollaborator.count({ where: { treeId } });
     const pendingCount = await prisma.treeInvite.count({
@@ -183,7 +183,7 @@ exports.updateVisibility = async (req, res, next) => {
     }
 
     const owner = await prisma.user.findUnique({ where: { id: req.user.id } });
-    const limits = getPlanLimits(owner.plan);
+    const limits = getEffectivePlanLimits(owner);
     if (visibility === 'PUBLIC' && !limits.canPublicMatching) {
       return res.status(403).json({
         message: 'Les arbres publics nécessitent le forfait Famille ou Patrimoine',
@@ -219,7 +219,7 @@ exports.acceptInvite = async (req, res, next) => {
 
     const tree = await prisma.familyTree.findUnique({ where: { id: invite.treeId } });
     const owner = await prisma.user.findUnique({ where: { id: tree.ownerId } });
-    const limits = getPlanLimits(owner.plan);
+    const limits = getEffectivePlanLimits(owner);
     const collabCount = await prisma.treeCollaborator.count({ where: { treeId: invite.treeId } });
     if (collabCount >= limits.maxCollaborators) {
       return res.status(403).json({

@@ -35,6 +35,6 @@ test.describe("Collaboration", () => {
     await expect(page.getByRole("button", { name: "Partager" })).toBeVisible({ timeout: 20_000 })
     await page.getByRole("button", { name: "Partager" }).click()
     await expect(page.getByRole("heading", { name: "Partager l'arbre" })).toBeVisible()
-    await expect(page.getByText("Visibilité")).toBeVisible()
+    await expect(page.getByRole("dialog").getByText("Visibilité", { exact: true })).toBeVisible()
   })
 })

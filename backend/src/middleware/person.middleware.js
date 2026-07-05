@@ -76,7 +76,10 @@ const canReadPersonRelationships = async (req, res, next) => {
     if (!person) {
       return res.status(404).json({ message: 'Personne non trouvée' });
     }
-    await requireTreeRead(req.user?.id, person.treeId);
+    const access = await resolveTreeAccess(req.user?.id, person.treeId);
+    if (!access.canRead) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
     next();
   } catch (error) {
     res.status(error.statusCode || 403).json({ message: error.message });

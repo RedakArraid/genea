@@ -5,12 +5,12 @@
 const express = require('express');
 const { body } = require('express-validator');
 const edgeController = require('../controllers/edge.controller');
-const { isAuth } = require('../middleware/auth.middleware');
+const { isAuth, optionalAuth } = require('../middleware/auth.middleware');
 const { canReadTree, canWriteEdge } = require('../middleware/treeAccess.middleware');
 
 const router = express.Router();
 
-router.get('/tree/:treeId', isAuth, canReadTree, edgeController.getAllEdges);
+router.get('/tree/:treeId', optionalAuth, canReadTree, edgeController.getAllEdges);
 
 router.post(
   '/',

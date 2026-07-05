@@ -4,7 +4,7 @@
 
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
-const { getPlanLimits } = require('../lib/plans');
+const { assertMediaAssetLimit, getEffectivePlanLimits } = require('../lib/planAccess');
 const storage = require('../lib/storage');
 
 /**
@@ -64,7 +64,7 @@ exports.createPerson = async (req, res, next) => {
 
     if (!tree.isDemo) {
       const owner = await prisma.user.findUnique({ where: { id: tree.ownerId } });
-      const limits = getPlanLimits(owner.plan);
+      const limits = getEffectivePlanLimits(owner);
       const personCount = await prisma.person.count({ where: { treeId } });
       if (personCount >= limits.maxPersonsPerTree) {
         return res.status(403).json({
@@ -235,9 +235,16 @@ exports.updatePersonPhoto = async (req, res, next) => {
       });
     }
 
-    const existing = await prisma.person.findUnique({ where: { id }, select: { photoUrl: true } });
+    const existing = await prisma.person.findUnique({
+      where: { id },
+      select: { photoUrl: true, FamilyTree: { select: { ownerId: true } } },
+    });
     if (!existing) {
       return res.status(404).json({ message: 'Personne non trouvée' });
+    }
+
+    if (photoUrl && !existing.photoUrl) {
+      await assertMediaAssetLimit(existing.FamilyTree.ownerId);
     }
 
     if (photoUrl && storage.isReady() && existing.photoUrl && existing.photoUrl !== photoUrl) {
@@ -251,6 +258,9 @@ exports.updatePersonPhoto = async (req, res, next) => {
 
     res.status(200).json({ message: 'Photo mise à jour', person });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'Personne non trouvée' });
     }

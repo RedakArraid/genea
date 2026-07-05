@@ -288,9 +288,15 @@ interface ShareDialogProps {
 }
 
 const VISIBILITY_LABELS: Record<TreeVisibility, string> = {
-  PRIVATE: "Privé — vous seul",
-  SHARED: "Partagé — collaborateurs invités",
-  PUBLIC: "Public — visible par tous",
+  PRIVATE: "Privé — compte requis pour accéder",
+  SHARED: "Partagé — collaborateurs invités uniquement",
+  PUBLIC: "Public — visible sans compte (lecture seule)",
+}
+
+const VISIBILITY_HINTS: Record<TreeVisibility, string> = {
+  PRIVATE: "Seul le propriétaire et les collaborateurs invités peuvent voir l'arbre.",
+  SHARED: "Seuls les collaborateurs invités peuvent voir l'arbre. Le lien public ne fonctionne pas.",
+  PUBLIC: "Toute personne avec le lien peut consulter l'arbre sans compte. La modification nécessite un compte autorisé.",
 }
 
 export function ShareDialog({ open, onClose, treeId, visibility, canManage }: ShareDialogProps) {
@@ -397,6 +403,7 @@ export function ShareDialog({ open, onClose, treeId, visibility, canManage }: Sh
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">{VISIBILITY_HINTS[currentVisibility]}</p>
               </div>
 
               {currentVisibility === "SHARED" && (
@@ -483,13 +490,24 @@ export function ShareDialog({ open, onClose, treeId, visibility, canManage }: Sh
           )}
 
           <div className="flex flex-col gap-1.5">
-            <Label>Lien public de l'arbre</Label>
-            <div className="flex gap-2">
-              <Input readOnly value={url} />
-              <Button variant="outline" onClick={() => { navigator.clipboard.writeText(url); toast.success("Lien copié") }}>
-                Copier
-              </Button>
-            </div>
+            <Label>Lien de consultation publique</Label>
+            {currentVisibility === "PUBLIC" ? (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Partagez ce lien pour permettre la lecture sans compte.
+                </p>
+                <div className="flex gap-2">
+                  <Input readOnly value={url} />
+                  <Button variant="outline" onClick={() => { navigator.clipboard.writeText(url); toast.success("Lien copié") }}>
+                    Copier
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Passez la visibilité sur « Public » pour activer un lien de consultation sans compte.
+              </p>
+            )}
           </div>
         </div>
       </DialogContent>

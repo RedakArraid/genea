@@ -216,6 +216,11 @@ if [ -n "$TOKEN" ]; then
   PERSONAL_TREE_ID=$(echo "$trees_json" | python3 -c "import sys,json; trees=json.load(sys.stdin).get('trees',[]); print(trees[0]['id'] if trees else '')" 2>/dev/null || echo "")
 
   if [ -n "$PERSONAL_TREE_ID" ] && [ -n "$DEMO_TOKEN" ]; then
+    # Reset état collaboration (idempotent)
+    if [ -n "$DEMO_USER_ID" ]; then
+      curl -s -o /dev/null -X DELETE "$API/family-trees/$PERSONAL_TREE_ID/collaborators/$DEMO_USER_ID" -H "$AUTH"
+    fi
+
     code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API/family-trees/$PERSONAL_TREE_ID/visibility" \
       -H "$AUTH" -H 'Content-Type: application/json' -d '{"visibility":"SHARED"}')
     assert_status "PUT visibilité SHARED" "200" "$code"
@@ -293,6 +298,66 @@ if [ -n "$TOKEN" ]; then
   else
     echo "  ✗ Arbre personnel ou compte demo@geneaia.app introuvable"
     FAIL=$((FAIL + 1))
+  fi
+fi
+
+# Billing & planActive
+billing_json=$(curl -s -X POST "$API/billing/preview" -H 'Content-Type: application/json' -d '{"plan":"FAMILY"}')
+assert_json "Billing preview FAMILY 20000 XOF" "d.get('finalAmount') == 20000 and d.get('limits',{}).get('maxTrees') == 5" "$billing_json"
+
+reg_email="billing-test-$(date +%s)@example.com"
+reg_json=$(curl -s -X POST "$API/auth/register" \
+  -H 'Content-Type: application/json' \
+  -d "{\"name\":\"Billing Test\",\"email\":\"$reg_email\",\"password\":\"password123\"}")
+assert_json "Inscription planActive=false" "d.get('user',{}).get('planActive') is False" "$reg_json"
+NEW_TOKEN=$(echo "$reg_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
+if [ -n "$NEW_TOKEN" ]; then
+  code=$(curl -s -o /tmp/genea_no_plan_tree.json -w '%{http_code}' -X POST "$API/family-trees" \
+    -H "Authorization: Bearer $NEW_TOKEN" -H 'Content-Type: application/json' \
+    -d '{"name":"Sans forfait"}')
+  assert_status "Création arbre sans forfait bloquée" "402" "$code" "$(cat /tmp/genea_no_plan_tree.json 2>/dev/null)"
+fi
+
+# Arbre public — admin (Patrimoine)
+if [ -n "$ADMIN_TOKEN" ]; then
+  admin_trees=$(curl -s "$API/family-trees" -H "$ADMIN_AUTH")
+  PUBLIC_TREE_ID=$(echo "$admin_trees" | python3 -c "
+import sys,json
+trees=json.load(sys.stdin).get('trees',[])
+non_demo=[t for t in trees if not t.get('isDemo')]
+print(non_demo[0]['id'] if non_demo else '')
+" 2>/dev/null || echo "")
+
+  if [ -z "$PUBLIC_TREE_ID" ]; then
+    create_json=$(curl -s -X POST "$API/family-trees" -H "$ADMIN_AUTH" -H 'Content-Type: application/json' \
+      -d '{"name":"Arbre Public Test"}')
+    PUBLIC_TREE_ID=$(echo "$create_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('tree',{}).get('id',''))" 2>/dev/null || echo "")
+  fi
+
+  if [ -n "$PUBLIC_TREE_ID" ]; then
+    code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API/family-trees/$PUBLIC_TREE_ID/visibility" \
+      -H "$ADMIN_AUTH" -H 'Content-Type: application/json' -d '{"visibility":"PUBLIC"}')
+    assert_status "PUT visibilité PUBLIC (admin)" "200" "$code"
+
+    pub_json=$(curl -s -w '\n%{http_code}' "$API/family-trees/$PUBLIC_TREE_ID")
+    pub_body=$(echo "$pub_json" | sed '$d')
+    pub_code=$(echo "$pub_json" | tail -1)
+    assert_status "Lecture arbre public sans auth" "200" "$pub_code"
+    assert_json "Visiteur public canRead" "d.get('access',{}).get('canRead') is True" "$pub_body"
+    assert_json "Visiteur public canWrite=false" "d.get('access',{}).get('canWrite') is False" "$pub_body"
+
+    code=$(curl -s -o /tmp/genea_anon_write.json -w '%{http_code}' -X POST "$API/persons/tree/$PUBLIC_TREE_ID" \
+      -H 'Content-Type: application/json' -d '{"firstName":"Anon","lastName":"Hack"}')
+    assert_status "Écriture anonyme bloquée sur arbre public" "401" "$code" "$(cat /tmp/genea_anon_write.json 2>/dev/null)"
+
+    PUB_PERSON=$(echo "$pub_body" | python3 -c "import sys,json; ps=json.load(sys.stdin).get('tree',{}).get('Person',[]); print(ps[0]['id'] if ps else '')" 2>/dev/null || echo "")
+    if [ -n "$PUB_PERSON" ]; then
+      code=$(curl -s -o /dev/null -w '%{http_code}' "$API/persons/$PUB_PERSON/documents")
+      assert_status "Documents lisibles sans auth (arbre public)" "200" "$code"
+    fi
+
+    code=$(curl -s -o /dev/null -w '%{http_code}' "$API/admin/promo-codes" -H "$ADMIN_AUTH")
+    assert_status "GET /admin/promo-codes" "200" "$code"
   fi
 fi
 

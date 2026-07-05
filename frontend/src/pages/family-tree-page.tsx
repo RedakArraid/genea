@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
+import { useAuthStore } from "@/stores/auth-store"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
 import { normalizePersons, computeLayout } from "@/utils/tree-layout"
 import type { NormalizedPerson, Position, TreeTweaks } from "@/types"
@@ -28,6 +29,8 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   const treeId = treeIdOverride ?? paramTreeId
   const navigate = useNavigate()
   const location = useLocation()
+  const { isAuthenticated } = useAuthStore()
+  const isPublicRoute = location.pathname.startsWith("/tree/")
 
   const {
     currentTree,
@@ -238,7 +241,11 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
 
   const handleEditPerson = (person: NormalizedPerson) => {
     if (!canEditPerson) {
-      toast.info("Les fiches personnes ne sont pas modifiables en démo")
+      toast.info(
+        isDemo
+          ? "Les fiches personnes ne sont pas modifiables en démo"
+          : "Connectez-vous avec un compte autorisé pour modifier cette fiche"
+      )
       return
     }
     const raw = currentTree?.Person?.find((p) => p.id === person.id)
@@ -334,12 +341,21 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
               ? canWrite
                 ? "Mode démo partagé — structure libre (ajouts, liens, photos, documents). Fiches texte verrouillées. Les changements sont visibles par tous."
                 : "Mode démo — déplacez les cartes pour explorer. Connectez-vous pour ajouter, lier et sauvegarder."
-              : "Mode lecture seule — vous pouvez explorer l'arbre mais pas le modifier"}
+              : isPublicRoute && !isAuthenticated
+                ? "Consultation publique en lecture seule — explorez l'arbre sans compte. Connectez-vous pour le modifier."
+                : readOnly && isAuthenticated
+                  ? "Mode lecture seule — vous pouvez explorer l'arbre mais pas le modifier."
+                  : "Mode lecture seule — créez un compte pour modifier cet arbre."}
           </span>
-          {publicDemo && !canWrite && (
-            <Button size="sm" variant="outline" className="h-7 border-amber-300 bg-background" onClick={() => navigate("/login")}>
-              Se connecter
-            </Button>
+          {(publicDemo || (readOnly && !isAuthenticated)) && (
+            <>
+              <Button size="sm" variant="outline" className="h-7 border-amber-300 bg-background" onClick={() => navigate("/login")}>
+                Se connecter
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 border-amber-300 bg-background" onClick={() => navigate("/register")}>
+                Créer un compte
+              </Button>
+            </>
           )}
           {publicDemo && canWrite && (
             <Button size="sm" variant="outline" className="h-7 border-amber-300 bg-background" onClick={() => navigate("/register")}>

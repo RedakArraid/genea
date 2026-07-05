@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
 import { fr } from "date-fns/locale"
-import { Plus, Trash2, Users, GitBranch, Share2, CreditCard } from "lucide-react"
+import { Plus, Trash2, Users, GitBranch, Share2, CreditCard, Link2 } from "lucide-react"
 import { toast } from "sonner"
 import { useAuthStore } from "@/stores/auth-store"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
@@ -59,6 +59,12 @@ export default function DashboardPage() {
     const result = await deleteTree(id)
     if (result.success) toast.success("Arbre supprimé")
     else toast.error(result.message)
+  }
+
+  const handleCopyPublicLink = async (treeId: string) => {
+    const url = `${window.location.origin}/tree/${treeId}`
+    await navigator.clipboard.writeText(url)
+    toast.success("Lien public copié")
   }
 
   return (
@@ -203,14 +209,26 @@ export default function DashboardPage() {
                       </span>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="opacity-0 transition-opacity group-hover:opacity-100"
-                    onClick={() => handleDelete(tree.id, tree.name)}
-                  >
-                    <Trash2 className="size-4 text-destructive" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    {(tree.visibility === "PUBLIC" || tree.isPublic) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Copier le lien public"
+                        onClick={() => handleCopyPublicLink(tree.id)}
+                      >
+                        <Link2 className="size-4" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-0 transition-opacity group-hover:opacity-100"
+                      onClick={() => handleDelete(tree.id, tree.name)}
+                    >
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

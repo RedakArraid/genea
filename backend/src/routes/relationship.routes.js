@@ -5,7 +5,7 @@
 const express = require('express');
 const { body } = require('express-validator');
 const relationshipController = require('../controllers/relationship.controller');
-const { isAuth } = require('../middleware/auth.middleware');
+const { isAuth, optionalAuth } = require('../middleware/auth.middleware');
 const {
   canCreateRelationship,
   canDeleteRelationship,
@@ -14,7 +14,7 @@ const {
 
 const router = express.Router();
 
-router.get('/person/:personId', isAuth, canReadPersonRelationships, relationshipController.getPersonRelationships);
+router.get('/person/:personId', optionalAuth, canReadPersonRelationships, relationshipController.getPersonRelationships);
 
 router.post(
   '/',

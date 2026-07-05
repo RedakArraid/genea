@@ -4,7 +4,6 @@
 
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
-const { getPlanLimits } = require('../lib/plans');
 const { assertPlanEntitlement, getEffectivePlanLimits } = require('../lib/planAccess');
 const { requireTreeRead } = require('../lib/treeAccess');
 
@@ -189,7 +188,7 @@ exports.updateTree = async (req, res, next) => {
     const { name, description, isPublic, visibility } = req.body;
 
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-    const limits = getPlanLimits(user.plan);
+    const limits = getEffectivePlanLimits(user);
 
     const updateData = {};
     if (name !== undefined) updateData.name = name;

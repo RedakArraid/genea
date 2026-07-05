@@ -3,11 +3,11 @@ import { MarketingHeader } from "@/components/layout/marketing-header"
 
 export function PublicLayout() {
   const { pathname } = useLocation()
-  const isDemo = pathname === "/demo"
+  const isPublicView = pathname === "/demo" || pathname.startsWith("/tree/")
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <MarketingHeader variant={isDemo ? "minimal" : "default"} />
+      <MarketingHeader variant={isPublicView ? "minimal" : "default"} />
       <Outlet />
     </div>
   )

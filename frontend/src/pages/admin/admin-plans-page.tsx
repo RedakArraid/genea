@@ -15,6 +15,7 @@ interface PlanData {
   maxTrees?: number
   maxPersonsPerTree?: number
   maxCollaborators?: number
+  maxMediaAssets?: number
   features?: string[]
 }
 
@@ -73,6 +74,7 @@ export default function AdminPlansPage() {
                     <ul className="space-y-1 text-sm text-muted-foreground">
                       <li>Arbres : {plan.maxTrees === Infinity ? "∞" : plan.maxTrees}</li>
                       <li>Personnes / arbre : {plan.maxPersonsPerTree === Infinity ? "∞" : plan.maxPersonsPerTree}</li>
+                      <li>Photos & docs : {plan.maxMediaAssets === Infinity ? "∞" : plan.maxMediaAssets ?? "—"}</li>
                       <li>Collaborateurs : {plan.maxCollaborators === Infinity ? "∞" : plan.maxCollaborators}</li>
                     </ul>
                     <ul className="space-y-2">

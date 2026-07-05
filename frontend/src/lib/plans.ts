@@ -10,6 +10,7 @@ export interface PlanDefinition {
   maxTrees: number
   maxPersonsPerTree: number
   maxCollaborators: number
+  maxMediaAssets: number
   canPublicMatching: boolean
   canExport: boolean
   canVersioning: boolean
@@ -30,6 +31,7 @@ export const PLANS: PlanDefinition[] = [
     maxTrees: 1,
     maxPersonsPerTree: 25,
     maxCollaborators: 2,
+    maxMediaAssets: 10,
     canPublicMatching: false,
     canExport: false,
     canVersioning: false,
@@ -44,20 +46,22 @@ export const PLANS: PlanDefinition[] = [
   {
     id: "FAMILY",
     name: "Famille",
-    priceXof: 15000,
-    priceLabel: "15 000 FCFA / an",
+    priceXof: 20000,
+    priceLabel: "20 000 FCFA / an",
     billingPeriod: "yearly",
     durationDays: 365,
-    maxTrees: Infinity,
+    maxTrees: 5,
     maxPersonsPerTree: 500,
     maxCollaborators: Infinity,
+    maxMediaAssets: 100,
     canPublicMatching: true,
     canExport: true,
     canVersioning: false,
     featured: true,
     cta: "Choisir Famille",
     features: [
-      "Arbres illimités, 500 fiches par arbre",
+      "5 arbres, 500 fiches par arbre",
+      "100 photos & documents inclus",
       "Collaborateurs illimités",
       "Correspondances publiques",
       "Export GEDCOM & PDF",
@@ -73,12 +77,14 @@ export const PLANS: PlanDefinition[] = [
     maxTrees: Infinity,
     maxPersonsPerTree: Infinity,
     maxCollaborators: Infinity,
+    maxMediaAssets: Infinity,
     canPublicMatching: true,
     canExport: true,
     canVersioning: true,
     cta: "Choisir Patrimoine",
     features: [
       "Personnes et arbres illimités",
+      "Photos & documents illimités",
       "Versioning et historique complet",
       "Import multi-formats",
       "Support prioritaire",
