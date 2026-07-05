@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const prisma = require('../lib/prisma');
 const { getEffectivePlanLimits } = require('../lib/planAccess');
 const { resolveTreeAccess, requireTreeRead, requireTreeWrite } = require('../lib/treeAccess');
+const { notifyTreeInviteEmail, notifyTreeAccessEmail } = require('../lib/treeInviteMail');
 
 exports.getTreeAccess = async (req, res, next) => {
   try {
@@ -102,8 +103,19 @@ exports.inviteCollaborator = async (req, res, next) => {
         create: { treeId, userId: existingUser.id, role },
         update: { role },
       });
+
+      const emailResult = await notifyTreeAccessEmail({
+        to: existingUser.email,
+        treeName: tree.name,
+        inviterName: owner.name,
+        role,
+        treeId,
+        locale: existingUser.locale || owner.locale,
+      });
+
       return res.status(201).json({
         message: 'Collaborateur ajouté',
+        emailSent: emailResult.sent,
         collaborator: {
           userId: existingUser.id,
           email: existingUser.email,
@@ -124,8 +136,18 @@ exports.inviteCollaborator = async (req, res, next) => {
       },
     });
 
+    const emailResult = await notifyTreeInviteEmail({
+      to: normalizedEmail,
+      treeName: tree.name,
+      inviterName: owner.name,
+      role,
+      token,
+      locale: owner.locale,
+    });
+
     res.status(201).json({
       message: 'Invitation créée',
+      emailSent: emailResult.sent,
       invite: {
         id: invite.id,
         email: invite.email,

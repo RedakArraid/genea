@@ -47,7 +47,7 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 - Dates de naissance futures bloquées (frontend `max` + validation backend express-validator).
 - Photos et documents par personne (upload via proxy API authentifié `/api/uploads/file/...` ; composant `AuthenticatedImage` pour le JWT).
 - Bouton **Réorganiser** : recalcul du layout avec confirmation si positions manuelles ; layout spécial « clusters conjugaux » pour les arbres sans liens parent-enfant (`computeSpouseOnlyLayout`).
-- Partage : visibilité PRIVATE/SHARED/PUBLIC, invitations collaborateurs (VIEWER/EDITOR), lien public lecture seule.
+- Partage : visibilité PRIVATE/SHARED/PUBLIC, invitations collaborateurs (VIEWER/EDITOR) avec **email d'invitation** (lien `/invite/:token` ou accès direct), lien public lecture seule.
 - Arbre démo public « Famille Dupont » (10 personnes), **auto-provisionné** au démarrage API si absent, réinitialisable par l'admin.
 - **Admin SMTP** : configuration email depuis `/admin/smtp` (table `SmtpSetting`, prioritaire sur les variables d'env).
 - Compte admin prod auto-créé au démarrage via `ADMIN_EMAIL` / `ADMIN_PASSWORD` (`ensure-admin.js`).
@@ -105,7 +105,7 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 
 ## 8. Journal
 
-- **2026-07-05 (soir, billing initialize)** — Fix `POST /api/billing/initialize` 400 : promo staging `NOCODE` (100 %) provoquait `INVALID_AMOUNT`. Checkout gratuit (fulfillment immédiat + redirect callback). Erreurs `INVALID_PROMO`, `PAYSTACK_NOT_CONFIGURED` (clés Paystack vides sur staging `.env`). Frontend : email requis avant paiement, promo invalide bloqué.
+- **2026-07-05 (soir, collaboration email)** — Email SMTP envoyé lors d'une invitation arbre (nouveau compte : lien d'acceptation ; compte existant : lien vers l'arbre). Templates fr/en.
 - **2026-07-05 (soir, billing preview)** — Fix `POST /api/billing/preview` 400 en boucle sur `/pricing` : cause = code promo invalide (ex. `GENEA2026`) renvoyait 400 à chaque frappe × 4 forfaits. Preview renvoie désormais 200 + `promoError` ; frontend affiche les prix localement et n'appelle l'API qu'avec un code promo (debounce 400 ms).
 - **2026-07-05 (soir, pricing intl)** — Billing 100 % international : Paystack USD seul, CinetPay retiré ; codes promo par marché (description admin). Tarifs $5 / $30/an / $50/an ou $5/mois.
 - **2026-07-05 (soir, i18n)** — **Internationalisation fr/en** : i18next + 7 namespaces, `User.locale` (Prisma + API profil), `lib/format.ts` (dates dynamiques), `translateApiError` + codes backend (auth, person, billing, OTP), templates OTP email fr/en, `PhoneInput` + `libphonenumber-js`, sélecteur langue (marketing, app-shell, profil). Pages publiques et app connectée traduites ; build frontend + tests layout/backend verts.

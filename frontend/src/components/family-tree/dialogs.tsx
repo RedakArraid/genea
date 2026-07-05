@@ -364,9 +364,13 @@ export function ShareDialog({ open, onClose, treeId, visibility, canManage }: Sh
       if (result.invite?.token) {
         const link = buildInviteUrl(result.invite.token)
         await navigator.clipboard.writeText(link)
-        toast.success(t("share.inviteCreated"))
+        toast.success(
+          result.emailSent ? t("share.inviteCreatedEmail") : t("share.inviteCreated")
+        )
       } else {
-        toast.success(result.message || t("share.collaboratorAdded"))
+        toast.success(
+          result.emailSent ? t("share.collaboratorAddedEmail") : (result.message || t("share.collaboratorAdded"))
+        )
       }
       setEmail("")
       const data = await fetchCollaborators(treeId)

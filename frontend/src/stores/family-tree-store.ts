@@ -26,6 +26,7 @@ interface FamilyTreeState {
     message?: string
     invite?: { token: string; email: string; role: string }
     collaborator?: { userId: string; email: string; role: string }
+    emailSent?: boolean
   }>
   revokeInvite: (treeId: string, inviteId: string) => Promise<{ success: boolean; message?: string }>
   acceptInvite: (token: string) => Promise<{ success: boolean; message?: string; treeId?: string }>
@@ -250,6 +251,7 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
         message: data.message,
         invite: data.invite,
         collaborator: data.collaborator,
+        emailSent: data.emailSent,
       }
     } catch (error: unknown) {
       const message = storeError(error, "tree:store.inviteError")
