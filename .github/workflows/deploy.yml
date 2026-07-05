@@ -165,25 +165,21 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        printf '%s' "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        ssh-keyscan -T 10 ${{ secrets.STAGING_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
     - name: Copy compose file to server
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.STAGING_HOST }}
-        username: ${{ secrets.STAGING_USER }}
-        key: ${{ secrets.STAGING_SSH_KEY }}
-        port: 22
-        source: docker-compose.staging.yml
-        target: ${{ secrets.STAGING_PATH }}
+      run: |
+        scp -i ~/.ssh/deploy_key docker-compose.staging.yml \
+          ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:${{ secrets.STAGING_PATH }}/
 
     - name: Deploy on server
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.STAGING_HOST }}
-        username: ${{ secrets.STAGING_USER }}
-        key: ${{ secrets.STAGING_SSH_KEY }}
-        port: 22
-        command_timeout: 10m
-        script: |
+      run: |
+        ssh -i ~/.ssh/deploy_key ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} 'bash -s' <<'DEPLOY'
           set -e
           cd ${{ secrets.STAGING_PATH }}
 
@@ -216,6 +212,7 @@ jobs:
 
           docker image prune -f || true
           echo "Déploiement staging terminé — https://staging.geneamap.com"
+        DEPLOY
 
     - name: Health check via Traefik
       run: |
@@ -235,25 +232,21 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        printf '%s' "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        ssh-keyscan -T 10 ${{ secrets.PROD_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
     - name: Copy compose file to server
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.PROD_HOST }}
-        username: ${{ secrets.PROD_USER }}
-        key: ${{ secrets.PROD_SSH_KEY }}
-        port: 22
-        source: docker-compose.prod.yml
-        target: ${{ secrets.PROD_PATH }}
+      run: |
+        scp -i ~/.ssh/deploy_key docker-compose.prod.yml \
+          ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }}:${{ secrets.PROD_PATH }}/
 
     - name: Deploy on server
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.PROD_HOST }}
-        username: ${{ secrets.PROD_USER }}
-        key: ${{ secrets.PROD_SSH_KEY }}
-        port: 22
-        command_timeout: 15m
-        script: |
+      run: |
+        ssh -i ~/.ssh/deploy_key ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} 'bash -s' <<'DEPLOY'
           set -e
           cd ${{ secrets.PROD_PATH }}
           TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
@@ -295,6 +288,7 @@ jobs:
           docker image prune -f || true
           echo "Déploiement production terminé — https://geneamap.com"
           echo "Backup: backups/backup_${TIMESTAMP}.sql"
+        DEPLOY
 
     - name: Health check via Traefik
       run: |
