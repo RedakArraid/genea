@@ -17,6 +17,8 @@
   "INVALID_PLAN": "Forfait invalide",
   "EMAIL_REQUIRED_FOR_PAYMENT": "Ajoutez une adresse email à votre profil pour effectuer un paiement en ligne.",
   "INVALID_AMOUNT": "Montant invalide après réduction",
+  "INVALID_PROMO": "Code promo invalide",
+  "PAYSTACK_NOT_CONFIGURED": "Paiement en ligne temporairement indisponible. Réessayez plus tard.",
   "VALIDATION_ERROR": "Données invalides",
   "UNAUTHORIZED": "Session expirée — reconnectez-vous",
   "FORBIDDEN": "Accès non autorisé",

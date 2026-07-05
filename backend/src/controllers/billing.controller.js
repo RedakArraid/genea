@@ -20,9 +20,18 @@ exports.previewCheckout = async (req, res, next) => {
     }
     const baseAmount = getPlanPrice(plan, billingInterval);
     let promo = null;
+    let promoError = null;
     if (promoCode) {
-      const validated = await validatePromoCode(promoCode, plan);
-      promo = validated.promo;
+      try {
+        const validated = await validatePromoCode(promoCode, plan);
+        promo = validated.promo;
+      } catch (error) {
+        if (error.statusCode === 400) {
+          promoError = error.message;
+        } else {
+          throw error;
+        }
+      }
     }
     const finalAmount = applyDiscount(baseAmount, promo);
     res.json({
@@ -32,6 +41,7 @@ exports.previewCheckout = async (req, res, next) => {
       baseAmount,
       finalAmount,
       promo: promo ? { code: promo.code, discountType: promo.discountType, discountValue: promo.discountValue } : null,
+      promoError,
       limits: getPlanLimits(plan),
     });
   } catch (error) {
@@ -63,12 +73,46 @@ exports.initializeCheckout = async (req, res, next) => {
     const baseAmount = getPlanPrice(plan, billingInterval);
     let promo = null;
     if (promoCode) {
-      const validated = await validatePromoCode(promoCode, plan);
-      promo = validated.promo;
+      try {
+        const validated = await validatePromoCode(promoCode, plan);
+        promo = validated.promo;
+      } catch (error) {
+        if (error.statusCode === 400) {
+          return sendError(res, 400, 'INVALID_PROMO', error.message);
+        }
+        throw error;
+      }
     }
     const finalAmount = applyDiscount(baseAmount, promo);
     if (finalAmount <= 0) {
-      return sendError(res, 400, 'INVALID_AMOUNT', 'Montant invalide après réduction');
+      if (!promo) {
+        return sendError(res, 400, 'INVALID_AMOUNT', 'Montant invalide après réduction');
+      }
+
+      const reference = generateReference('genea');
+      const callbackUrl = `${publicBaseUrl()}/billing/callback?reference=${reference}`;
+      const payment = await prisma.payment.create({
+        data: {
+          userId: user.id,
+          reference,
+          provider: 'PAYSTACK',
+          amount: 0,
+          currency: CURRENCY,
+          plan,
+          status: 'PENDING',
+          promoCodeId: promo.id,
+          metadata: { baseAmount, promoCode: promo.code, billingInterval, freeCheckout: true },
+        },
+      });
+      await fulfillPayment(payment.id);
+
+      return res.json({
+        provider: 'FREE',
+        authorizationUrl: callbackUrl,
+        reference,
+        amount: 0,
+        currency: CURRENCY,
+      });
     }
 
     const reference = generateReference('genea');
@@ -106,6 +150,14 @@ exports.initializeCheckout = async (req, res, next) => {
       currency: CURRENCY,
     });
   } catch (error) {
+    if (error.message?.includes('Paystack non configuré')) {
+      return sendError(
+        res,
+        503,
+        'PAYSTACK_NOT_CONFIGURED',
+        'Paiement en ligne temporairement indisponible.',
+      );
+    }
     next(error);
   }
 };

@@ -98,14 +98,15 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 - [x] DNS geneamap.com : A `@`, `www`, `api`, `staging`, `api-staging` → `178.238.229.159` (attention : proxy Cloudflare orange actif, fonctionne mais recommandé de passer en DNS only).
 - [x] Déploiement staging opérationnel : https://staging.geneamap.com + https://api-staging.geneamap.com (R2 ready).
 - [x] **Production déployée** (2026-07-05 soir) : ancienne app `/root/genea` arrêtée (backup `backups/legacy-genea-*.sql`), nouvelle stack `geneaia-*-prod` sur https://geneamap.com / https://api.geneamap.com (R2 `geneamap-prod` ready).
-- [ ] Renseigner Paystack dans les `.env` du VPS — SMTP configurable via admin `/admin/smtp`.
+- [ ] Renseigner Paystack dans les `.env` du VPS (`PAYSTACK_SECRET_KEY` / `PAYSTACK_PUBLIC_KEY` actuellement vides sur staging) — SMTP configurable via admin `/admin/smtp`.
 - [ ] Choisir le fournisseur SMTP/SMS de production pour l'OTP (actuellement Mailpit en local).
 - [ ] Protection de branche `main` sur GitHub (PR obligatoire).
 - [ ] Routes SEO `/fr` `/en` + hreflang (hors périmètre i18n phase 1).
 
 ## 8. Journal
 
-- **2026-07-05 (soir, i18n/pricing)** — Sélecteur langue FR/EN corrigé (boutons + persistance localStorage). Tarifs affichés uniquement en USD, sans conversion EUR ni parenthèses.
+- **2026-07-05 (soir, billing initialize)** — Fix `POST /api/billing/initialize` 400 : promo staging `NOCODE` (100 %) provoquait `INVALID_AMOUNT`. Checkout gratuit (fulfillment immédiat + redirect callback). Erreurs `INVALID_PROMO`, `PAYSTACK_NOT_CONFIGURED` (clés Paystack vides sur staging `.env`). Frontend : email requis avant paiement, promo invalide bloqué.
+- **2026-07-05 (soir, billing preview)** — Fix `POST /api/billing/preview` 400 en boucle sur `/pricing` : cause = code promo invalide (ex. `GENEA2026`) renvoyait 400 à chaque frappe × 4 forfaits. Preview renvoie désormais 200 + `promoError` ; frontend affiche les prix localement et n'appelle l'API qu'avec un code promo (debounce 400 ms).
 - **2026-07-05 (soir, pricing intl)** — Billing 100 % international : Paystack USD seul, CinetPay retiré ; codes promo par marché (description admin). Tarifs $5 / $30/an / $50/an ou $5/mois.
 - **2026-07-05 (soir, i18n)** — **Internationalisation fr/en** : i18next + 7 namespaces, `User.locale` (Prisma + API profil), `lib/format.ts` (dates dynamiques), `translateApiError` + codes backend (auth, person, billing, OTP), templates OTP email fr/en, `PhoneInput` + `libphonenumber-js`, sélecteur langue (marketing, app-shell, profil). Pages publiques et app connectée traduites ; build frontend + tests layout/backend verts.
 - **2026-07-05 (soir, prod)** — **Production live sur geneamap.com** : backup ancienne base (`/root/geneaia/backups/legacy-genea-20260705_184808.sql`), arrêt `/root/genea` (genea-*), push `dev`→`main`, pipeline vert, conteneurs `geneaia-*-prod` healthy, API + frontend HTTP 200, R2 `geneamap-prod` ready. Base prod vierge (migrations appliquées, pas de seed — inscription utilisateur requise).

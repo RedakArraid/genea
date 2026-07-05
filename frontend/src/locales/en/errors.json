@@ -17,6 +17,8 @@
   "INVALID_PLAN": "Invalid plan",
   "EMAIL_REQUIRED_FOR_PAYMENT": "Add an email address to your profile to pay online.",
   "INVALID_AMOUNT": "Invalid amount after discount",
+  "INVALID_PROMO": "Invalid promo code",
+  "PAYSTACK_NOT_CONFIGURED": "Online payment is temporarily unavailable. Please try again later.",
   "VALIDATION_ERROR": "Invalid data",
   "UNAUTHORIZED": "Session expired — please log in again",
   "FORBIDDEN": "Access denied",

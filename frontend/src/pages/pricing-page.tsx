@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import { useEffect, useMemo, useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import { Check, CreditCard } from "lucide-react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
@@ -8,6 +8,7 @@ import { PLANS, formatPrice, getPlanPrice } from "@/lib/plans"
 import type { BillingInterval } from "@/lib/billing-api"
 import type { PlanId } from "@/types"
 import { initializeCheckout, previewCheckout } from "@/lib/billing-api"
+import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -18,7 +19,9 @@ import { cn } from "@/lib/utils"
 export default function PricingPage() {
   const { t } = useTranslation("billing")
   const { isAuthenticated, user } = useAuthStore()
+  const navigate = useNavigate()
   const [promoCode, setPromoCode] = useState("")
+  const [promoError, setPromoError] = useState<string | null>(null)
   const [previews, setPreviews] = useState<Record<string, number>>({})
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
   const [patrimonyInterval, setPatrimonyInterval] = useState<BillingInterval>("yearly")
@@ -28,32 +31,89 @@ export default function PricingPage() {
   const previewKey = (planId: PlanId, interval: BillingInterval = "yearly") =>
     planId === "PATRIMONY" ? `${planId}:${interval}` : planId
 
-  useEffect(() => {
+  const basePreviews = useMemo(() => {
+    const next: Record<string, number> = {}
     PLANS.forEach((plan) => {
       const intervals: BillingInterval[] =
         plan.id === "PATRIMONY" ? ["yearly", "monthly"] : ["yearly"]
       intervals.forEach((interval) => {
-        previewCheckout(plan.id, promoCode || undefined, interval)
-          .then((p) => setPreviews((prev) => ({ ...prev, [previewKey(plan.id, interval)]: p.finalAmount })))
-          .catch(() =>
-            setPreviews((prev) => ({
-              ...prev,
-              [previewKey(plan.id, interval)]: getPlanPrice(plan, interval),
-            }))
-          )
+        next[previewKey(plan.id, interval)] = getPlanPrice(plan, interval)
       })
     })
-  }, [promoCode])
+    return next
+  }, [])
+
+  useEffect(() => {
+    const trimmedPromo = promoCode.trim()
+    if (!trimmedPromo) {
+      setPromoError(null)
+      setPreviews(basePreviews)
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        const requests = PLANS.flatMap((plan) => {
+          const intervals: BillingInterval[] =
+            plan.id === "PATRIMONY" ? ["yearly", "monthly"] : ["yearly"]
+          return intervals.map((interval) => ({ plan, interval }))
+        })
+
+        const results = await Promise.all(
+          requests.map(async ({ plan, interval }) => {
+            try {
+              const preview = await previewCheckout(plan.id, trimmedPromo, interval)
+              return {
+                key: previewKey(plan.id, interval),
+                amount: preview.finalAmount,
+                promoError: preview.promoError ?? null,
+              }
+            } catch {
+              return {
+                key: previewKey(plan.id, interval),
+                amount: getPlanPrice(plan, interval),
+                promoError: null,
+              }
+            }
+          })
+        )
+
+        setPreviews((prev) => {
+          const next = { ...prev }
+          results.forEach(({ key, amount }) => {
+            next[key] = amount
+          })
+          return next
+        })
+        setPromoError(results.find((result) => result.promoError)?.promoError ?? null)
+      })()
+    }, 400)
+
+    return () => window.clearTimeout(timer)
+  }, [promoCode, basePreviews])
 
   const handleCheckout = async (planId: PlanId, interval: BillingInterval = "yearly") => {
     if (!isAuthenticated) return
+    if (!user?.email?.trim()) {
+      toast.error(translateApiError({ code: "EMAIL_REQUIRED_FOR_PAYMENT" }))
+      navigate("/profile")
+      return
+    }
+    if (promoError) {
+      toast.error(promoError)
+      return
+    }
     setLoadingPlan(previewKey(planId, interval))
     try {
-      const { authorizationUrl } = await initializeCheckout(planId, promoCode || undefined, interval)
+      const trimmedPromo = promoCode.trim()
+      const { authorizationUrl } = await initializeCheckout(
+        planId,
+        trimmedPromo || undefined,
+        interval
+      )
       window.location.href = authorizationUrl
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message
-      toast.error(msg || t("pricing.checkoutError"))
+      toast.error(translateApiError(getApiErrorPayload(err), "billing:pricing.checkoutError"))
       setLoadingPlan(null)
     }
   }
@@ -79,6 +139,7 @@ export default function PricingPage() {
                 onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
               />
               <p className="text-xs text-muted-foreground">{t("pricing.promoHint")}</p>
+              {promoError && <p className="text-xs text-destructive">{promoError}</p>}
             </div>
           </div>
         </div>

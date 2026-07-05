@@ -16,6 +16,7 @@ export interface CheckoutPreview {
   baseAmount: number
   finalAmount: number
   promo: { code: string; discountType: string; discountValue: number } | null
+  promoError?: string | null
 }
 
 export async function fetchBillingConfig(): Promise<BillingConfig> {
