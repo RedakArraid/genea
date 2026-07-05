@@ -55,6 +55,10 @@ services:
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASS=${SMTP_PASS:-}
       - SMTP_FROM=${SMTP_FROM:-GeneaIA Staging <noreply@geneamap.com>}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - ADMIN_PHONE=${ADMIN_PHONE:-+2250700000010}
+      - OTP_EXPIRES_MINUTES=${OTP_EXPIRES_MINUTES:-10}
       - OTP_EXPIRES_MINUTES=${OTP_EXPIRES_MINUTES:-10}
     depends_on:
       postgres:

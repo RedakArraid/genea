@@ -27,6 +27,7 @@ import AdminStoragePage from "@/pages/admin/admin-storage-page"
 import AdminDemoPage from "@/pages/admin/admin-demo-page"
 import AdminPlansPage from "@/pages/admin/admin-plans-page"
 import AdminPromoPage from "@/pages/admin/admin-promo-page"
+import AdminSmtpPage from "@/pages/admin/admin-smtp-page"
 import NotFoundPage from "@/pages/not-found-page"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -91,6 +92,7 @@ export default function App() {
             <Route path="/admin/demo" element={<AdminDemoPage />} />
             <Route path="/admin/plans" element={<AdminPlansPage />} />
             <Route path="/admin/promo" element={<AdminPromoPage />} />
+            <Route path="/admin/smtp" element={<AdminSmtpPage />} />
           </Route>
         </Route>
 

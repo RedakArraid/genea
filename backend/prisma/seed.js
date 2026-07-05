@@ -1,7 +1,8 @@
 /**
  * Script de seed — admin, test user, arbre perso, démo Famille Dupont
  * Comptes (téléphone = identifiant principal) :
- *   0700000010 / admin@geneaia.app — password123 (admin)
+ *   0700000010 / admin@geneamap.com — admin123 (admin prod)
+ *   0700000010 / admin@geneaia.app — password123 (admin local seed legacy)
  *   0700000001 / test@example.com — password123
  *   0700000002 / demo@geneaia.app — password123
  *   0700000003 / famille40@geneaia.app — password123 (famille 40 personnes)
@@ -30,13 +31,14 @@ async function main() {
   await prisma.user.deleteMany();
 
   const hashedPassword = await bcrypt.hash('password123', 12);
+  const adminHashedPassword = await bcrypt.hash('admin123', 12);
 
   const admin = await prisma.user.create({
     data: {
       name: 'Administrateur',
       phone: '+2250700000010',
-      email: 'admin@geneaia.app',
-      password: hashedPassword,
+      email: 'admin@geneamap.com',
+      password: adminHashedPassword,
       plan: 'PATRIMONY',
       role: 'ADMIN',
       planActive: true,
@@ -96,7 +98,7 @@ async function main() {
   });
 
   const adminEmail = process.env.ADMIN_EMAIL;
-  if (adminEmail && adminEmail !== 'admin@geneaia.app') {
+  if (adminEmail && adminEmail !== 'admin@geneamap.com') {
     await prisma.user.upsert({
       where: { email: adminEmail },
       update: { role: 'ADMIN' },

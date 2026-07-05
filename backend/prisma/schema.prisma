@@ -240,3 +240,15 @@ model PersonDocument {
   @@index([personId])
   @@index([treeId])
 }
+
+/// Configuration SMTP (singleton id = "default"), modifiable via l'admin.
+model SmtpSetting {
+  id        String   @id @default("default")
+  host      String?
+  port      Int      @default(587)
+  secure    Boolean  @default(false)
+  user      String?
+  pass      String?
+  from      String?
+  updatedAt DateTime @updatedAt
+}

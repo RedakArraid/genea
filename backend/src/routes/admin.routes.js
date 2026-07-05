@@ -22,5 +22,8 @@ router.get('/promo-codes', adminController.listPromoCodes);
 router.post('/promo-codes', adminController.createPromoCode);
 router.patch('/promo-codes/:id', adminController.updatePromoCode);
 router.delete('/promo-codes/:id', adminController.deletePromoCode);
+router.get('/smtp', adminController.getSmtpSettings);
+router.patch('/smtp', adminController.updateSmtpSettings);
+router.post('/smtp/test', adminController.testSmtpSettings);
 
 module.exports = router;

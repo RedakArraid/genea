@@ -6,6 +6,8 @@ const prisma = require('../lib/prisma');
 const storage = require('../lib/storage');
 const { PLANS } = require('../lib/plans');
 const { resetDemoTree, getDemoTreeInfo } = require('../lib/demoTree');
+const { getPublicSmtpSettings, updateSmtpSettings } = require('../lib/smtpSettings');
+const { sendMail, verifySmtpConnection, resetTransporter } = require('../lib/mail');
 
 const userPublicSelect = {
   id: true,
@@ -414,5 +416,48 @@ exports.deletePromoCode = async (req, res, next) => {
   } catch (error) {
     if (error.code === 'P2025') return res.status(404).json({ message: 'Code introuvable' });
     next(error);
+  }
+};
+
+exports.getSmtpSettings = async (req, res, next) => {
+  try {
+    const smtp = await getPublicSmtpSettings();
+    res.json({ smtp });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.updateSmtpSettings = async (req, res, next) => {
+  try {
+    const { host, port, secure, user, pass, from } = req.body;
+    const smtp = await updateSmtpSettings({ host, port, secure, user, pass, from });
+    resetTransporter();
+    res.json({ message: 'Configuration SMTP enregistrée', smtp });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.testSmtpSettings = async (req, res, next) => {
+  try {
+    const to = req.body.to?.trim() || req.user.email;
+    if (!to) {
+      return res.status(400).json({ message: 'Adresse email de test requise' });
+    }
+
+    await verifySmtpConnection();
+    await sendMail({
+      to,
+      subject: 'GeneaIA — test SMTP',
+      text: 'Cet email confirme que la configuration SMTP GeneaIA fonctionne correctement.',
+      html: '<p>Cet email confirme que la configuration SMTP <strong>GeneaIA</strong> fonctionne correctement.</p>',
+    });
+
+    res.json({ message: `Email de test envoyé à ${to}` });
+  } catch (error) {
+    res.status(400).json({
+      message: error.message || 'Échec du test SMTP',
+    });
   }
 };

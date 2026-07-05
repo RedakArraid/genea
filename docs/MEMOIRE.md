@@ -49,6 +49,8 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 - Bouton **Réorganiser** : recalcul du layout avec confirmation si positions manuelles ; layout spécial « clusters conjugaux » pour les arbres sans liens parent-enfant (`computeSpouseOnlyLayout`).
 - Partage : visibilité PRIVATE/SHARED/PUBLIC, invitations collaborateurs (VIEWER/EDITOR), lien public lecture seule.
 - Arbre démo public « Famille Dupont » (10 personnes), **auto-provisionné** au démarrage API si absent, réinitialisable par l'admin.
+- **Admin SMTP** : configuration email depuis `/admin/smtp` (table `SmtpSetting`, prioritaire sur les variables d'env).
+- Compte admin prod auto-créé au démarrage via `ADMIN_EMAIL` / `ADMIN_PASSWORD` (`ensure-admin.js`).
 
 ### Corrections récentes notables
 - Fix accumulation de listeners `pointerup` dans `person-card.tsx` (clics bloqués après drag).
@@ -65,7 +67,8 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 | 0700000002 | demo@geneaia.app | Arbre démo Famille Dupont (10 pers.) |
 | 0700000003 | famille40@geneaia.app | **Famille Traoré : 40 personnes, 5 générations** (`backend/src/lib/largeFamilyTree.js`) |
 | 0700000004 | testeur@geneaia.app | Compte paiement (plan inactif) |
-| 0700000010 | admin@geneaia.app | Admin |
+| 0700000010 | admin@geneamap.com | Admin production (`admin123`) |
+| 0700000010 | admin@geneaia.app | Admin local seed (`password123`) |
 
 Mot de passe universel : `password123`.
 
@@ -95,14 +98,14 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 - [x] DNS geneamap.com : A `@`, `www`, `api`, `staging`, `api-staging` → `178.238.229.159` (attention : proxy Cloudflare orange actif, fonctionne mais recommandé de passer en DNS only).
 - [x] Déploiement staging opérationnel : https://staging.geneamap.com + https://api-staging.geneamap.com (R2 ready).
 - [x] **Production déployée** (2026-07-05 soir) : ancienne app `/root/genea` arrêtée (backup `backups/legacy-genea-*.sql`), nouvelle stack `geneaia-*-prod` sur https://geneamap.com / https://api.geneamap.com (R2 `geneamap-prod` ready).
-- [ ] Renseigner SMTP et Paystack dans les `.env` du VPS (`/root/geneaia/.env`, `/root/geneaia-staging/.env`) — champs vides actuellement.
+- [ ] Renseigner Paystack dans les `.env` du VPS — SMTP configurable via admin `/admin/smtp`.
 - [ ] Choisir le fournisseur SMTP/SMS de production pour l'OTP (actuellement Mailpit en local).
 - [ ] Protection de branche `main` sur GitHub (PR obligatoire).
 - [ ] Routes SEO `/fr` `/en` + hreflang (hors périmètre i18n phase 1).
 
 ## 8. Journal
 
-- **2026-07-05 (soir, démo UI)** — Fix canvas vide sur `/demo` : `PublicLayout` en `h-svh` + chaîne flex `flex-1 min-h-0` pour le canvas plein écran.
+- **2026-07-05 (soir, admin)** — Compte admin prod `admin@geneamap.com` / `admin123` (`ensure-admin.js` au démarrage). Page admin **Email / SMTP** (`/admin/smtp`) : config en base, test d'envoi, priorité sur `.env`.
 - **2026-07-05 (soir, pricing intl)** — Billing 100 % international : Paystack USD seul, CinetPay retiré ; codes promo par marché (description admin). Tarifs $5 / $30/an / $50/an ou $5/mois.
 - **2026-07-05 (soir, i18n)** — **Internationalisation fr/en** : i18next + 7 namespaces, `User.locale` (Prisma + API profil), `lib/format.ts` (dates dynamiques), `translateApiError` + codes backend (auth, person, billing, OTP), templates OTP email fr/en, `PhoneInput` + `libphonenumber-js`, sélecteur langue (marketing, app-shell, profil). Pages publiques et app connectée traduites ; build frontend + tests layout/backend verts.
 - **2026-07-05 (soir, prod)** — **Production live sur geneamap.com** : backup ancienne base (`/root/geneaia/backups/legacy-genea-20260705_184808.sql`), arrêt `/root/genea` (genea-*), push `dev`→`main`, pipeline vert, conteneurs `geneaia-*-prod` healthy, API + frontend HTTP 200, R2 `geneamap-prod` ready. Base prod vierge (migrations appliquées, pas de seed — inscription utilisateur requise).

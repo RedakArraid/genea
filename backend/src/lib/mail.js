@@ -1,40 +1,55 @@
 /**
  * Envoi d'emails via SMTP (Nodemailer).
- * En local Docker : Mailpit (SMTP 1025, UI http://localhost:8025).
+ * Config : admin (DB) ou variables d'environnement.
  */
 
 const nodemailer = require('nodemailer');
-
-function getSmtpConfig() {
-  const port = parseInt(process.env.SMTP_PORT || '587', 10);
-  const user = process.env.SMTP_USER?.trim();
-  const pass = process.env.SMTP_PASS;
-
-  return {
-    host: process.env.SMTP_HOST,
-    port,
-    secure: process.env.SMTP_SECURE === 'true' || port === 465,
-    auth: user ? { user, pass } : undefined,
-  };
-}
-
-function isMailConfigured() {
-  return Boolean(process.env.SMTP_HOST?.trim());
-}
+const { getEffectiveSmtpConfig } = require('./smtpSettings');
 
 let transporter = null;
+let transporterKey = null;
 
-function getTransporter() {
-  if (!isMailConfigured()) return null;
-  if (!transporter) {
-    transporter = nodemailer.createTransport(getSmtpConfig());
+function configKey(config) {
+  return JSON.stringify({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    user: config.user,
+    from: config.from,
+  });
+}
+
+async function isMailConfigured() {
+  const config = await getEffectiveSmtpConfig();
+  return Boolean(config.host);
+}
+
+async function getTransporter() {
+  const config = await getEffectiveSmtpConfig();
+  if (!config.host) return null;
+
+  const key = configKey(config);
+  if (!transporter || transporterKey !== key) {
+    transporter = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: config.auth,
+    });
+    transporterKey = key;
   }
   return transporter;
 }
 
+function resetTransporter() {
+  transporter = null;
+  transporterKey = null;
+}
+
 async function sendMail({ to, subject, text, html }) {
-  const from = process.env.SMTP_FROM || 'GeneaIA <noreply@geneaia.app>';
-  const transport = getTransporter();
+  const config = await getEffectiveSmtpConfig();
+  const from = config.from || process.env.SMTP_FROM || 'GeneaIA <noreply@geneaia.app>';
+  const transport = await getTransporter();
 
   if (!transport) {
     console.warn(`[mail] SMTP non configuré — email non envoyé à ${to}`);
@@ -48,8 +63,18 @@ async function sendMail({ to, subject, text, html }) {
   return { sent: true, messageId: info.messageId };
 }
 
+async function verifySmtpConnection() {
+  const transport = await getTransporter();
+  if (!transport) {
+    throw new Error('SMTP non configuré');
+  }
+  await transport.verify();
+}
+
 module.exports = {
   isMailConfigured,
   getTransporter,
   sendMail,
+  verifySmtpConnection,
+  resetTransporter,
 };

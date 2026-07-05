@@ -22,8 +22,8 @@ function generateOtp() {
   return String(crypto.randomInt(100000, 999999));
 }
 
-function isOtpDeliveryAvailable() {
-  return isMailConfigured() || process.env.NODE_ENV === 'development';
+async function isOtpDeliveryAvailable() {
+  return (await isMailConfigured()) || process.env.NODE_ENV === 'development';
 }
 
 const GENERIC_SENT_MESSAGE = 'Si un compte existe avec ce numéro, un code a été envoyé.';
@@ -86,7 +86,7 @@ async function requestLoginOtp(rawPhone, defaultCountry = 'CI') {
   });
 
   let delivered = false;
-  if (user.email && isMailConfigured()) {
+  if (user.email && (await isMailConfigured())) {
     await sendLoginOtpEmail(user, code, phoneDisplay);
     delivered = true;
   }

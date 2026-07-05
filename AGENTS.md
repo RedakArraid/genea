@@ -24,7 +24,7 @@
 | 0700000002 | demo@geneaia.app | password123 | Propriétaire arbre démo |
 | 0700000003 | famille40@geneaia.app | password123 | Famille Traoré (40 personnes, 5 générations) |
 | 0700000004 | testeur@geneaia.app | password123 | Testeur paiement |
-| 0700000010 | admin@geneaia.app | password123 | Admin |
+| 0700000010 | admin@geneamap.com | password123 | Admin prod (`admin123` si créé via `ADMIN_PASSWORD`) |
 
 ## Commandes utiles
 

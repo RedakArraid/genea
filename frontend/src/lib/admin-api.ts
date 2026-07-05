@@ -184,3 +184,37 @@ export async function updatePromoCode(id: string, payload: Record<string, unknow
 export async function deletePromoCode(id: string): Promise<void> {
   await api.delete(`/admin/promo-codes/${id}`)
 }
+
+export interface AdminSmtpSettings {
+  host: string
+  port: number
+  secure: boolean
+  user: string
+  from: string
+  hasPassword: boolean
+  configured: boolean
+  source: "db" | "env" | "none"
+  updatedAt: string | null
+}
+
+export async function fetchSmtpSettings(): Promise<AdminSmtpSettings> {
+  const { data } = await api.get<{ smtp: AdminSmtpSettings }>("/admin/smtp")
+  return data.smtp
+}
+
+export async function updateSmtpSettings(payload: {
+  host?: string
+  port?: number
+  secure?: boolean
+  user?: string
+  pass?: string
+  from?: string
+}): Promise<AdminSmtpSettings> {
+  const { data } = await api.patch<{ smtp: AdminSmtpSettings }>("/admin/smtp", payload)
+  return data.smtp
+}
+
+export async function testSmtpSettings(to: string): Promise<{ message: string }> {
+  const { data } = await api.post<{ message: string }>("/admin/smtp/test", { to })
+  return data
+}

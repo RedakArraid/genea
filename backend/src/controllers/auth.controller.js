@@ -144,7 +144,7 @@ exports.getMe = async (req, res, next) => {
 };
 
 exports.otpStatus = async (req, res) => {
-  res.json({ enabled: isOtpDeliveryAvailable() });
+  res.json({ enabled: await isOtpDeliveryAvailable() });
 };
 
 exports.requestOtp = async (req, res, next) => {
@@ -154,7 +154,7 @@ exports.requestOtp = async (req, res, next) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    if (!isOtpDeliveryAvailable()) {
+    if (!(await isOtpDeliveryAvailable())) {
       return res.status(503).json({ message: 'Connexion par code indisponible.' });
     }
 
