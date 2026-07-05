@@ -27,6 +27,8 @@ services:
       dockerfile: Dockerfile
       target: production
     container_name: geneaia-backend-local-v2
+    env_file:
+      - ./backend/.env
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://geneaia_user:geneaia_password@postgres:5432/geneaia_local?schema=public
@@ -40,10 +42,6 @@ services:
       - S3_PUBLIC_URL=http://localhost:9000/geneaia
       - API_PUBLIC_URL=http://localhost:3001
       - FRONTEND_URL=http://localhost:5173
-      - PAYSTACK_SECRET_KEY=
-      - PAYSTACK_PUBLIC_KEY=
-      - CINETPAY_API_KEY=
-      - CINETPAY_SITE_ID=
       - STORAGE_PHOTO_PREFIX=photos
       - STORAGE_DOCUMENT_PREFIX=documents
       - STORAGE_PHOTO_MAX_MB=5
