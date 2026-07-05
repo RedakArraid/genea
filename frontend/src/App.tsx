@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
@@ -40,17 +40,18 @@ function AuthRedirect({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const { t, i18n } = useTranslation()
-  const { checkAuth, isLoading } = useAuthStore()
+  const { checkAuth } = useAuthStore()
+  const [bootstrapped, setBootstrapped] = useState(false)
 
   useEffect(() => {
-    checkAuth()
+    checkAuth().finally(() => setBootstrapped(true))
   }, [checkAuth])
 
   useEffect(() => {
     document.title = t("metaTitle")
   }, [t, i18n.language])
 
-  if (isLoading) {
+  if (!bootstrapped) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Skeleton className="size-12 rounded-full" />

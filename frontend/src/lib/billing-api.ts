@@ -1,5 +1,5 @@
 import api from "@/lib/api"
-import type { PlanId } from "@/types"
+import type { PlanId, User } from "@/types"
 
 export type BillingInterval = "yearly" | "monthly"
 
@@ -59,7 +59,7 @@ export async function initializeCheckout(
 export async function verifyCheckout(reference: string): Promise<{
   status: string
   plan?: PlanId
-  user?: { plan: PlanId; planActive: boolean; planExpiresAt?: string | null }
+  user?: User
   message?: string
 }> {
   const { data } = await api.get(`/billing/verify/${reference}`)

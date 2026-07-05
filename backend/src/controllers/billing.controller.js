@@ -173,7 +173,11 @@ exports.verifyCheckout = async (req, res, next) => {
       return res.status(403).json({ message: 'Accès refusé' });
     }
     if (payment.status === 'SUCCESS') {
-      return res.json({ status: 'success', payment, plan: payment.plan });
+      const user = await prisma.user.findUnique({
+        where: { id: payment.userId },
+        select: { id: true, email: true, plan: true, planActive: true, planExpiresAt: true, role: true, locale: true },
+      });
+      return res.json({ status: 'success', payment, plan: payment.plan, user });
     }
 
     const verified = await payments.verifyCheckout(payment.provider, reference);

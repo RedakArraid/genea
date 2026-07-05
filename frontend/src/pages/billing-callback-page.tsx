@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { CheckCircle2, Loader2, XCircle } from "lucide-react"
@@ -16,18 +16,29 @@ export default function BillingCallbackPage() {
   const { checkAuth } = useAuthStore()
   const [status, setStatus] = useState<"loading" | "success" | "failed">("loading")
   const [planId, setPlanId] = useState<PlanId | null>(null)
+  const verifiedRef = useRef(false)
 
   useEffect(() => {
-    if (!reference) {
-      setStatus("failed")
+    if (!reference || verifiedRef.current) {
+      if (!reference) setStatus("failed")
       return
     }
+    verifiedRef.current = true
+
     verifyCheckout(reference)
       .then(async (result) => {
         if (result.status === "success") {
           setStatus("success")
           setPlanId(result.plan || null)
-          await checkAuth()
+          if (result.user) {
+            useAuthStore.setState({
+              user: result.user,
+              isAuthenticated: true,
+              isAdmin: result.user.role === "ADMIN",
+            })
+          } else {
+            await checkAuth({ silent: true })
+          }
           toast.success(t("callback.paymentConfirmed"))
         } else {
           setStatus("failed")

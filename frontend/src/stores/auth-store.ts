@@ -18,7 +18,7 @@ interface AuthState {
   user: User | null
   isAdmin: boolean
   isLoading: boolean
-  checkAuth: () => Promise<void>
+  checkAuth: (options?: { silent?: boolean }) => Promise<void>
   login: (login: string, password: string) => Promise<{ success: boolean; message?: string }>
   requestOtp: (phone: string, phoneCountry?: string) => Promise<{ success: boolean; message?: string }>
   verifyOtp: (phone: string, code: string, phoneCountry?: string) => Promise<{ success: boolean; message?: string }>
@@ -34,8 +34,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAdmin: false,
   isLoading: true,
 
-  checkAuth: async () => {
-    set({ isLoading: true })
+  checkAuth: async (options) => {
+    if (!options?.silent) {
+      set({ isLoading: true })
+    }
     try {
       const token = localStorage.getItem("token")
       if (!token) {
