@@ -49,7 +49,7 @@ app.use(cors({
       callback(null, true);
       return;
     }
-    callback(new Error('Non autorisé par CORS'));
+    callback(null, false);
   },
   credentials: true,
 }));

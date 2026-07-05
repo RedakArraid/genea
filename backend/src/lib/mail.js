@@ -46,9 +46,29 @@ function resetTransporter() {
   transporterKey = null;
 }
 
+function extractEmailAddress(from) {
+  if (!from) return null;
+  const bracket = from.match(/<([^>]+)>/);
+  return (bracket ? bracket[1] : from).trim();
+}
+
+/** Aligne l'expéditeur sur le compte SMTP authentifié (requis par Hostinger, etc.) */
+function resolveFromAddress(config) {
+  const configured = config.from || process.env.SMTP_FROM || 'GeneaIA <noreply@geneaia.app>';
+  const authUser = config.auth?.user?.trim();
+  if (!authUser) return configured;
+
+  const fromEmail = extractEmailAddress(configured)?.toLowerCase();
+  if (fromEmail === authUser.toLowerCase()) return configured;
+
+  const nameMatch = configured.match(/^([^<]+)</);
+  const displayName = nameMatch ? nameMatch[1].trim().replace(/^"|"$/g, '') : 'GeneaIA';
+  return `${displayName} <${authUser}>`;
+}
+
 async function sendMail({ to, subject, text, html }) {
   const config = await getEffectiveSmtpConfig();
-  const from = config.from || process.env.SMTP_FROM || 'GeneaIA <noreply@geneaia.app>';
+  const from = resolveFromAddress(config);
   const transport = await getTransporter();
 
   if (!transport) {

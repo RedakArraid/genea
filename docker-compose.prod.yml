@@ -31,7 +31,7 @@ services:
       - DATABASE_URL=postgresql://geneaia_prod:${PROD_DB_PASSWORD}@postgres:5432/geneaia_production?schema=public
       - JWT_SECRET=${PROD_JWT_SECRET:?PROD_JWT_SECRET requis}
       - PORT=3001
-      - CORS_ORIGIN=https://geneamap.com
+      - CORS_ORIGIN=https://geneamap.com,https://www.geneamap.com
       - FRONTEND_URL=https://geneamap.com
       - API_PUBLIC_URL=https://api.geneamap.com
       # ─── Cloudflare R2 ───

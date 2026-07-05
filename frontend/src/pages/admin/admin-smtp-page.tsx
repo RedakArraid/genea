@@ -134,6 +134,7 @@ export default function AdminSmtpPage() {
           <CardTitle>Serveur SMTP</CardTitle>
           <CardDescription>
             Les paramètres enregistrés ici remplacent les variables d'environnement du serveur.
+            L'adresse « Expéditeur » doit correspondre au compte SMTP (sinon le serveur mail utilise le compte authentifié).
             Laissez le mot de passe vide pour conserver l'existant.
           </CardDescription>
         </CardHeader>
