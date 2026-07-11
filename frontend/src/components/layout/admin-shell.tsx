@@ -72,7 +72,7 @@ export function AdminShell() {
               <SidebarMenu>
                 {adminNav.map((item) => {
                   const title = t(item.titleKey)
-                  const active = item.exact
+                  const active = "exact" in item && item.exact
                     ? location.pathname === item.href
                     : location.pathname.startsWith(item.href)
                   const navId = item.href === "/admin" ? "dashboard" : item.href.split("/").pop()!
