@@ -8,8 +8,9 @@ services:
     image: postgres:15-alpine
     container_name: geneamap-db-prod
     environment:
-      POSTGRES_DB: geneamap_production
-      POSTGRES_USER: geneamap_prod
+      # Identifiants DB inchangés sur le VPS (volume PostgreSQL existant)
+      POSTGRES_DB: geneaia_production
+      POSTGRES_USER: geneaia_prod
       POSTGRES_PASSWORD: ${PROD_DB_PASSWORD:?PROD_DB_PASSWORD requis}
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
@@ -18,7 +19,7 @@ services:
       - internal
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U geneamap_prod -d geneamap_production"]
+      test: ["CMD-SHELL", "pg_isready -U geneaia_prod -d geneaia_production"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,7 +29,7 @@ services:
     container_name: geneamap-backend-prod
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://geneamap_prod:${PROD_DB_PASSWORD}@postgres:5432/geneamap_production?schema=public
+      - DATABASE_URL=postgresql://geneaia_prod:${PROD_DB_PASSWORD}@postgres:5432/geneaia_production?schema=public
       - JWT_SECRET=${PROD_JWT_SECRET:?PROD_JWT_SECRET requis}
       - PORT=3001
       - CORS_ORIGIN=https://geneamap.com,https://www.geneamap.com

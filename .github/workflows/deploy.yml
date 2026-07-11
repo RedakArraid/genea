@@ -248,7 +248,7 @@ jobs:
 
           echo "Attente de PostgreSQL..."
           for i in $(seq 1 30); do
-            if docker exec geneamap-db-staging pg_isready -U geneamap_staging -d geneamap_staging >/dev/null 2>&1; then
+            if docker exec geneamap-db-staging pg_isready -U geneaia_staging -d geneaia_staging >/dev/null 2>&1; then
               break
             fi
             sleep 2
@@ -308,10 +308,10 @@ jobs:
             exit 1
           fi
 
-          if docker exec geneamap-db-prod pg_isready -U geneamap_prod -d geneamap_production >/dev/null 2>&1; then
+          if docker exec geneamap-db-prod pg_isready -U geneaia_prod -d geneaia_production >/dev/null 2>&1; then
             echo "Sauvegarde de la base..."
             mkdir -p backups
-            docker exec geneamap-db-prod pg_dump -U geneamap_prod -d geneamap_production > backups/backup_${TIMESTAMP}.sql
+            docker exec geneamap-db-prod pg_dump -U geneaia_prod -d geneaia_production > backups/backup_${TIMESTAMP}.sql
             echo "Backup: backups/backup_${TIMESTAMP}.sql"
           fi
 
@@ -323,7 +323,7 @@ jobs:
 
           echo "Attente de PostgreSQL..."
           for i in $(seq 1 30); do
-            if docker exec geneamap-db-prod pg_isready -U geneamap_prod -d geneamap_production >/dev/null 2>&1; then
+            if docker exec geneamap-db-prod pg_isready -U geneaia_prod -d geneaia_production >/dev/null 2>&1; then
               break
             fi
             sleep 2

@@ -8,8 +8,9 @@ services:
     image: postgres:15-alpine
     container_name: geneamap-db-staging
     environment:
-      POSTGRES_DB: geneamap_staging
-      POSTGRES_USER: geneamap_staging
+      # Identifiants DB inchangés sur le VPS (volume PostgreSQL existant)
+      POSTGRES_DB: geneaia_staging
+      POSTGRES_USER: geneaia_staging
       POSTGRES_PASSWORD: ${STAGING_DB_PASSWORD:?STAGING_DB_PASSWORD requis}
     volumes:
       - postgres_staging_data:/var/lib/postgresql/data
@@ -17,7 +18,7 @@ services:
       - internal
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U geneamap_staging -d geneamap_staging"]
+      test: ["CMD-SHELL", "pg_isready -U geneaia_staging -d geneaia_staging"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,7 +28,7 @@ services:
     container_name: geneamap-backend-staging
     environment:
       - NODE_ENV=staging
-      - DATABASE_URL=postgresql://geneamap_staging:${STAGING_DB_PASSWORD}@postgres:5432/geneamap_staging?schema=public
+      - DATABASE_URL=postgresql://geneaia_staging:${STAGING_DB_PASSWORD}@postgres:5432/geneaia_staging?schema=public
       - JWT_SECRET=${STAGING_JWT_SECRET:?STAGING_JWT_SECRET requis}
       - PORT=3001
       - CORS_ORIGIN=https://staging.geneamap.com,https://www.staging.geneamap.com
