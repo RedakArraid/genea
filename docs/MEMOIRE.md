@@ -73,7 +73,7 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 |---|---|---|
 | 0700000001 | test@example.com | Arbre « Ma Famille » (1 personne racine) |
 | 0700000002 | demo@geneaia.app | Arbre démo Famille Dupont (10 pers.) |
-| 0700000003 | famille40@geneaia.app | **Famille Traoré : 40 personnes, 5 générations** (`backend/src/lib/largeFamilyTree.js`) |
+| 0700000003 | famille40@geneaia.app | **Famille Traoré : 40 personnes** — forfait **Patrimoine** (tests export/import/historique) |
 | 0700000004 | testeur@geneaia.app | Compte paiement (plan inactif) |
 | 0700000010 | admin@geneamap.com | Admin (`admin123`) |
 
