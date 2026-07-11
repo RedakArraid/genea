@@ -88,7 +88,7 @@ async function main() {
       phone: '+2250700000003',
       email: 'famille40@geneaia.app',
       password: hashedPassword,
-      plan: 'FAMILY',
+      plan: 'PATRIMONY',
       role: 'USER',
       planActive: true,
       planExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),

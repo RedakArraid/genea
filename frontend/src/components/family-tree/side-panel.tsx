@@ -163,6 +163,7 @@ function SidePanelContent({
     return personToForm(person, raw)
   })
   const [saving, setSaving] = useState(false)
+  const [historyRefresh, setHistoryRefresh] = useState(0)
   const maxBirthDate = todayIsoDate()
 
   useEffect(() => {
@@ -210,6 +211,7 @@ function SidePanelContent({
     try {
       await onSave(person.id, form)
       toast.success(t("person.updated"))
+      setHistoryRefresh((n) => n + 1)
     } catch {
       toast.error(t("person.updateFailed"))
     } finally {
@@ -454,7 +456,7 @@ function SidePanelContent({
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {t("history.title")}
                 </span>
-                <PersonHistory personId={person.id} onRestored={onPersonRestored} />
+                <PersonHistory personId={person.id} refreshKey={historyRefresh} onRestored={onPersonRestored} />
               </div>
               <Separator />
             </>

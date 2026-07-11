@@ -198,7 +198,7 @@ exports.deletePerson = async (req, res, next) => {
 
     const person = await prisma.person.findUnique({
       where: { id },
-      select: { photoUrl: true, treeId: true, firstName: true, lastName: true, birthDate: true, birthPlace: true, deathDate: true, occupation: true, biography: true, gender: true, PersonDocument: { select: { fileKey: true, fileUrl: true } } },
+      select: { id: true, photoUrl: true, treeId: true, firstName: true, lastName: true, birthDate: true, birthPlace: true, deathDate: true, occupation: true, biography: true, gender: true, PersonDocument: { select: { fileKey: true, fileUrl: true } } },
     });
     if (!person) {
       return sendError(res, 404, 'PERSON_NOT_FOUND', 'Personne non trouvée');

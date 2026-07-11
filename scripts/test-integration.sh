@@ -410,6 +410,73 @@ if [ -n "$FAM40_TOKEN" ]; then
     code=$(curl -s -o /tmp/genea_export.pdf -w '%{http_code}' "$API/family-trees/$FAM40_TREE_ID/export/pdf" \
       -H "Authorization: Bearer $FAM40_TOKEN")
     assert_status "Export PDF Patrimoine" "200" "$code"
+
+    # Import GEDCOM
+    cat > /tmp/genea_import.ged <<'GEDEOF'
+0 HEAD
+1 SOUR GeneaIA Test
+0 @I999@ INDI
+1 NAME Integration /Import/
+1 SEX M
+0 TRLR
+GEDEOF
+    code=$(curl -s -o /tmp/genea_import.json -w '%{http_code}' -X POST "$API/family-trees/$FAM40_TREE_ID/import/gedcom" \
+      -H "Authorization: Bearer $FAM40_TOKEN" \
+      -F "gedcom=@/tmp/genea_import.ged")
+    assert_status "Import GEDCOM Patrimoine" "201" "$code"
+    assert_json "Import GEDCOM importedPersons" "d.get('importedPersons', 0) >= 1" "$(cat /tmp/genea_import.json 2>/dev/null)"
+
+    # Correspondances publiques
+    code=$(curl -s -o /tmp/genea_matches.json -w '%{http_code}' "$API/family-trees/$FAM40_TREE_ID/matches" \
+      -H "Authorization: Bearer $FAM40_TOKEN")
+    assert_status "GET matches Patrimoine" "200" "$code"
+    assert_json "matches payload" "'matches' in d" "$(cat /tmp/genea_matches.json 2>/dev/null)"
+
+    code=$(curl -s -o /tmp/genea_optin.json -w '%{http_code}' -X PUT "$API/family-trees/$FAM40_TREE_ID/matching-opt-in" \
+      -H "Authorization: Bearer $FAM40_TOKEN" -H 'Content-Type: application/json' \
+      -d '{"matchingOptIn":true}')
+    assert_status "PUT matching opt-in Patrimoine" "200" "$code"
+    assert_json "matchingOptIn true" "d.get('matchingOptIn') is True" "$(cat /tmp/genea_optin.json 2>/dev/null)"
+
+    # Historique personnes (versioning)
+    fam40_tree=$(curl -s "$API/family-trees/$FAM40_TREE_ID" -H "Authorization: Bearer $FAM40_TOKEN")
+    FAM40_PERSON=$(echo "$fam40_tree" | python3 -c "import sys,json; ps=json.load(sys.stdin).get('tree',{}).get('Person',[]); print(ps[0]['id'] if ps else '')" 2>/dev/null || echo "")
+    if [ -n "$FAM40_PERSON" ]; then
+      code=$(curl -s -o /tmp/genea_rev_before.json -w '%{http_code}' -X PUT "$API/persons/$FAM40_PERSON" \
+        -H "Authorization: Bearer $FAM40_TOKEN" -H 'Content-Type: application/json' \
+        -d '{"firstName":"RevisionTest"}')
+      assert_status "Update personne Patrimoine (versioning)" "200" "$code"
+      code=$(curl -s -o /tmp/genea_revisions.json -w '%{http_code}' "$API/persons/$FAM40_PERSON/revisions" \
+        -H "Authorization: Bearer $FAM40_TOKEN")
+      assert_status "GET revisions Patrimoine" "200" "$code"
+      assert_json "Au moins une révision" "len(d.get('revisions',[])) >= 1" "$(cat /tmp/genea_revisions.json 2>/dev/null)"
+    fi
+  fi
+fi
+
+# Import / matching / revisions bloqués forfait Solo
+if [ -n "$TOKEN" ] && [ -n "$PERSONAL_TREE_ID" ]; then
+  solo_tree=$(curl -s "$API/family-trees/$PERSONAL_TREE_ID" -H "$AUTH")
+  SOLO_PERSON=$(echo "$solo_tree" | python3 -c "import sys,json; ps=json.load(sys.stdin).get('tree',{}).get('Person',[]); print(ps[0]['id'] if ps else '')" 2>/dev/null || echo "")
+
+  cat > /tmp/genea_import_solo.ged <<'GEDEOF'
+0 HEAD
+0 @I1@ INDI
+1 NAME Solo /Test/
+0 TRLR
+GEDEOF
+  code=$(curl -s -o /tmp/genea_import_solo.json -w '%{http_code}' -X POST "$API/family-trees/$PERSONAL_TREE_ID/import/gedcom" \
+    -H "$AUTH" -F "gedcom=@/tmp/genea_import_solo.ged")
+  assert_status "Import GEDCOM forfait Solo bloqué" "403" "$code" "$(cat /tmp/genea_import_solo.json 2>/dev/null)"
+
+  code=$(curl -s -o /tmp/genea_optin_solo.json -w '%{http_code}' -X PUT "$API/family-trees/$PERSONAL_TREE_ID/matching-opt-in" \
+    -H "$AUTH" -H 'Content-Type: application/json' \
+    -d '{"matchingOptIn":true}')
+  assert_status "Matching opt-in Solo bloqué" "403" "$code" "$(cat /tmp/genea_optin_solo.json 2>/dev/null)"
+
+  if [ -n "$SOLO_PERSON" ]; then
+    code=$(curl -s -o /tmp/genea_rev_solo.json -w '%{http_code}' "$API/persons/$SOLO_PERSON/revisions" -H "$AUTH")
+    assert_status "Révisions Solo bloquées" "403" "$code" "$(cat /tmp/genea_rev_solo.json 2>/dev/null)"
   fi
 fi
 

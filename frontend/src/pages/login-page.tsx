@@ -82,7 +82,7 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" disabled={loading} className="w-full" data-testid="login-submit">
               {loading ? t("login.submitting") : t("login.submit")}
             </Button>
           </form>

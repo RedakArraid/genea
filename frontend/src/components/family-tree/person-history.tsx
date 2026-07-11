@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 
 interface PersonHistoryProps {
   personId: string
+  refreshKey?: number
   onRestored?: () => void
 }
 
-export function PersonHistory({ personId, onRestored }: PersonHistoryProps) {
+export function PersonHistory({ personId, refreshKey = 0, onRestored }: PersonHistoryProps) {
   const { t } = useTranslation("tree")
   const [revisions, setRevisions] = useState<PersonRevision[]>([])
   const [loading, setLoading] = useState(true)
@@ -23,7 +24,7 @@ export function PersonHistory({ personId, onRestored }: PersonHistoryProps) {
       .finally(() => setLoading(false))
   }
 
-  useEffect(load, [personId])
+  useEffect(load, [personId, refreshKey])
 
   const handleRestore = async (revisionId: string) => {
     try {

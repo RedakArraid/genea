@@ -7,13 +7,13 @@ test.describe("Boutons — parcours principal", () => {
     await clearAuth(page)
   })
 
-  test("connexion et inscription — onglets et liens", async ({ page }) => {
+  test("connexion et inscription — liens", async ({ page }) => {
     await page.goto("/login")
-    await page.getByRole("tab", { name: "Mot de passe" }).click()
-    await page.getByRole("tab", { name: /Code/i }).click()
-    await page.getByRole("link", { name: /inscri/i }).click()
+    await expect(page.locator("#login")).toBeVisible()
+    await expect(page.locator("#password")).toBeVisible()
+    await page.getByRole("link", { name: /inscri|sign up|register/i }).click()
     await expect(page).toHaveURL(/\/register/)
-    await page.getByRole("link", { name: /connexion/i }).click()
+    await page.getByRole("link", { name: /connexion|log in|sign in/i }).click()
     await expect(page).toHaveURL(/\/login/)
   })
 

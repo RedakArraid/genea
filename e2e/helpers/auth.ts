@@ -6,6 +6,12 @@ export const TEST_USER = {
   password: "password123",
 }
 
+export const PATRIMONY_USER = {
+  phone: "0700000003",
+  email: "famille40@geneaia.app",
+  password: "password123",
+}
+
 export const TEST_ADMIN = {
   phone: "0700000010",
   email: "admin@geneamap.com",
@@ -24,10 +30,9 @@ export async function loginWithPassword(
 ) {
   const loginId = creds.phone ?? creds.email ?? ""
   await page.goto("/login")
-  await page.getByRole("tab", { name: "Mot de passe" }).click()
   await page.locator("#login").fill(loginId)
   await page.locator("#password").fill(creds.password)
-  await page.getByRole("button", { name: "Se connecter" }).click()
+  await page.getByTestId("login-submit").click()
   await page.waitForURL(/\/dashboard/, { timeout: 15_000 })
 }
 
@@ -39,5 +44,16 @@ export async function getFirstTreeId(page: Page): Promise<string> {
     .getAttribute("href")
   const treeId = href?.split("/").pop()
   if (!treeId) throw new Error("Aucun arbre trouvé sur le tableau de bord")
+  return treeId
+}
+
+export async function getPatrimonyTreeId(page: Page): Promise<string> {
+  await page.goto("/dashboard")
+  const href = await page
+    .getByRole("link", { name: /Traoré|Famille Traoré/i })
+    .first()
+    .getAttribute("href")
+  const treeId = href?.match(/family-tree\/([^/]+)/)?.[1]
+  if (!treeId) throw new Error("Arbre Patrimoine (Famille Traoré) introuvable")
   return treeId
 }

@@ -92,8 +92,8 @@ Mot de passe utilisateurs test : `password123`.
 |---|---|
 | `npm run test:frontend` | Layout engine (12 tests, dont multi-conjoints) |
 | `npm run test:backend` | Jest backend |
-| `npm run test:e2e` | Playwright : admin, boutons, collaboration, édition personne |
-| `bash scripts/test-storage.sh` | Smoke test stockage (upload + lecture proxy) |
+| `npm run test:e2e` | Playwright : admin, boutons, collaboration, édition personne, **Patrimoine** (import GEDCOM, historique, correspondances, landing XOF) |
+| `bash scripts/test-integration.sh` | Smoke API **69 assertions** (export/import GEDCOM, matching, révisions, permissions) |
 | `bash scripts/check-r2.sh` | Vérification credentials Cloudflare R2 |
 
 E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`.
@@ -116,6 +116,7 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 - **2026-07-05 (nuit, fix menu ajouter enfant v2)** — Panneau latéral : `modal={false}` sur le dropdown (évite le blocage pointer-events / scroll lock dans le aside scrollable), état `open` contrôlé, callbacks stabilisés (`useCallback`/`useMemo`), z-index positioner `z-[300]`, menu ouvert vers la gauche.
 - **2026-07-05 (nuit, fix menu ajouter enfant)** — Fix menu « + Ajouter » (nouvel enfant / lier existant) : extraction `ChildAddMenu`, `RelSection` et `RelChip` hors du render de `SidePanelContent` (évite remontage React qui fermait le dropdown) ; `queueMicrotask` sur les actions menu ; arête mariage canvas wrappée en `absolute` + z-index.
 - **2026-07-05 (soir, lier enfant existant)** — Menu « Nouvel enfant / Lier existant » (panneau latéral, icône bébé conjoint, arête mariage) ; dialogue `LinkExistingChildDialog` ; fix direction parent/enfant dans « Lier ».
+- **2026-07-11 (nuit, polish)** — Landing `#prix` dual XOF/USD ; tests intégration import/matching/révisions (69/69) ; E2E Patrimoine ; seed `0700000003` en Patrimoine ; fix DELETE personne + refresh historique panneau.
 - **2026-07-11 (nuit, intégration complète)** — Import GEDCOM, API matching, historique Patrimoine (`PersonRevision`), tarifs dual XOF/USD, admin i18n fr/en, OpenWA compose + doc, OTP libellé WhatsApp, `canVersioning`/`canExport` dans `treeAccess`.
 - **2026-07-11 (soir, admin i18n)** — Back-office admin internationalisé fr/en : namespace `admin` (shell, pages dashboard/users/trees/storage/smtp/openwa/demo/plans/promo), `LanguageSwitcher` dans `admin-shell`, `data-testid` E2E inchangés.
 - **2026-07-11 (soir)** — Export **GEDCOM & PDF** : routes `GET /api/family-trees/:id/export/gedcom|pdf`, gating via `canExport` (forfaits Famille/Patrimoine, plan du propriétaire), bouton Exporter dans la toolbar arbre, tests unitaires + intégration.
