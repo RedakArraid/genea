@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test"
 
-const frontendURL = process.env.FRONTEND_URL || "http://localhost:5174"
+const frontendURL = process.env.FRONTEND_URL || "http://localhost:5173"
 
 export default defineConfig({
   testDir: "./e2e",

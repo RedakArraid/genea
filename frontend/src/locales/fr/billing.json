@@ -53,8 +53,7 @@
         "5 arbres, 500 fiches par arbre",
         "100 photos & documents inclus",
         "Collaborateurs illimités",
-        "Correspondances publiques",
-        "Export GEDCOM & PDF"
+        "Arbres publics en lecture seule"
       ]
     },
     "PATRIMONY": {
@@ -66,8 +65,7 @@
       "features": [
         "Personnes et arbres illimités",
         "Photos & documents illimités",
-        "Versioning et historique complet",
-        "Import multi-formats",
+        "Arbres publics en lecture seule",
         "Support prioritaire"
       ]
     }

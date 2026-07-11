@@ -1,5 +1,5 @@
 const prisma = require('../lib/prisma');
-const { CURRENCY, getPlanPrice, getPlanLimits } = require('../lib/plans');
+const { CURRENCY, getPlanPrice, getPlanLimits, serializePlan, toPaystackAmount } = require('../lib/plans');
 const { validatePromoCode, applyDiscount } = require('../lib/promo');
 const { generateReference, fulfillPayment } = require('../lib/payments/fulfill');
 const payments = require('../lib/payments');
@@ -42,7 +42,7 @@ exports.previewCheckout = async (req, res, next) => {
       finalAmount,
       promo: promo ? { code: promo.code, discountType: promo.discountType, discountValue: promo.discountValue } : null,
       promoError,
-      limits: getPlanLimits(plan),
+      limits: serializePlan(getPlanLimits(plan)),
     });
   } catch (error) {
     if (error.statusCode) return res.status(error.statusCode).json({ message: error.message });
@@ -133,7 +133,7 @@ exports.initializeCheckout = async (req, res, next) => {
         userId: user.id,
         reference,
         provider: checkout.provider,
-        amount: finalAmount,
+        amount: toPaystackAmount(finalAmount),
         currency: CURRENCY,
         plan,
         status: 'PENDING',
@@ -181,7 +181,7 @@ exports.verifyCheckout = async (req, res, next) => {
     }
 
     const verified = await payments.verifyCheckout(payment.provider, reference);
-    if (verified.success && verified.amount >= payment.amount) {
+    if (verified.success && Math.round(verified.amount * 100) >= payment.amount) {
       await fulfillPayment(payment.id);
       const updated = await prisma.payment.findUnique({ where: { id: payment.id } });
       const user = await prisma.user.findUnique({

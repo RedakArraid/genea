@@ -71,10 +71,9 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 | 0700000002 | demo@geneaia.app | Arbre démo Famille Dupont (10 pers.) |
 | 0700000003 | famille40@geneaia.app | **Famille Traoré : 40 personnes, 5 générations** (`backend/src/lib/largeFamilyTree.js`) |
 | 0700000004 | testeur@geneaia.app | Compte paiement (plan inactif) |
-| 0700000010 | admin@geneamap.com | Admin production (`admin123`) |
-| 0700000010 | admin@geneaia.app | Admin local seed (`password123`) |
+| 0700000010 | admin@geneamap.com | Admin (`admin123`) |
 
-Mot de passe universel : `password123`.
+Mot de passe utilisateurs test : `password123`.
 
 ## 5. Décisions d'architecture
 
@@ -113,6 +112,7 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 - **2026-07-05 (nuit, fix menu ajouter enfant v2)** — Panneau latéral : `modal={false}` sur le dropdown (évite le blocage pointer-events / scroll lock dans le aside scrollable), état `open` contrôlé, callbacks stabilisés (`useCallback`/`useMemo`), z-index positioner `z-[300]`, menu ouvert vers la gauche.
 - **2026-07-05 (nuit, fix menu ajouter enfant)** — Fix menu « + Ajouter » (nouvel enfant / lier existant) : extraction `ChildAddMenu`, `RelSection` et `RelChip` hors du render de `SidePanelContent` (évite remontage React qui fermait le dropdown) ; `queueMicrotask` sur les actions menu ; arête mariage canvas wrappée en `absolute` + z-index.
 - **2026-07-05 (soir, lier enfant existant)** — Menu « Nouvel enfant / Lier existant » (panneau latéral, icône bébé conjoint, arête mariage) ; dialogue `LinkExistingChildDialog` ; fix direction parent/enfant dans « Lier ».
+- **2026-07-11** — Alignement cohérence projet : compte admin seed/tests/docs (`admin@geneamap.com` / `admin123`), ports locaux unifiés (3001/5173), test intégration inscription avec téléphone, sérialisation `Infinity`→`null` dans API plans, `Payment.amount` en centimes USD, retrait enum `CINETPAY`, features forfaits sans promesses non livrées (GEDCOM/versioning), tests intégration en CI.
 - **2026-07-05 (soir, OpenWA admin)** — Page admin `/admin/openwa` : table `OpenWaSetting`, API GET/PATCH + statut session + test WhatsApp. OTP : WhatsApp prioritaire (OpenWA), email SMTP secours.
 - **2026-07-05 (soir, responsive)** — Refonte responsive complète : SidePanel Sheet mobile, toolbar arbre compacte, menu hamburger marketing, dashboard/timeline/matches touch-friendly, admin tables colonnes adaptatives, pinch-to-zoom canvas, spec E2E viewport 375px. Build frontend vert.
 - **2026-07-05 (soir, layout réorganiser)** — Fix « Réorganiser » : parents placés au-dessus de la personne racine (générations top-down, vraies racines sans parents in-tree, directChildren assoupli si un seul parent référencé). 14 tests layout.

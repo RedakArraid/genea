@@ -1,9 +1,9 @@
 const prisma = require('../lib/prisma');
-const { PLANS } = require('../lib/plans');
+const { PLANS, listPlansForApi } = require('../lib/plans');
 const { getEffectivePlanLimits, isPlanEntitlementActive } = require('../lib/planAccess');
 
 exports.listPlans = (req, res) => {
-  res.json({ plans: Object.values(PLANS) });
+  res.json({ plans: listPlansForApi() });
 };
 
 exports.getMyPlan = async (req, res, next) => {
@@ -18,7 +18,7 @@ exports.getMyPlan = async (req, res, next) => {
       planActive: isPlanEntitlementActive(user),
       planExpiresAt: user.planExpiresAt,
       limits,
-      catalog: Object.values(PLANS),
+      catalog: listPlansForApi(),
     });
   } catch (error) {
     next(error);

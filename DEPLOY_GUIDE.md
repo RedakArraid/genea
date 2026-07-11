@@ -8,7 +8,7 @@ Application déployée sur le **VPS Contabo** (`178.238.229.159`, alias SSH `vps
 
 | Env | Branche | Frontend | API | Bucket R2 | Dossier VPS |
 |---|---|---|---|---|---|
-| Local | `dev` | http://localhost:5174 | http://localhost:3002/api | MinIO local | — |
+| Local | `dev` | http://localhost:5173 | http://localhost:3001/api | MinIO local | — |
 | Staging | `staging` | https://staging.geneamap.com | https://api-staging.geneamap.com/api | `geneamap-staging` | `/root/geneaia-staging/` |
 | Production | `main` | https://geneamap.com | https://api.geneamap.com/api | `geneamap-prod` | `/root/geneaia/` |
 

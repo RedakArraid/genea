@@ -91,6 +91,58 @@ jobs:
         cd frontend
         npm test
 
+    - name: Seed database
+      run: |
+        cd backend
+        npx prisma db seed
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneaia_test
+
+    - name: Start MinIO
+      run: |
+        docker run -d --name geneaia-minio-ci -p 9000:9000 \
+          -e MINIO_ROOT_USER=geneaia_minio \
+          -e MINIO_ROOT_PASSWORD=geneaia_minio_password \
+          minio/minio server /data --address :9000
+        sleep 5
+
+    - name: Start API for integration tests
+      run: |
+        cd backend
+        node src/index.js &
+        echo $! > /tmp/geneaia-api.pid
+        for i in $(seq 1 30); do
+          curl -sf http://localhost:3001/api/health && exit 0
+          sleep 2
+        done
+        echo "API failed to start"
+        exit 1
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneaia_test
+        JWT_SECRET: test-secret-key
+        NODE_ENV: development
+        PORT: 3001
+        S3_ENDPOINT: http://localhost:9000
+        S3_ACCESS_KEY: geneaia_minio
+        S3_SECRET_KEY: geneaia_minio_password
+        S3_BUCKET: geneaia
+        S3_REGION: us-east-1
+        STORAGE_USE_PROXY: "true"
+        STORAGE_AUTO_INIT: "true"
+        CORS_ORIGIN: http://localhost:5173
+        FRONTEND_URL: http://localhost:5173
+
+    - name: Integration API tests
+      run: bash scripts/test-integration.sh
+      env:
+        API_URL: http://localhost:3001/api
+
+    - name: Stop API and MinIO
+      if: always()
+      run: |
+        kill "$(cat /tmp/geneaia-api.pid 2>/dev/null)" 2>/dev/null || true
+        docker rm -f geneaia-minio-ci 2>/dev/null || true
+
     - name: Build Frontend
       run: |
         cd frontend

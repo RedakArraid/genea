@@ -53,8 +53,7 @@
         "5 trees, 500 profiles per tree",
         "100 photos & documents included",
         "Unlimited collaborators",
-        "Public matches",
-        "GEDCOM & PDF export"
+        "Public read-only trees"
       ]
     },
     "PATRIMONY": {
@@ -66,8 +65,7 @@
       "features": [
         "Unlimited people and trees",
         "Unlimited photos & documents",
-        "Versioning and full history",
-        "Multi-format import",
+        "Public read-only trees",
         "Priority support"
       ]
     }

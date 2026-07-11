@@ -42,14 +42,13 @@ const PLANS = {
     maxCollaborators: Infinity,
     maxMediaAssets: 100,
     canPublicMatching: true,
-    canExport: true,
+    canExport: false,
     canVersioning: false,
     features: [
       '5 arbres, 500 fiches par arbre',
       '100 photos & documents inclus',
       'Collaborateurs illimités',
-      'Correspondances publiques',
-      'Export GEDCOM & PDF',
+      'Arbres publics en lecture seule',
     ],
   },
   PATRIMONY: {
@@ -67,13 +66,12 @@ const PLANS = {
     maxCollaborators: Infinity,
     maxMediaAssets: Infinity,
     canPublicMatching: true,
-    canExport: true,
-    canVersioning: true,
+    canExport: false,
+    canVersioning: false,
     features: [
       'Personnes et arbres illimités',
       'Photos & documents illimités',
-      'Versioning et historique complet',
-      'Import multi-formats',
+      'Arbres publics en lecture seule',
       'Support prioritaire',
     ],
   },
@@ -121,6 +119,19 @@ function toPaystackAmount(usd) {
   return Math.round(usd * 100);
 }
 
+/** Sérialise un forfait pour JSON (Infinity → null) */
+function serializePlan(plan) {
+  const out = { ...plan };
+  for (const key of Object.keys(out)) {
+    if (out[key] === Infinity) out[key] = null;
+  }
+  return out;
+}
+
+function listPlansForApi() {
+  return Object.values(PLANS).map(serializePlan);
+}
+
 module.exports = {
   PLANS,
   CURRENCY,
@@ -131,4 +142,6 @@ module.exports = {
   isPaidPlan,
   computeDiscountedAmount,
   toPaystackAmount,
+  serializePlan,
+  listPlansForApi,
 };

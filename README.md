@@ -19,13 +19,13 @@ docker compose up -d --build
 docker compose exec backend npx prisma db seed
 ```
 
-**Accès (ports par défaut du `.env.example`) :**
-- Frontend : http://localhost:5174
-- API : http://localhost:3002
+**Accès (ports par défaut) :**
+- Frontend : http://localhost:5173
+- API : http://localhost:3001
 - MinIO console : http://localhost:9001
 - Mailpit (emails OTP) : http://localhost:8025
 
-Comptes de test : `0700000001` / `password123` — admin : `0700000010` / `password123`
+Comptes de test : `0700000001` / `password123` — admin : `0700000010` / `admin123` (`admin@geneamap.com`)
 
 ## 📦 Stockage fichiers (MinIO / S3)
 

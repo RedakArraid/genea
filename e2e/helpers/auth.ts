@@ -8,8 +8,8 @@ export const TEST_USER = {
 
 export const TEST_ADMIN = {
   phone: "0700000010",
-  email: "admin@geneaia.app",
-  password: "password123",
+  email: "admin@geneamap.com",
+  password: "admin123",
 }
 
 export async function clearAuth(page: Page) {

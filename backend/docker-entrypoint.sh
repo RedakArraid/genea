@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 cd /app
+if [ ! -d node_modules/libphonenumber-js ]; then
+  echo "→ npm install (dépendances manquantes)…"
+  npm install
+fi
 echo "→ Prisma generate…"
 npx prisma generate
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then

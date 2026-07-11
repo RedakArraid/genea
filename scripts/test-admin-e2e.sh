@@ -3,8 +3,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-FRONTEND_URL="${FRONTEND_URL:-http://localhost:5174}"
-API_URL="${API_URL:-http://localhost:3002/api}"
+FRONTEND_URL="${FRONTEND_URL:-http://localhost:5173}"
+API_URL="${API_URL:-http://localhost:3001/api}"
 SPECS="${1:-e2e/admin.spec.ts}"
 
 cd "$ROOT"

@@ -142,7 +142,6 @@ model User {
 
 enum PaymentProvider {
   PAYSTACK
-  CINETPAY
 }
 
 enum PaymentStatus {
@@ -161,7 +160,7 @@ model Payment {
   userId      String
   reference   String           @unique
   provider    PaymentProvider
-  amount      Int
+  amount      Int              /// Montant en centimes USD
   currency    String           @default("USD")
   plan        Plan
   status      PaymentStatus    @default(PENDING)

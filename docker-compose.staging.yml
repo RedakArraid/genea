@@ -59,7 +59,6 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - ADMIN_PHONE=${ADMIN_PHONE:-+2250700000010}
       - OTP_EXPIRES_MINUTES=${OTP_EXPIRES_MINUTES:-10}
-      - OTP_EXPIRES_MINUTES=${OTP_EXPIRES_MINUTES:-10}
     depends_on:
       postgres:
         condition: service_healthy

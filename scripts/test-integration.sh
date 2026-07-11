@@ -158,13 +158,13 @@ fi
 # Admin API — login admin
 admin_login=$(curl -s -X POST "$API/auth/login" \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@geneaia.app","password":"password123"}')
+  -d '{"phone":"0700000010","password":"admin123"}')
 ADMIN_TOKEN=$(echo "$admin_login" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
 if [ -z "$ADMIN_TOKEN" ]; then
-  echo "  ✗ Login admin@geneaia.app"
+  echo "  ✗ Login admin (0700000010 / admin123)"
   FAIL=$((FAIL + 1))
 else
-  echo "  ✓ Login admin@geneaia.app"
+  echo "  ✓ Login admin (0700000010 / admin123)"
   PASS=$((PASS + 1))
 fi
 
@@ -266,9 +266,10 @@ for i in d.get('invites',[]):
     INVITE_ID=$(echo "$pending_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('invite',{}).get('id',''))" 2>/dev/null || echo "")
 
     if [ -n "$INVITE_TOKEN" ]; then
+      COLLAB_PHONE="07$(printf '%08d' $(($(date +%s) % 100000000)))"
       reg_json=$(curl -s -X POST "$API/auth/register" \
         -H 'Content-Type: application/json' \
-        -d "{\"name\":\"Collab Test\",\"email\":\"$COLLAB_EMAIL\",\"password\":\"password123\"}")
+        -d "{\"name\":\"Collab Test\",\"phone\":\"$COLLAB_PHONE\",\"email\":\"$COLLAB_EMAIL\",\"password\":\"password123\"}")
       COLLAB_TOKEN=$(echo "$reg_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
 
       if [ -z "$COLLAB_TOKEN" ]; then
@@ -321,9 +322,10 @@ billing_json=$(curl -s -X POST "$API/billing/preview" -H 'Content-Type: applicat
 assert_json "Billing preview FAMILY 30 USD" "d.get('finalAmount') == 30 and d.get('limits',{}).get('maxTrees') == 5" "$billing_json"
 
 reg_email="billing-test-$(date +%s)@example.com"
+reg_phone="07$(printf '%08d' $(($(date +%s) % 100000000)))"
 reg_json=$(curl -s -X POST "$API/auth/register" \
   -H 'Content-Type: application/json' \
-  -d "{\"name\":\"Billing Test\",\"email\":\"$reg_email\",\"password\":\"password123\"}")
+  -d "{\"name\":\"Billing Test\",\"phone\":\"$reg_phone\",\"email\":\"$reg_email\",\"password\":\"password123\"}")
 assert_json "Inscription planActive=false" "d.get('user',{}).get('planActive') is False" "$reg_json"
 NEW_TOKEN=$(echo "$reg_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
 if [ -n "$NEW_TOKEN" ]; then

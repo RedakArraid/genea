@@ -1,13 +1,11 @@
 /**
  * Script de seed — admin, test user, arbre perso, démo Famille Dupont
  * Comptes (téléphone = identifiant principal) :
- *   0700000010 / admin@geneamap.com — admin123 (admin prod)
- *   0700000010 / admin@geneaia.app — password123 (admin local seed legacy)
+ *   0700000010 / admin@geneamap.com — admin123 (admin)
  *   0700000001 / test@example.com — password123
  *   0700000002 / demo@geneaia.app — password123
  *   0700000003 / famille40@geneaia.app — password123 (famille 40 personnes)
- *   0700000004 — testeur paiement (email optionnel testeur@geneaia.app)
- *   0700000003 / famille40@geneaia.app — password123 (famille 40 personnes)
+ *   0700000004 / testeur@geneaia.app — password123 (testeur paiement, plan inactif)
  */
 
 const prisma = require('../src/lib/prisma');
