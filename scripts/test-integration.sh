@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests d'intégration API GeneaIA (démo, accès, permissions)
+# Tests d'intégration API geneamap (démo, accès, permissions)
 set -euo pipefail
 
 API="${API_URL:-http://localhost:3001/api}"
@@ -29,7 +29,7 @@ assert_json() {
   fi
 }
 
-echo "=== GeneaIA — Tests d'intégration API ==="
+echo "=== geneamap — Tests d'intégration API ==="
 echo "API: $API"
 echo
 
@@ -207,7 +207,7 @@ fi
 if [ -n "$TOKEN" ]; then
   demo_login=$(curl -s -X POST "$API/auth/login" \
     -H 'Content-Type: application/json' \
-    -d '{"email":"demo@geneaia.app","password":"password123"}')
+    -d '{"email":"demo@geneamap.com","password":"password123"}')
   DEMO_TOKEN=$(echo "$demo_login" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
   DEMO_AUTH="Authorization: Bearer $DEMO_TOKEN"
   DEMO_USER_ID=$(echo "$demo_login" | python3 -c "import sys,json; print(json.load(sys.stdin).get('user',{}).get('id',''))" 2>/dev/null || echo "")
@@ -242,7 +242,7 @@ for i in d.get('invites',[]):
 
     collab_add=$(curl -s -w '\n%{http_code}' -X POST "$API/family-trees/$PERSONAL_TREE_ID/collaborators" \
       -H "$AUTH" -H 'Content-Type: application/json' \
-      -d '{"email":"demo@geneaia.app","role":"VIEWER"}')
+      -d '{"email":"demo@geneamap.com","role":"VIEWER"}')
     collab_code=$(echo "$collab_add" | tail -1)
     assert_status "POST collaborateur existant (VIEWER)" "201" "$collab_code"
 
@@ -252,7 +252,7 @@ for i in d.get('invites',[]):
 
     code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API/family-trees/$PERSONAL_TREE_ID/collaborators" \
       -H "$AUTH" -H 'Content-Type: application/json' \
-      -d '{"email":"demo@geneaia.app","role":"EDITOR"}')
+      -d '{"email":"demo@geneamap.com","role":"EDITOR"}')
     assert_status "POST upgrade collaborateur EDITOR" "201" "$code"
 
     demo_tree=$(curl -s "$API/family-trees/$PERSONAL_TREE_ID" -H "$DEMO_AUTH")
@@ -312,7 +312,7 @@ for i in d.get('invites',[]):
       curl -s -o /dev/null -X DELETE "$API/family-trees/$PERSONAL_TREE_ID/collaborators/$DEMO_USER_ID" -H "$AUTH"
     fi
   else
-    echo "  ✗ Arbre personnel ou compte demo@geneaia.app introuvable"
+    echo "  ✗ Arbre personnel ou compte demo@geneamap.com introuvable"
     FAIL=$((FAIL + 1))
   fi
 fi
@@ -414,7 +414,7 @@ if [ -n "$FAM40_TOKEN" ]; then
     # Import GEDCOM
     cat > /tmp/genea_import.ged <<'GEDEOF'
 0 HEAD
-1 SOUR GeneaIA Test
+1 SOUR geneamap Test
 0 @I999@ INDI
 1 NAME Integration /Import/
 1 SEX M

@@ -41,20 +41,20 @@ ssh root@168.231.86.179
 
 ```bash
 # Sur le serveur, créer les dossiers
-mkdir -p /var/www/geneaia-staging
-mkdir -p /var/www/geneaia-production
+mkdir -p /var/www/geneamap-staging
+mkdir -p /var/www/geneamap-production
 
 # Créer la configuration staging
-cd /var/www/geneaia-staging
+cd /var/www/geneamap-staging
 
 cat > docker-compose.yml << 'EOF'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: geneaia-db-staging
+    container_name: geneamap-db-staging
     environment:
-      POSTGRES_DB: geneaia_staging
-      POSTGRES_USER: geneaia_staging
+      POSTGRES_DB: geneamap_staging
+      POSTGRES_USER: geneamap_staging
       POSTGRES_PASSWORD: 7xRr77PJmojqFftNgfmgeovF8
     volumes:
       - postgres_staging_data:/var/lib/postgresql/data
@@ -62,17 +62,17 @@ services:
       - "5433:5432"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U geneaia_staging -d geneaia_staging"]
+      test: ["CMD-SHELL", "pg_isready -U geneamap_staging -d geneamap_staging"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   backend:
-    image: ghcr.io/redakarraid/geneaia-backend:staging
-    container_name: geneaia-backend-staging
+    image: ghcr.io/redakarraid/geneamap-backend:staging
+    container_name: geneamap-backend-staging
     environment:
       - NODE_ENV=staging
-      - DATABASE_URL=postgresql://geneaia_staging:7xRr77PJmojqFftNgfmgeovF8@postgres:5432/geneaia_staging?schema=public
+      - DATABASE_URL=postgresql://geneamap_staging:7xRr77PJmojqFftNgfmgeovF8@postgres:5432/geneamap_staging?schema=public
       - JWT_SECRET=2nyEzaFtRa0iXSJYGTIUdMPet
       - CORS_ORIGIN=http://168.231.86.179:3010
       - PORT=3001
@@ -84,8 +84,8 @@ services:
       - "3011:3001"
 
   frontend:
-    image: ghcr.io/redakarraid/geneaia-frontend:staging
-    container_name: geneaia-frontend-staging
+    image: ghcr.io/redakarraid/geneamap-frontend:staging
+    container_name: geneamap-frontend-staging
     restart: unless-stopped
     ports:
       - "3010:80"
@@ -108,27 +108,27 @@ docker-compose logs
 ### 1. Build des images en local
 
 ```bash
-cd /Users/kader/Desktop/projet-en-cours/geneaIA
+cd /Users/kader/Desktop/projet-en-cours/geneamap
 
 # Build backend
 cd backend
-docker build -t geneaia-backend:local .
+docker build -t geneamap-backend:local .
 
 # Build frontend  
 cd ../frontend
-docker build -t geneaia-frontend:local .
+docker build -t geneamap-frontend:local .
 ```
 
 ### 2. Sauvegarder et transférer les images
 
 ```bash
 # Sauvegarder les images
-docker save geneaia-backend:local > geneaia-backend.tar
-docker save geneaia-frontend:local > geneaia-frontend.tar
+docker save geneamap-backend:local > geneamap-backend.tar
+docker save geneamap-frontend:local > geneamap-frontend.tar
 
 # Transférer vers le serveur (avec votre méthode SSH qui marche)
-scp geneaia-backend.tar root@168.231.86.179:/tmp/
-scp geneaia-frontend.tar root@168.231.86.179:/tmp/
+scp geneamap-backend.tar root@168.231.86.179:/tmp/
+scp geneamap-frontend.tar root@168.231.86.179:/tmp/
 ```
 
 ### 3. Charger sur le serveur
@@ -138,13 +138,13 @@ scp geneaia-frontend.tar root@168.231.86.179:/tmp/
 ssh root@168.231.86.179
 
 # Charger les images
-docker load < /tmp/geneaia-backend.tar
-docker load < /tmp/geneaia-frontend.tar
+docker load < /tmp/geneamap-backend.tar
+docker load < /tmp/geneamap-frontend.tar
 
 # Modifier le docker-compose.yml pour utiliser les images locales
-cd /var/www/geneaia-staging
-sed -i 's/ghcr.io\/redakarraid\/geneaia-backend:staging/geneaia-backend:local/g' docker-compose.yml
-sed -i 's/ghcr.io\/redakarraid\/geneaia-frontend:staging/geneaia-frontend:local/g' docker-compose.yml
+cd /var/www/geneamap-staging
+sed -i 's/ghcr.io\/redakarraid\/geneamap-backend:staging/geneamap-backend:local/g' docker-compose.yml
+sed -i 's/ghcr.io\/redakarraid\/geneamap-frontend:staging/geneamap-frontend:local/g' docker-compose.yml
 
 # Redémarrer
 docker-compose up -d
@@ -162,30 +162,30 @@ ssh -vvv root@168.231.86.179
 ssh-add -l
 
 # Ajouter la clé à l'agent
-ssh-add ~/.ssh/geneaia-deploy
+ssh-add ~/.ssh/geneamap-deploy
 ```
 
 ### 2. Méthode de clé SSH alternative
 
 ```bash
 # Créer une nouvelle clé avec un autre format
-ssh-keygen -t rsa -b 4096 -C "geneaia-deploy" -f ~/.ssh/geneaia-rsa
+ssh-keygen -t rsa -b 4096 -C "geneamap-deploy" -f ~/.ssh/geneamap-rsa
 
 # Copier la clé (méthode manuelle)
-cat ~/.ssh/geneaia-rsa.pub
+cat ~/.ssh/geneamap-rsa.pub
 
 # Sur le serveur, ajouter manuellement dans authorized_keys
 echo "VOTRE_CLE_PUBLIQUE_ICI" >> ~/.ssh/authorized_keys
 
 # Tester
-ssh -i ~/.ssh/geneaia-rsa root@168.231.86.179
+ssh -i ~/.ssh/geneamap-rsa root@168.231.86.179
 ```
 
 ### 3. Une fois SSH réparé
 
 ```bash
 # Mettre à jour GitHub Secrets avec la nouvelle clé
-cat ~/.ssh/geneaia-rsa
+cat ~/.ssh/geneamap-rsa
 
 # Copier dans STAGING_SSH_KEY et PROD_SSH_KEY sur GitHub
 

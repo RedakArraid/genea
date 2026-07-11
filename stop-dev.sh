@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# 🛑 Script d'arrêt pour GeneaIA
+# 🛑 Script d'arrêt pour geneamap
 # Usage: ./stop-dev.sh
 
 set -e
 
-echo "🛑 Arrêt de l'environnement de développement GeneaIA..."
+echo "🛑 Arrêt de l'environnement de développement geneamap..."
 
 # Couleurs pour les messages
 RED='\033[0;31m'

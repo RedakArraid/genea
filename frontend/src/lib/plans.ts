@@ -47,7 +47,7 @@ export const PLANS: PlanDefinition[] = [
     canPublicMatching: false,
     canExport: false,
     canVersioning: false,
-    cta: "Try GeneaIA",
+    cta: "Try geneamap",
     features: [
       "1 tree, up to 25 profiles",
       "90 days to explore",

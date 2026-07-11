@@ -1,4 +1,4 @@
-# GeneaIA — CI/CD
+# geneamap — CI/CD
 
 Pipeline GitHub Actions : [.github/workflows/deploy.yml](.github/workflows/deploy.yml).
 Guide de déploiement complet : [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md).
@@ -33,8 +33,8 @@ flowchart LR
 
 ### Job `build` (push sur dev/staging/main)
 - Images Docker poussées sur GHCR :
-  - `ghcr.io/redakarraid/geneaia-backend:<branche>` (+ `latest` sur main)
-  - `ghcr.io/redakarraid/geneaia-frontend:<branche>` (+ `latest` sur main)
+  - `ghcr.io/redakarraid/geneamap-backend:<branche>` (+ `latest` sur main)
+  - `ghcr.io/redakarraid/geneamap-frontend:<branche>` (+ `latest` sur main)
 - `VITE_API_URL` cuit au build : `https://api.geneamap.com/api` (main), `https://api-staging.geneamap.com/api` (staging)
 
 ### Jobs `deploy-*` (push sur staging/main)
@@ -52,8 +52,8 @@ flowchart LR
 | `STAGING_HOST` / `PROD_HOST` | `178.238.229.159` (VPS Contabo) |
 | `STAGING_USER` / `PROD_USER` | `root` |
 | `STAGING_SSH_KEY` / `PROD_SSH_KEY` | clé privée SSH |
-| `STAGING_PATH` | `/root/geneaia-staging` |
-| `PROD_PATH` | `/root/geneaia` |
+| `STAGING_PATH` | `/root/geneamap-staging` |
+| `PROD_PATH` | `/root/geneamap` |
 
 Les secrets applicatifs (DB, JWT, **R2**, SMTP, Paystack) sont dans le `.env` **sur le serveur** (voir [.env.production.example](.env.production.example)) — jamais dans GitHub ni dans le repo.
 
@@ -73,7 +73,7 @@ Les secrets applicatifs (DB, JWT, **R2**, SMTP, Paystack) sont dans le `.env` **
 1. Workflow rouge au deploy → vérifier les secrets SSH et que `.env` existe dans le dossier cible.
 2. Health check externe KO → DNS pas propagé ou Traefik sans certificat ; vérifier `docker logs traefik` sur le VPS.
 3. Stockage KO → `bash scripts/check-r2.sh` avec les credentials du `.env`.
-4. Rollback base : backups dans `/root/geneaia/backups/backup_<timestamp>.sql`.
+4. Rollback base : backups dans `/root/geneamap/backups/backup_<timestamp>.sql`.
 
 ## Évolutions futures
 

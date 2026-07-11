@@ -29,7 +29,7 @@ function generateTreePdf(tree, persons) {
 
     doc.fontSize(20).text(tree.name || 'Arbre généalogique', { align: 'center' });
     doc.moveDown(0.5);
-    doc.fontSize(10).fillColor('#666').text(`Export GeneaIA — ${new Date().toLocaleDateString('fr-FR')}`, { align: 'center' });
+    doc.fontSize(10).fillColor('#666').text(`Export geneamap — ${new Date().toLocaleDateString('fr-FR')}`, { align: 'center' });
     doc.fillColor('#000');
 
     if (tree.description) {

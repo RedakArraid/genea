@@ -85,4 +85,4 @@ Clic droit sur une personne → **Modifier** ou **Supprimer**
 
 ---
 
-🎉 **Félicitations !** Vous savez maintenant utiliser toutes les façons d'ajouter des personnes à votre arbre généalogique GeneaIA ! L'interface épurée vous offre un accès rapide et intuitif.
+🎉 **Félicitations !** Vous savez maintenant utiliser toutes les façons d'ajouter des personnes à votre arbre généalogique geneamap ! L'interface épurée vous offre un accès rapide et intuitif.

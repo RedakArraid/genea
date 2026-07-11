@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Configuration CI/CD optimale pour GeneaIA"
+echo "🚀 Configuration CI/CD optimale pour geneamap"
 echo "============================================="
 
 # Variables de configuration
@@ -34,7 +34,7 @@ cat > secrets-github.txt << EOF
 STAGING_HOST=${SERVER_IP}
 STAGING_USER=root
 STAGING_SSH_KEY=<VOTRE_CLÉ_SSH_PRIVÉE_COMPLÈTE>
-STAGING_PATH=/var/www/geneaia-staging
+STAGING_PATH=/var/www/geneamap-staging
 STAGING_DB_PASSWORD=${STAGING_DB_PASSWORD}
 STAGING_JWT_SECRET=${STAGING_JWT_SECRET}
 
@@ -44,7 +44,7 @@ STAGING_JWT_SECRET=${STAGING_JWT_SECRET}
 PROD_HOST=${SERVER_IP}
 PROD_USER=root
 PROD_SSH_KEY=<VOTRE_CLÉ_SSH_PRIVÉE_COMPLÈTE>
-PROD_PATH=/var/www/geneaia-production
+PROD_PATH=/var/www/geneamap-production
 PROD_DB_PASSWORD=${PROD_DB_PASSWORD}
 PROD_JWT_SECRET=${PROD_JWT_SECRET}
 
@@ -65,24 +65,24 @@ cat > generate-ssh-key.sh << 'EOF'
 echo "🔑 Génération d'une clé SSH dédiée pour les déploiements..."
 
 # Générer une nouvelle clé SSH
-ssh-keygen -t ed25519 -C "geneaia-deploy-$(date +%Y%m%d)" -f ~/.ssh/geneaia-deploy -N ""
+ssh-keygen -t ed25519 -C "geneamap-deploy-$(date +%Y%m%d)" -f ~/.ssh/geneamap-deploy -N ""
 
 echo "✅ Clé SSH générée:"
-echo "📁 Clé privée: ~/.ssh/geneaia-deploy"
-echo "📁 Clé publique: ~/.ssh/geneaia-deploy.pub"
+echo "📁 Clé privée: ~/.ssh/geneamap-deploy"
+echo "📁 Clé publique: ~/.ssh/geneamap-deploy.pub"
 
 echo ""
 echo "🔐 Contenu de la clé privée (à copier dans GitHub Secrets):"
 echo "=========================================================="
-cat ~/.ssh/geneaia-deploy
+cat ~/.ssh/geneamap-deploy
 
 echo ""
 echo "📋 Prochaines étapes:"
 echo "1. Copier la clé privée ci-dessus dans GitHub Secrets (STAGING_SSH_KEY et PROD_SSH_KEY)"
 echo "2. Ajouter la clé publique sur le serveur:"
-echo "   ssh-copy-id -i ~/.ssh/geneaia-deploy.pub root@168.231.86.179"
+echo "   ssh-copy-id -i ~/.ssh/geneamap-deploy.pub root@168.231.86.179"
 echo "3. Tester la connexion:"
-echo "   ssh -i ~/.ssh/geneaia-deploy root@168.231.86.179"
+echo "   ssh -i ~/.ssh/geneamap-deploy root@168.231.86.179"
 EOF
 
 chmod +x generate-ssh-key.sh
@@ -91,7 +91,7 @@ echo "🔑 Script generate-ssh-key.sh créé"
 
 # Instructions finales
 cat > INSTRUCTIONS.md << 'EOF'
-# 🚀 Instructions de configuration CI/CD GeneaIA
+# 🚀 Instructions de configuration CI/CD geneamap
 
 ## 📋 Étapes à suivre
 
@@ -101,16 +101,16 @@ cat > INSTRUCTIONS.md << 'EOF'
 ./generate-ssh-key.sh
 
 # Copier la clé publique sur le serveur
-ssh-copy-id -i ~/.ssh/geneaia-deploy.pub root@168.231.86.179
+ssh-copy-id -i ~/.ssh/geneamap-deploy.pub root@168.231.86.179
 
 # Tester la connexion
-ssh -i ~/.ssh/geneaia-deploy root@168.231.86.179
+ssh -i ~/.ssh/geneamap-deploy root@168.231.86.179
 ```
 
 ### 2. 🔐 Configurer GitHub Secrets
 1. Aller sur GitHub → Settings → Secrets and variables → Actions
 2. Copier tous les secrets depuis `secrets-github.txt`
-3. Remplacer `<VOTRE_CLÉ_SSH_PRIVÉE_COMPLÈTE>` par le contenu de `~/.ssh/geneaia-deploy`
+3. Remplacer `<VOTRE_CLÉ_SSH_PRIVÉE_COMPLÈTE>` par le contenu de `~/.ssh/geneamap-deploy`
 
 ### 3. 🚀 Tester le déploiement
 ```bash
@@ -149,18 +149,18 @@ curl http://168.231.86.179:8080  # App production complète
 ### Erreur SSH
 ```bash
 # Vérifier la clé
-ssh -i ~/.ssh/geneaia-deploy root@168.231.86.179
+ssh -i ~/.ssh/geneamap-deploy root@168.231.86.179
 
 # Permissions correctes
-chmod 600 ~/.ssh/geneaia-deploy
-chmod 644 ~/.ssh/geneaia-deploy.pub
+chmod 600 ~/.ssh/geneamap-deploy
+chmod 644 ~/.ssh/geneamap-deploy.pub
 ```
 
 ### Erreur de déploiement
 ```bash
 # Sur le serveur, voir les logs
 ssh root@168.231.86.179
-cd /var/www/geneaia-staging
+cd /var/www/geneamap-staging
 docker-compose logs
 ```
 
@@ -168,7 +168,7 @@ docker-compose logs
 ```bash
 # Sur le serveur, reset complet
 docker-compose down
-docker volume rm geneaia-staging_postgres_staging_data
+docker volume rm geneamap-staging_postgres_staging_data
 docker-compose up -d
 ```
 EOF

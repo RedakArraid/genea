@@ -8,7 +8,7 @@ export const TEST_USER = {
 
 export const PATRIMONY_USER = {
   phone: "0700000003",
-  email: "famille40@geneaia.app",
+  email: "famille40@geneamap.com",
   password: "password123",
 }
 

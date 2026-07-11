@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const prisma = require('./prisma');
 
-const DEMO_OWNER_EMAIL = 'demo@geneaia.app';
+const DEMO_OWNER_EMAIL = 'demo@geneamap.com';
 const DEMO_OWNER_PHONE = '+2250700000002';
 
 async function createRelationship(type, sourceId, targetId) {
@@ -124,7 +124,7 @@ async function getOrCreateDemoOwner() {
 
   owner = await prisma.user.create({
     data: {
-      name: 'GeneaIA Démo',
+      name: 'geneamap Démo',
       phone: phoneTaken ? `+999${String(Date.now()).slice(-10)}` : DEMO_OWNER_PHONE,
       email: DEMO_OWNER_EMAIL,
       password,

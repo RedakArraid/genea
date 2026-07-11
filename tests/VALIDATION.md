@@ -1,4 +1,4 @@
-# Tests de Validation des Corrections GeneaIA
+# Tests de Validation des Corrections geneamap
 
 ## Tests Manuels de Base
 
@@ -240,4 +240,4 @@ describe('Authentication', () => {
    - Optimisation des requêtes Prisma
    - Compression des images
 
-Le projet GeneaIA est maintenant plus robuste et prêt pour un développement et déploiement sereins.
+Le projet geneamap est maintenant plus robuste et prêt pour un développement et déploiement sereins.

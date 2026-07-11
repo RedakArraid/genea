@@ -8,8 +8,10 @@ test.describe("Collaboration", () => {
 
   test("page invitation invite à se connecter", async ({ page }) => {
     await page.goto("/invite/00000000-0000-0000-0000-000000000000")
-    await expect(page.getByRole("link", { name: "Se connecter" })).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText(/Invitation/i)).toBeVisible()
+    await expect(
+      page.getByRole("main").getByRole("link", { name: /Se connecter|Log in|Sign in/i })
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole("main").getByText(/Tree invitation|Invitation à un arbre/i)).toBeVisible()
   })
 
   test("propriétaire ouvre dialogue partage", async ({ page }) => {

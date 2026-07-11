@@ -3,9 +3,9 @@
  * Comptes (téléphone = identifiant principal) :
  *   0700000010 / admin@geneamap.com — admin123 (admin)
  *   0700000001 / test@example.com — password123
- *   0700000002 / demo@geneaia.app — password123
- *   0700000003 / famille40@geneaia.app — password123 (famille 40 personnes)
- *   0700000004 / testeur@geneaia.app — password123 (testeur paiement, plan inactif)
+ *   0700000002 / demo@geneamap.com — password123
+ *   0700000003 / famille40@geneamap.com — password123 (famille 40 personnes)
+ *   0700000004 / testeur@geneamap.com — password123 (testeur paiement, plan inactif)
  */
 
 const prisma = require('../src/lib/prisma');
@@ -46,9 +46,9 @@ async function main() {
 
   const demoOwner = await prisma.user.create({
     data: {
-      name: 'GeneaIA Démo',
+      name: 'geneamap Démo',
       phone: '+2250700000002',
-      email: 'demo@geneaia.app',
+      email: 'demo@geneamap.com',
       password: hashedPassword,
       plan: 'PATRIMONY',
       role: 'USER',
@@ -74,7 +74,7 @@ async function main() {
     data: {
       name: 'Testeur Paiement',
       phone: '+2250700000004',
-      email: 'testeur@geneaia.app',
+      email: 'testeur@geneamap.com',
       password: hashedPassword,
       plan: 'SOLO',
       role: 'USER',
@@ -86,7 +86,7 @@ async function main() {
     data: {
       name: 'Famille 40 Test',
       phone: '+2250700000003',
-      email: 'famille40@geneaia.app',
+      email: 'famille40@geneamap.com',
       password: hashedPassword,
       plan: 'PATRIMONY',
       role: 'USER',
@@ -112,8 +112,8 @@ async function main() {
   }
 
   console.log(`Created users: ${admin.phone}, ${user.phone}, ${demoOwner.phone}, ${testeur.phone}, ${famille40User.phone}`);
-  console.log('Testeur CI — tel: 0700000004 | email: testeur@geneaia.app | mdp: password123');
-  console.log('Famille 40 — tel: 0700000003 | email: famille40@geneaia.app | mdp: password123');
+  console.log('Testeur CI — tel: 0700000004 | email: testeur@geneamap.com | mdp: password123');
+  console.log('Famille 40 — tel: 0700000003 | email: famille40@geneamap.com | mdp: password123');
 
   const personalTree = await prisma.familyTree.create({
     data: {

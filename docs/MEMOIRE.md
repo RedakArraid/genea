@@ -1,15 +1,15 @@
-# Mémoire projet — GeneaIA
+# Mémoire projet — geneamap
 
 > Source de vérité partagée entre toutes les IA et développeurs.
 > À lire en début de session, à mettre à jour en fin de tâche (voir [AGENTS.md](../AGENTS.md)).
 
-Dernière mise à jour : **2026-07-11** (arbres Organisation)
+Dernière mise à jour : **2026-07-11** (rebrand geneamap)
 
 ---
 
 ## 1. Vue d'ensemble
 
-**GeneaIA** est une application de généalogie : création d'arbres familiaux, fiches personnes (photos, documents), collaboration, plans payants internationaux (USD via Paystack, affichage EUR/USD).
+**geneamap** est une application de généalogie : création d'arbres familiaux, fiches personnes (photos, documents), collaboration, plans payants internationaux (USD via Paystack, affichage EUR/USD).
 
 | Couche | Techno |
 |---|---|
@@ -76,9 +76,9 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 | Téléphone | Compte | Contenu |
 |---|---|---|
 | 0700000001 | test@example.com | Arbre « Ma Famille » (1 personne racine) |
-| 0700000002 | demo@geneaia.app | Arbre démo Famille Dupont (10 pers.) |
-| 0700000003 | famille40@geneaia.app | **Famille Traoré : 40 personnes** — forfait **Patrimoine** (tests export/import/historique) |
-| 0700000004 | testeur@geneaia.app | Compte paiement (plan inactif) |
+| 0700000002 | demo@geneamap.com | Arbre démo Famille Dupont (10 pers.) |
+| 0700000003 | famille40@geneamap.com | **Famille Traoré : 40 personnes** — forfait **Patrimoine** (tests export/import/historique) |
+| 0700000004 | testeur@geneamap.com | Compte paiement (plan inactif) |
 | 0700000010 | admin@geneamap.com | Admin (`admin123`) |
 
 Mot de passe utilisateurs test : `password123`.
@@ -105,10 +105,10 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 ## 7. À faire / prochaines étapes
 
 - [x] Buckets R2 `geneamap-staging` et `geneamap-prod` créés et validés (lecture/écriture OK, credentials gérés par Paul dans `~/.config/paul/.env`).
-- [x] Secrets GitHub configurés (environnements `staging`/`production`, clé SSH dédiée `~/.ssh/deploy-keys/geneaia_deploy`).
+- [x] Secrets GitHub configurés (environnements `staging`/`production`, clé SSH dédiée `~/.ssh/deploy-keys/geneamap_deploy`).
 - [x] DNS geneamap.com : A `@`, `www`, `api`, `staging`, `api-staging` → `178.238.229.159` (attention : proxy Cloudflare orange actif, fonctionne mais recommandé de passer en DNS only).
 - [x] Déploiement staging opérationnel : https://staging.geneamap.com + https://api-staging.geneamap.com (R2 ready).
-- [x] **Production déployée** (2026-07-05 soir) : ancienne app `/root/genea` arrêtée (backup `backups/legacy-genea-*.sql`), nouvelle stack `geneaia-*-prod` sur https://geneamap.com / https://api.geneamap.com (R2 `geneamap-prod` ready).
+- [x] **Production déployée** (2026-07-05 soir) : ancienne app `/root/genea` arrêtée (backup `backups/legacy-genea-*.sql`), nouvelle stack `geneamap-*-prod` sur https://geneamap.com / https://api.geneamap.com (R2 `geneamap-prod` ready).
 - [ ] Finaliser Paystack sur le compte marchand (canaux internationaux/USD) — clés test renseignées sur staging (2026-07-05).
 - [ ] Déployer le service OpenWA sur le VPS (Docker séparé) et connecter la session WhatsApp prod — compose local : `docker-compose.openwa.yml`, doc `docs/OPENWA.md`.
 - [ ] Choisir le fournisseur SMTP de production pour l'OTP email (secours ; Mailpit en local).
@@ -124,6 +124,7 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 - **2026-07-11 (nuit, intégration complète)** — Import GEDCOM, API matching, historique Patrimoine (`PersonRevision`), tarifs dual XOF/USD, admin i18n fr/en, OpenWA compose + doc, OTP libellé WhatsApp, `canVersioning`/`canExport` dans `treeAccess`.
 - **2026-07-11 (soir, admin i18n)** — Back-office admin internationalisé fr/en : namespace `admin` (shell, pages dashboard/users/trees/storage/smtp/openwa/demo/plans/promo), `LanguageSwitcher` dans `admin-shell`, `data-testid` E2E inchangés.
 - **2026-07-11 (soir)** — Export **GEDCOM & PDF** : routes `GET /api/family-trees/:id/export/gedcom|pdf`, gating via `canExport` (forfaits Famille/Patrimoine, plan du propriétaire), bouton Exporter dans la toolbar arbre, tests unitaires + intégration.
+- **2026-07-11** — Rebrand **GeneaIA → geneamap** : UI, emails seed `@geneamap.com`, templates SMTP/WhatsApp/invitations, GEDCOM/PDF, docs ; clé locale `geneamap_locale` (migration depuis `geneaia_locale`). Identifiants infra alignés (`geneamap-*`, GHCR `redakarraid/geneamap`, variables `GENEAMAP_*`).
 - **2026-07-11** — Alignement cohérence projet : compte admin seed/tests/docs (`admin@geneamap.com` / `admin123`), ports locaux unifiés (3001/5173), test intégration inscription avec téléphone, sérialisation `Infinity`→`null` dans API plans, `Payment.amount` en centimes USD, retrait enum `CINETPAY`, features forfaits sans promesses non livrées (GEDCOM/versioning), tests intégration en CI.
 - **2026-07-05 (soir, OpenWA admin)** — Page admin `/admin/openwa` : table `OpenWaSetting`, API GET/PATCH + statut session + test WhatsApp. OTP : WhatsApp prioritaire (OpenWA), email SMTP secours.
 - **2026-07-05 (soir, responsive)** — Refonte responsive complète : SidePanel Sheet mobile, toolbar arbre compacte, menu hamburger marketing, dashboard/timeline/matches touch-friendly, admin tables colonnes adaptatives, pinch-to-zoom canvas, spec E2E viewport 375px. Build frontend vert.
@@ -132,8 +133,8 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 - **2026-07-05 (soir, billing preview)** — Fix `POST /api/billing/preview` 400 en boucle sur `/pricing` : cause = code promo invalide (ex. `GENEA2026`) renvoyait 400 à chaque frappe × 4 forfaits. Preview renvoie désormais 200 + `promoError` ; frontend affiche les prix localement et n'appelle l'API qu'avec un code promo (debounce 400 ms).
 - **2026-07-05 (soir, pricing intl)** — Billing 100 % international : Paystack USD seul, CinetPay retiré ; codes promo par marché (description admin). Tarifs $5 / $30/an / $50/an ou $5/mois.
 - **2026-07-05 (soir, i18n)** — **Internationalisation fr/en** : i18next + 7 namespaces, `User.locale` (Prisma + API profil), `lib/format.ts` (dates dynamiques), `translateApiError` + codes backend (auth, person, billing, OTP), templates OTP email fr/en, `PhoneInput` + `libphonenumber-js`, sélecteur langue (marketing, app-shell, profil). Pages publiques et app connectée traduites ; build frontend + tests layout/backend verts.
-- **2026-07-05 (soir, prod)** — **Production live sur geneamap.com** : backup ancienne base (`/root/geneaia/backups/legacy-genea-20260705_184808.sql`), arrêt `/root/genea` (genea-*), push `dev`→`main`, pipeline vert, conteneurs `geneaia-*-prod` healthy, API + frontend HTTP 200, R2 `geneamap-prod` ready. Base prod vierge (migrations appliquées, pas de seed — inscription utilisateur requise).
-- **2026-07-05 (soir)** — **Staging déployé sur geneamap.com** : `.env` créés sur le VPS (`/root/geneaia{,-staging}`), secrets GitHub via API (les anciens secrets d'environnement `staging`/`production` de juin 2025 écrasaient les secrets repo — corrigé), pipeline vert. Incidents CI corrigés : TS `AuthenticatedImage` (Omit src), 5 erreurs ESLint, Node 18→22 (Tailwind v4 oxide), actions appleboy remplacées par ssh/scp natifs (auth qui échouait silencieusement), healthcheck frontend `localhost`→`127.0.0.1` (IPv6). R2 : le token utilisé était le token DNS filtré par IP → 403 depuis le VPS ; nouveau token `geneamap-r2-vps` (R2 Storage Read+Write, sans filtre IP) créé, credentials dans `~/.config/paul/.env` (`PAUL_CLOUDFLARE_R2_VPS_*`) et dans les `.env` du VPS.
+- **2026-07-05 (soir, prod)** — **Production live sur geneamap.com** : backup ancienne base (`/root/geneamap/backups/legacy-genea-20260705_184808.sql`), arrêt `/root/genea` (genea-*), push `dev`→`main`, pipeline vert, conteneurs `geneamap-*-prod` healthy, API + frontend HTTP 200, R2 `geneamap-prod` ready. Base prod vierge (migrations appliquées, pas de seed — inscription utilisateur requise).
+- **2026-07-05 (soir)** — **Staging déployé sur geneamap.com** : `.env` créés sur le VPS (`/root/geneamap{,-staging}`), secrets GitHub via API (les anciens secrets d'environnement `staging`/`production` de juin 2025 écrasaient les secrets repo — corrigé), pipeline vert. Incidents CI corrigés : TS `AuthenticatedImage` (Omit src), 5 erreurs ESLint, Node 18→22 (Tailwind v4 oxide), actions appleboy remplacées par ssh/scp natifs (auth qui échouait silencieusement), healthcheck frontend `localhost`→`127.0.0.1` (IPv6). R2 : le token utilisé était le token DNS filtré par IP → 403 depuis le VPS ; nouveau token `geneamap-r2-vps` (R2 Storage Read+Write, sans filtre IP) créé, credentials dans `~/.config/paul/.env` (`PAUL_CLOUDFLARE_R2_VPS_*`) et dans les `.env` du VPS.
 - **2026-07-05** — R2 opérationnel : buckets `geneamap-staging` et `geneamap-prod` créés via l'API S3 avec les credentials de Paul (`~/.config/paul/.env`), check-r2.sh vert sur les deux. Account ID Cloudflare : `eeea3b33d3e36656a9adaecbf6990424`.
 - **2026-07-05** — Préparation lancement : mémoire projet, compat R2 (`STORAGE_AUTO_INIT`), compose VPS Traefik (geneamap.com), branches dev/staging/main, CI aligné (compose du repo via scp), guide Cloudflare R2, docs déploiement à jour.
 - **2026-07-05** — Édition inline panneau latéral, blocage dates naissance futures (front + back), compte test famille 40 personnes (Famille Traoré, 5 générations), seed 0700000003.

@@ -24,6 +24,17 @@ export const SUPPORTED_LOCALES = ["fr", "en"] as const
 export type Locale = (typeof SUPPORTED_LOCALES)[number]
 export const DEFAULT_LOCALE: Locale = "fr"
 
+const LOCALE_STORAGE_KEY = "geneamap_locale"
+const LEGACY_LOCALE_STORAGE_KEY = "geneamap_locale"
+
+if (typeof localStorage !== "undefined") {
+  const legacy = localStorage.getItem(LEGACY_LOCALE_STORAGE_KEY)
+  if (legacy && !localStorage.getItem(LOCALE_STORAGE_KEY)) {
+    localStorage.setItem(LOCALE_STORAGE_KEY, legacy)
+    localStorage.removeItem(LEGACY_LOCALE_STORAGE_KEY)
+  }
+}
+
 export const resources = {
   fr: {
     common: frCommon,
@@ -58,7 +69,7 @@ i18n
     ns: ["common", "auth", "marketing", "tree", "dashboard", "billing", "errors", "admin"],
     detection: {
       order: ["localStorage", "navigator"],
-      lookupLocalStorage: "geneaia_locale",
+      lookupLocalStorage: LOCALE_STORAGE_KEY,
       caches: ["localStorage"],
     },
     interpolation: { escapeValue: false },

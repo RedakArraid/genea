@@ -199,7 +199,7 @@ export default function AdminSmtpPage() {
               <Label htmlFor="smtp-from">{t("smtp.fields.from")}</Label>
               <Input
                 id="smtp-from"
-                placeholder="GeneaIA <noreply@geneamap.com>"
+                placeholder="geneamap <noreply@geneamap.com>"
                 value={form.from}
                 onChange={(e) => setForm({ ...form, from: e.target.value })}
               />

@@ -1,5 +1,5 @@
 {
-  "appName": "GeneaIA",
+  "appName": "geneamap",
   "actions": {
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -42,6 +42,6 @@
     "backHome": "Accueil",
     "backDashboard": "Tableau de bord"
   },
-  "footer": "GeneaIA — Application de généalogie moderne",
-  "metaTitle": "GeneaIA — Généalogie moderne"
+  "footer": "geneamap — Application de généalogie moderne",
+  "metaTitle": "geneamap — Généalogie moderne"
 }

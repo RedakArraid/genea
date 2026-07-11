@@ -1,10 +1,10 @@
 /**
- * Tests basiques pour l'API GeneaIA
+ * Tests basiques pour l'API geneamap
  */
 
 const { buildTreeInviteEmail, buildTreeAccessEmail } = require('../src/lib/treeInviteTemplates');
 
-describe('GeneaIA Backend Tests', () => {
+describe('geneamap Backend Tests', () => {
   test('should pass basic test', () => {
     expect(1 + 1).toBe(2);
   });

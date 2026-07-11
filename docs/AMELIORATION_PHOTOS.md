@@ -1,4 +1,4 @@
-# 📸 Ajout de la Fonctionnalité Upload de Photos - GeneaIA
+# 📸 Ajout de la Fonctionnalité Upload de Photos - geneamap
 
 ## 🎯 Objectif
 Permettre aux utilisateurs d'ajouter et de modifier des photos de profil pour les personnes dans leurs arbres généalogiques.
@@ -276,7 +276,7 @@ exports.updatePerson = async (req, res, next) => {
 
 ## 🎉 Conclusion
 
-L'ajout de la fonctionnalité d'upload de photos enrichit considérablement l'expérience utilisateur de GeneaIA. Les arbres généalogiques deviennent plus **vivants et personnels** avec des photos de famille.
+L'ajout de la fonctionnalité d'upload de photos enrichit considérablement l'expérience utilisateur de geneamap. Les arbres généalogiques deviennent plus **vivants et personnels** avec des photos de famille.
 
 ### **Impact Utilisateur**
 - **👨‍👩‍👧‍👦 Personnalisation** : Arbres plus engageants avec des visages
@@ -290,7 +290,7 @@ L'ajout de la fonctionnalité d'upload de photos enrichit considérablement l'ex
 - **⚡ Performant** : Validations côté client, pas de requêtes inutiles
 - **🔒 Sécurisé** : Contrôles de type et taille de fichier
 
-Cette fonctionnalité transforme GeneaIA d'un simple outil de création d'arbres en une **véritable plateforme de préservation de la mémoire familiale** ! 📸✨
+Cette fonctionnalité transforme geneamap d'un simple outil de création d'arbres en une **véritable plateforme de préservation de la mémoire familiale** ! 📸✨
 
 ---
 

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Script de validation automatique des corrections GeneaIA
+# Script de validation automatique des corrections geneamap
 # Ce script vérifie que les corrections appliquées fonctionnent correctement
 
 set -e  # Arrête le script en cas d'erreur
 
-echo "🚀 Validation des corrections GeneaIA"
+echo "🚀 Validation des corrections geneamap"
 echo "===================================="
 
 # Couleurs pour l'affichage
@@ -160,7 +160,7 @@ echo "Tests réussis: ${passed_tests}/${total_tests}"
 
 if [ $passed_tests -eq $total_tests ]; then
     echo -e "${GREEN}🎉 Toutes les corrections ont été appliquées avec succès !${NC}"
-    echo -e "${GREEN}Le projet GeneaIA est prêt pour le développement.${NC}"
+    echo -e "${GREEN}Le projet geneamap est prêt pour le développement.${NC}"
     exit 0
 else
     failed_tests=$((total_tests - passed_tests))

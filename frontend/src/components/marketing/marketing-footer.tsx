@@ -10,7 +10,7 @@ export function MarketingFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 md:flex-row md:items-start md:justify-between">
         <div className="flex items-center gap-2 font-semibold">
           <TreePine className="size-5" />
-          GeneaIA
+          geneamap
         </div>
         <nav className="flex flex-wrap gap-6 text-sm text-muted-foreground">
           <Link to="/demo" className="hover:text-foreground">

@@ -1,5 +1,5 @@
 /**
- * Générateur GEDCOM 5.5.1 (LINEAGE-LINKED) minimal pour GeneaIA.
+ * Générateur GEDCOM 5.5.1 (LINEAGE-LINKED) minimal pour geneamap.
  */
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -127,8 +127,8 @@ function generateGedcom(tree, persons, relationships) {
   const push = (...parts) => lines.push(parts.join(' '));
 
   push('0', 'HEAD');
-  push('1', 'SOUR', 'GeneaIA');
-  push('2', 'NAME', 'GeneaIA');
+  push('1', 'SOUR', 'geneamap');
+  push('2', 'NAME', 'geneamap');
   push('2', 'VERS', '1.0');
   push('1', 'GEDC');
   push('2', 'VERS', '5.5.1');
@@ -218,7 +218,7 @@ function generateGedcom(tree, persons, relationships) {
 
   if (tree.description) {
     push('0', '@SUBM1@', 'SUBM');
-    push('1', 'NAME', escapeGedcom(tree.name || 'GeneaIA'));
+    push('1', 'NAME', escapeGedcom(tree.name || 'geneamap'));
     push('1', 'NOTE', escapeGedcom(tree.description));
   }
 

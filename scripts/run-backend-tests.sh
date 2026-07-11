@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CONTAINER="${GENEA_BACKEND_CONTAINER:-geneaia-backend-local-v2}"
+CONTAINER="${GENEA_BACKEND_CONTAINER:-geneamap-backend-local-v2}"
 
 if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$CONTAINER"; then
   echo "→ Tests backend via Docker ($CONTAINER)"
@@ -13,6 +13,6 @@ fi
 
 echo "→ Tests backend en local"
 export NODE_ENV="${NODE_ENV:-test}"
-export DATABASE_URL="${DATABASE_URL:-postgresql://geneaia_user:geneaia_password@localhost:5436/geneaia_local?schema=public}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://geneamap_user:geneamap_password@localhost:5436/geneamap_local?schema=public}"
 cd "$ROOT/backend"
 npm test -- --forceExit

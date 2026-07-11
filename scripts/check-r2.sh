@@ -47,7 +47,7 @@ const client = new S3Client({
 });
 
 const key = `healthcheck/check-r2-${Date.now()}.txt`;
-const body = 'geneaia r2 healthcheck';
+const body = 'geneamap r2 healthcheck';
 
 function ok(step) { console.log(`  ✓ ${step}`); }
 function fail(step, err) {

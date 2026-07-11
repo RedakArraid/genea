@@ -5,9 +5,9 @@
 services:
   openwa:
     image: openwa/wa-automate:latest
-    container_name: geneaia-openwa-local
+    container_name: geneamap-openwa-local
     environment:
-      - SESSION_ID=${OPENWA_SESSION_ID:-geneaia}
+      - SESSION_ID=${OPENWA_SESSION_ID:-geneamap}
       - MULTI_DEVICE=true
       - HEADLESS=true
     ports:

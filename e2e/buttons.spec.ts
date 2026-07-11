@@ -58,7 +58,7 @@ test.describe("Boutons — parcours principal", () => {
 
   test("accueil public — liens principaux", async ({ page }) => {
     await page.goto("/")
-    await page.getByRole("link", { name: /Commencer|Créer/i }).first().click()
+    await page.getByRole("link", { name: /Commencer|Créer|Create|Sign up|Get started/i }).first().click()
     await expect(page).toHaveURL(/\/(register|login)/)
     await page.goto("/demo")
     await expect(page.locator(".tree-person-card, [class*='skeleton']").first()).toBeVisible({

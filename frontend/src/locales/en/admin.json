@@ -1,6 +1,6 @@
 {
   "shell": {
-    "brand": "GeneaIA Admin",
+    "brand": "geneamap Admin",
     "backOffice": "Back office",
     "header": "Platform administration",
     "backToApp": "Back to app",
@@ -88,7 +88,7 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "subtitle": "GeneaIA platform overview",
+    "subtitle": "geneamap platform overview",
     "stats": {
       "users": "Users",
       "usersWeek": "+{{count}} this week",

@@ -11,7 +11,8 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
-  const locale = localStorage.getItem("geneaia_locale")
+  const locale = localStorage.getItem("geneamap_locale")
+    ?? localStorage.getItem("geneamap_locale")
   if (locale) {
     config.headers["Accept-Language"] = locale
   }

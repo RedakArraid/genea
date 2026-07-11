@@ -6,17 +6,17 @@ const OTP_EXPIRES_MINUTES = parseInt(process.env.OTP_EXPIRES_MINUTES || '10', 10
 
 const templates = {
   fr: {
-    subject: (code) => `${code} — votre code de connexion GeneaIA`,
+    subject: (code) => `${code} — votre code de connexion geneamap`,
     build: (code, name, phoneDisplay) => {
       const greeting = name ? `Bonjour ${name},` : 'Bonjour,';
       const text = `${greeting}
 
-Votre code de connexion GeneaIA pour le numéro ${phoneDisplay} : ${code}
+Votre code de connexion geneamap pour le numéro ${phoneDisplay} : ${code}
 
 Ce code est valable ${OTP_EXPIRES_MINUTES} minutes.
 Si vous n'avez pas demandé ce code, ignorez ce message.
 
-— L'équipe GeneaIA`;
+— L'équipe geneamap`;
       const html = `
     <p>${greeting}</p>
     <p>Code de connexion pour <strong>${phoneDisplay}</strong> :</p>
@@ -27,17 +27,17 @@ Si vous n'avez pas demandé ce code, ignorez ce message.
     },
   },
   en: {
-    subject: (code) => `${code} — your GeneaIA login code`,
+    subject: (code) => `${code} — your geneamap login code`,
     build: (code, name, phoneDisplay) => {
       const greeting = name ? `Hello ${name},` : 'Hello,';
       const text = `${greeting}
 
-Your GeneaIA login code for ${phoneDisplay}: ${code}
+Your geneamap login code for ${phoneDisplay}: ${code}
 
 This code is valid for ${OTP_EXPIRES_MINUTES} minutes.
 If you did not request this code, please ignore this message.
 
-— The GeneaIA team`;
+— The geneamap team`;
       const html = `
     <p>${greeting}</p>
     <p>Login code for <strong>${phoneDisplay}</strong>:</p>

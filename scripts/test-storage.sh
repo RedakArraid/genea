@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Vérification rapide MinIO / stockage GeneaIA
+# Vérification rapide MinIO / stockage geneamap
 set -euo pipefail
 
 API="${API_URL:-http://localhost:3002/api}"
 PHONE="${TEST_PHONE:-0700000001}"
 PASSWORD="${TEST_PASSWORD:-password123}"
 
-echo "=== GeneaIA — Test stockage MinIO ==="
+echo "=== geneamap — Test stockage MinIO ==="
 echo "API: $API"
 echo
 

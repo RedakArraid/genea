@@ -31,7 +31,7 @@ const storageConfig = {
   endpoint: process.env.S3_ENDPOINT || '',
   accessKey: process.env.S3_ACCESS_KEY || '',
   secretKey: process.env.S3_SECRET_KEY || '',
-  bucket: process.env.S3_BUCKET || 'geneaia',
+  bucket: process.env.S3_BUCKET || 'geneamap',
   region: process.env.S3_REGION || 'us-east-1',
   publicUrl: process.env.S3_PUBLIC_URL || '',
   apiPublicUrl: (process.env.API_PUBLIC_URL || 'http://localhost:3001').replace(/\/$/, ''),

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# 🚀 Script de démarrage rapide pour GeneaIA
+# 🚀 Script de démarrage rapide pour geneamap
 # Usage: ./start-dev.sh
 
 set -e
 
-echo "🚀 Démarrage de l'environnement de développement GeneaIA..."
+echo "🚀 Démarrage de l'environnement de développement geneamap..."
 
 # Couleurs pour les messages
 RED='\033[0;31m'
@@ -91,7 +91,7 @@ max_attempts=30
 attempt=1
 
 while [ $attempt -le $max_attempts ]; do
-    if docker exec geneaia-db-local-v2 pg_isready -U geneaia_user -d geneaia_local &> /dev/null; then
+    if docker exec geneamap-db-local-v2 pg_isready -U geneamap_user -d geneamap_local &> /dev/null; then
         print_success "PostgreSQL est prêt!"
         break
     fi
@@ -111,17 +111,17 @@ done
 print_status "Initialisation de la base de données..."
 
 print_status "Génération du client Prisma..."
-docker exec geneaia-backend-local-v2 npx prisma generate
+docker exec geneamap-backend-local-v2 npx prisma generate
 
 print_status "Exécution des migrations..."
-docker exec geneaia-backend-local-v2 npx prisma migrate deploy
+docker exec geneamap-backend-local-v2 npx prisma migrate deploy
 
 # Optionnel: Ajouter des données de test
 read -p "$(echo -e "${YELLOW}Voulez-vous ajouter des données de test? (y/N):${NC} ")" -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     print_status "Ajout des données de test..."
-    docker exec geneaia-backend-local-v2 npx prisma db seed || print_warning "Échec du seeding (pas de script seed ou données déjà présentes)"
+    docker exec geneamap-backend-local-v2 npx prisma db seed || print_warning "Échec du seeding (pas de script seed ou données déjà présentes)"
 fi
 
 # Attendre que le backend soit prêt
@@ -132,7 +132,7 @@ sleep 10
 print_status "Tests de santé..."
 
 # Test PostgreSQL
-if docker exec geneaia-db-local-v2 psql -U geneaia_user -d geneaia_local -c "SELECT 1;" &> /dev/null; then
+if docker exec geneamap-db-local-v2 psql -U geneamap_user -d geneamap_local -c "SELECT 1;" &> /dev/null; then
     print_success "✅ PostgreSQL: OK"
 else
     print_error "❌ PostgreSQL: ÉCHEC"

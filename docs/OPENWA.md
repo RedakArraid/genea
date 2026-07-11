@@ -1,4 +1,4 @@
-# OpenWA — OTP WhatsApp (GeneaIA)
+# OpenWA — OTP WhatsApp (geneamap)
 
 Service externe [OpenWA](https://github.com/open-wa/wa-automate-nodejs) pour l'envoi des codes OTP par WhatsApp. L'email SMTP reste le secours.
 
@@ -8,7 +8,7 @@ Service externe [OpenWA](https://github.com/open-wa/wa-automate-nodejs) pour l'e
 docker compose -f docker-compose.openwa.yml up -d
 ```
 
-Puis dans l'admin GeneaIA → **WhatsApp / OpenWA** :
+Puis dans l'admin geneamap → **WhatsApp / OpenWA** :
 
 - URL API : `http://host.docker.internal:2785/api` (Mac/Windows) ou IP du conteneur
 - Créer une session et scanner le QR WhatsApp
@@ -19,7 +19,7 @@ Variables env backend (alternative à l'admin) :
 OPENWA_ENABLED=true
 OPENWA_BASE_URL=http://openwa:2785/api
 OPENWA_API_KEY=
-OPENWA_SESSION_ID=geneaia
+OPENWA_SESSION_ID=geneamap
 ```
 
 ## Production (VPS)
@@ -30,7 +30,7 @@ OPENWA_SESSION_ID=geneaia
 docker compose -f docker-compose.openwa.yml --env-file .env up -d
 ```
 
-2. Scanner le QR une fois (logs du conteneur `geneaia-openwa`).
+2. Scanner le QR une fois (logs du conteneur `geneamap-openwa`).
 
 3. Configurer `/admin/openwa` ou les variables `OPENWA_*` dans `.env` prod.
 

@@ -1,5 +1,5 @@
 {
-  "name": "geneaia",
+  "name": "geneamap",
   "version": "1.0.0",
   "description": "Application de généalogie moderne",
   "main": "index.js",
@@ -39,7 +39,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/votre-username/geneaia.git"
+    "url": "git+https://github.com/votre-username/geneamap.git"
   },
   "keywords": [
     "genealogy",
@@ -52,7 +52,7 @@
   "author": "Votre Nom",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/votre-username/geneaia/issues"
+    "url": "https://github.com/votre-username/geneamap/issues"
   },
-  "homepage": "https://github.com/votre-username/geneaia#readme"
+  "homepage": "https://github.com/votre-username/geneamap#readme"
 }

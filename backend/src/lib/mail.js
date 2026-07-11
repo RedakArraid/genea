@@ -54,7 +54,7 @@ function extractEmailAddress(from) {
 
 /** Aligne l'expéditeur sur le compte SMTP authentifié (requis par Hostinger, etc.) */
 function resolveFromAddress(config) {
-  const configured = config.from || process.env.SMTP_FROM || 'GeneaIA <noreply@geneaia.app>';
+  const configured = config.from || process.env.SMTP_FROM || 'geneamap <noreply@geneamap.com>';
   const authUser = config.auth?.user?.trim();
   if (!authUser) return configured;
 
@@ -62,7 +62,7 @@ function resolveFromAddress(config) {
   if (fromEmail === authUser.toLowerCase()) return configured;
 
   const nameMatch = configured.match(/^([^<]+)</);
-  const displayName = nameMatch ? nameMatch[1].trim().replace(/^"|"$/g, '') : 'GeneaIA';
+  const displayName = nameMatch ? nameMatch[1].trim().replace(/^"|"$/g, '') : 'geneamap';
   return `${displayName} <${authUser}>`;
 }
 

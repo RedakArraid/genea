@@ -1,4 +1,4 @@
-name: GeneaIA CI/CD
+name: geneamap CI/CD
 
 # Flux : dev (tests) -> staging (tests + build + deploy staging) -> main (tests + build + deploy prod)
 # VPS Contabo : Traefik route geneamap.com / api.geneamap.com (prod)
@@ -16,7 +16,7 @@ on:
 env:
   NODE_VERSION: '22'
   REGISTRY: ghcr.io
-  REPO_NAME: redakarraid/geneaia
+  REPO_NAME: redakarraid/geneamap
 
 jobs:
   test:
@@ -28,7 +28,7 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: geneaia_test
+          POSTGRES_DB: geneamap_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -65,7 +65,7 @@ jobs:
         cd backend
         npx prisma migrate deploy
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneaia_test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneamap_test
 
     - name: Lint Backend
       run: |
@@ -82,7 +82,7 @@ jobs:
         cd backend
         npm test
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneaia_test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneamap_test
         JWT_SECRET: test-secret-key
         NODE_ENV: test
 
@@ -96,13 +96,13 @@ jobs:
         cd backend
         npx prisma db seed
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneaia_test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneamap_test
 
     - name: Start MinIO
       run: |
-        docker run -d --name geneaia-minio-ci -p 9000:9000 \
-          -e MINIO_ROOT_USER=geneaia_minio \
-          -e MINIO_ROOT_PASSWORD=geneaia_minio_password \
+        docker run -d --name geneamap-minio-ci -p 9000:9000 \
+          -e MINIO_ROOT_USER=geneamap_minio \
+          -e MINIO_ROOT_PASSWORD=geneamap_minio_password \
           minio/minio server /data --address :9000
         sleep 5
 
@@ -110,7 +110,7 @@ jobs:
       run: |
         cd backend
         node src/index.js &
-        echo $! > /tmp/geneaia-api.pid
+        echo $! > /tmp/geneamap-api.pid
         for i in $(seq 1 30); do
           curl -sf http://localhost:3001/api/health && exit 0
           sleep 2
@@ -118,14 +118,14 @@ jobs:
         echo "API failed to start"
         exit 1
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneaia_test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/geneamap_test
         JWT_SECRET: test-secret-key
         NODE_ENV: development
         PORT: 3001
         S3_ENDPOINT: http://localhost:9000
-        S3_ACCESS_KEY: geneaia_minio
-        S3_SECRET_KEY: geneaia_minio_password
-        S3_BUCKET: geneaia
+        S3_ACCESS_KEY: geneamap_minio
+        S3_SECRET_KEY: geneamap_minio_password
+        S3_BUCKET: geneamap
         S3_REGION: us-east-1
         STORAGE_USE_PROXY: "true"
         STORAGE_AUTO_INIT: "true"
@@ -140,8 +140,8 @@ jobs:
     - name: Stop API and MinIO
       if: always()
       run: |
-        kill "$(cat /tmp/geneaia-api.pid 2>/dev/null)" 2>/dev/null || true
-        docker rm -f geneaia-minio-ci 2>/dev/null || true
+        kill "$(cat /tmp/geneamap-api.pid 2>/dev/null)" 2>/dev/null || true
+        docker rm -f geneamap-minio-ci 2>/dev/null || true
 
     - name: Build Frontend
       run: |
@@ -248,18 +248,18 @@ jobs:
 
           echo "Attente de PostgreSQL..."
           for i in $(seq 1 30); do
-            if docker exec geneaia-db-staging pg_isready -U geneaia_staging -d geneaia_staging >/dev/null 2>&1; then
+            if docker exec geneamap-db-staging pg_isready -U geneamap_staging -d geneamap_staging >/dev/null 2>&1; then
               break
             fi
             sleep 2
           done
 
           echo "Migrations Prisma..."
-          docker exec geneaia-backend-staging npx prisma migrate deploy
+          docker exec geneamap-backend-staging npx prisma migrate deploy
 
           echo "Health checks..."
           sleep 10
-          docker exec geneaia-backend-staging curl -sf http://localhost:3001/api/health >/dev/null \
+          docker exec geneamap-backend-staging curl -sf http://localhost:3001/api/health >/dev/null \
             && echo "Backend: OK" || { echo "Backend: FAILED"; exit 1; }
 
           docker image prune -f || true
@@ -308,10 +308,10 @@ jobs:
             exit 1
           fi
 
-          if docker exec geneaia-db-prod pg_isready -U geneaia_prod -d geneaia_production >/dev/null 2>&1; then
+          if docker exec geneamap-db-prod pg_isready -U geneamap_prod -d geneamap_production >/dev/null 2>&1; then
             echo "Sauvegarde de la base..."
             mkdir -p backups
-            docker exec geneaia-db-prod pg_dump -U geneaia_prod -d geneaia_production > backups/backup_${TIMESTAMP}.sql
+            docker exec geneamap-db-prod pg_dump -U geneamap_prod -d geneamap_production > backups/backup_${TIMESTAMP}.sql
             echo "Backup: backups/backup_${TIMESTAMP}.sql"
           fi
 
@@ -323,18 +323,18 @@ jobs:
 
           echo "Attente de PostgreSQL..."
           for i in $(seq 1 30); do
-            if docker exec geneaia-db-prod pg_isready -U geneaia_prod -d geneaia_production >/dev/null 2>&1; then
+            if docker exec geneamap-db-prod pg_isready -U geneamap_prod -d geneamap_production >/dev/null 2>&1; then
               break
             fi
             sleep 2
           done
 
           echo "Migrations Prisma..."
-          docker exec geneaia-backend-prod npx prisma migrate deploy
+          docker exec geneamap-backend-prod npx prisma migrate deploy
 
           echo "Health checks..."
           sleep 10
-          docker exec geneaia-backend-prod curl -sf http://localhost:3001/api/health >/dev/null \
+          docker exec geneamap-backend-prod curl -sf http://localhost:3001/api/health >/dev/null \
             && echo "Backend: OK" || { echo "Backend: FAILED"; exit 1; }
 
           docker image prune -f || true

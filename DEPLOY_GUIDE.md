@@ -1,4 +1,4 @@
-# Guide de déploiement GeneaIA — VPS Contabo
+# Guide de déploiement geneamap — VPS Contabo
 
 Application déployée sur le **VPS Contabo** (`178.238.229.159`, alias SSH `vps-contabo`) derrière **Traefik + Let's Encrypt**, avec le domaine **geneamap.com**. Le stockage fichiers utilise **Cloudflare R2** (voir [docs/CLOUDFLARE_R2.md](docs/CLOUDFLARE_R2.md)).
 
@@ -9,8 +9,8 @@ Application déployée sur le **VPS Contabo** (`178.238.229.159`, alias SSH `vps
 | Env | Branche | Frontend | API | Bucket R2 | Dossier VPS |
 |---|---|---|---|---|---|
 | Local | `dev` | http://localhost:5173 | http://localhost:3001/api | MinIO local | — |
-| Staging | `staging` | https://staging.geneamap.com | https://api-staging.geneamap.com/api | `geneamap-staging` | `/root/geneaia-staging/` |
-| Production | `main` | https://geneamap.com | https://api.geneamap.com/api | `geneamap-prod` | `/root/geneaia/` |
+| Staging | `staging` | https://staging.geneamap.com | https://api-staging.geneamap.com/api | `geneamap-staging` | `/root/geneamap-staging/` |
+| Production | `main` | https://geneamap.com | https://api.geneamap.com/api | `geneamap-prod` | `/root/geneamap/` |
 
 Flux : développement sur `dev` → merge dans `staging` (déploiement auto + tests) → merge dans `main` (déploiement prod auto).
 
@@ -44,8 +44,8 @@ Suivre [docs/CLOUDFLARE_R2.md](docs/CLOUDFLARE_R2.md) :
 | `STAGING_HOST` / `PROD_HOST` | `178.238.229.159` |
 | `STAGING_USER` / `PROD_USER` | `root` |
 | `STAGING_SSH_KEY` / `PROD_SSH_KEY` | clé privée SSH de déploiement (`~/.ssh/id_ed25519` ou clé dédiée) |
-| `STAGING_PATH` | `/root/geneaia-staging` |
-| `PROD_PATH` | `/root/geneaia` |
+| `STAGING_PATH` | `/root/geneamap-staging` |
+| `PROD_PATH` | `/root/geneamap` |
 
 Les secrets applicatifs (DB, JWT, R2, SMTP, Paystack) ne sont **pas** dans GitHub : ils vivent dans le fichier `.env` de chaque dossier sur le VPS (étape 4).
 
@@ -55,14 +55,14 @@ Les secrets applicatifs (DB, JWT, R2, SMTP, Paystack) ne sont **pas** dans GitHu
 ssh vps-contabo
 
 # Production
-mkdir -p /root/geneaia/backups
-cd /root/geneaia
+mkdir -p /root/geneamap/backups
+cd /root/geneamap
 # Créer .env à partir de .env.production.example (PROD_*, R2_*, SMTP_*, PAYSTACK_*)
 nano .env
 
 # Staging
-mkdir -p /root/geneaia-staging
-cd /root/geneaia-staging
+mkdir -p /root/geneamap-staging
+cd /root/geneamap-staging
 # Créer .env avec STAGING_DB_PASSWORD, STAGING_JWT_SECRET, R2_*, SMTP_*
 nano .env
 ```
@@ -115,14 +115,14 @@ Dans le navigateur : https://geneamap.com — créer un compte, créer un arbre,
 ssh vps-contabo
 
 # Logs
-cd /root/geneaia && docker compose -f docker-compose.prod.yml logs --tail 100
-cd /root/geneaia-staging && docker compose -f docker-compose.staging.yml logs --tail 100
+cd /root/geneamap && docker compose -f docker-compose.prod.yml logs --tail 100
+cd /root/geneamap-staging && docker compose -f docker-compose.staging.yml logs --tail 100
 
 # Redémarrer
 docker compose -f docker-compose.prod.yml --env-file .env up -d
 
 # Backups base (créés automatiquement avant chaque deploy prod)
-ls -lh /root/geneaia/backups/
+ls -lh /root/geneamap/backups/
 ```
 
 Problèmes fréquents :

@@ -9,7 +9,7 @@ export function normalizeLocale(lng?: string | null): Locale {
   return SUPPORTED_LOCALES.includes(short) ? short : DEFAULT_LOCALE
 }
 
-const STORAGE_KEY = "geneaia_locale"
+const STORAGE_KEY = "geneamap_locale"
 
 /**
  * Locale courante + changement de langue (i18next, <html lang>,

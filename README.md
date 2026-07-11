@@ -1,4 +1,4 @@
-# GeneaIA - Application de Généalogie Moderne
+# geneamap - Application de Généalogie Moderne
 
 > ⚠️ **PROJET CORRIGÉ** - Les incohérences identifiées ont été résolues. Voir [CORRECTIONS.md](CORRECTIONS.md) pour les détails.
 
@@ -10,7 +10,7 @@ Si les ports par défaut (3001, 5173) sont déjà utilisés sur votre machine :
 
 ```bash
 cp .env.example .env
-# Éditez .env : GENEAIA_BACKEND_HOST_PORT=3002, GENEAIA_FRONTEND_HOST_PORT=5174
+# Éditez .env : GENEAMAP_BACKEND_HOST_PORT=3002, GENEAMAP_FRONTEND_HOST_PORT=5174
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 # Alignez VITE_API_URL et CORS_ORIGIN sur les mêmes ports
@@ -29,7 +29,7 @@ Comptes de test : `0700000001` / `password123` — admin : `0700000010` / `admin
 
 ## 📦 Stockage fichiers (MinIO / S3)
 
-Les photos de profil et documents sont stockés dans **MinIO** (compatible S3). En local Docker, le bucket `geneaia` est créé automatiquement au démarrage du backend.
+Les photos de profil et documents sont stockés dans **MinIO** (compatible S3). En local Docker, le bucket `geneamap` est créé automatiquement au démarrage du backend.
 
 | Variable | Rôle |
 |----------|------|
@@ -55,7 +55,7 @@ API_URL=http://localhost:3002/api ./scripts/test-storage.sh
 ### Installation Automatique
 ```bash
 git clone <URL-du-repo>
-cd geneaIA
+cd geneamap
 
 # Scripts cross-platform (Windows, Mac, Linux)
 npm install
@@ -140,7 +140,7 @@ Le projet est structuré en deux parties principales :
 1. Clonez le répertoire :
 ```bash
 git clone <URL-du-repo>
-cd geneaIA
+cd geneamap
 ```
 
 2. Rendez les scripts exécutables :
@@ -151,7 +151,7 @@ chmod +x setup.sh
 
 3. Configurez votre base de données PostgreSQL dans le fichier `backend/.env` :
 ```
-DATABASE_URL="postgresql://username:password@localhost:5432/geneaia?schema=public"
+DATABASE_URL="postgresql://username:password@localhost:5432/geneamap?schema=public"
 ```
 
 4. Initialisez la base de données :
@@ -172,7 +172,7 @@ DATABASE_URL="postgresql://username:password@localhost:5432/geneaia?schema=publi
 2. Créez une base de données pour le projet :
 
 ```sql
-CREATE DATABASE geneaia;
+CREATE DATABASE geneamap;
 ```
 
 ### Backend
@@ -192,7 +192,7 @@ npm install
 3. Configurez les variables d'environnement en modifiant le fichier `.env` :
 
 ```
-DATABASE_URL="postgresql://username:password@localhost:5432/geneaia?schema=public"
+DATABASE_URL="postgresql://username:password@localhost:5432/geneamap?schema=public"
 PORT=3001
 JWT_SECRET="votre-secret-jwt"
 JWT_EXPIRES_IN="7d"
@@ -233,7 +233,7 @@ npm install
 3. Configurez les variables d'environnement en modifiant le fichier `.env` :
 
 ```
-VITE_APP_NAME=GeneaIA
+VITE_APP_NAME=geneamap
 VITE_API_URL=http://localhost:3001/api
 ```
 

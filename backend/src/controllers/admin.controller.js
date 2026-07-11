@@ -453,9 +453,9 @@ exports.testSmtpSettings = async (req, res, next) => {
     await verifySmtpConnection();
     await sendMail({
       to,
-      subject: 'GeneaIA — test SMTP',
-      text: 'Cet email confirme que la configuration SMTP GeneaIA fonctionne correctement.',
-      html: '<p>Cet email confirme que la configuration SMTP <strong>GeneaIA</strong> fonctionne correctement.</p>',
+      subject: 'geneamap — test SMTP',
+      text: 'Cet email confirme que la configuration SMTP geneamap fonctionne correctement.',
+      html: '<p>Cet email confirme que la configuration SMTP <strong>geneamap</strong> fonctionne correctement.</p>',
     });
 
     res.json({ message: `Email de test envoyé à ${to}` });

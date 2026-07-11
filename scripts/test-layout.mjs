@@ -19,7 +19,7 @@ function ok(name, cond) {
   else { console.log(`  ✗ ${name}`); fail++ }
 }
 
-console.log('=== GeneaIA — Tests layout engine ===\n')
+console.log('=== geneamap — Tests layout engine ===\n')
 
 for (const layout of ['vertical', 'horizontal', 'radial']) {
   const { positions } = computeLayout(people, layout, 'spacious')

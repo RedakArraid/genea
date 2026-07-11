@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script de démarrage pour l'application GeneaIA
+# Script de démarrage pour l'application geneamap
 # Ce script démarre le serveur backend et frontend
 
 # Fonction pour la gestion des erreurs
@@ -69,7 +69,7 @@ cleanup() {
 # Capture des signaux pour arrêter proprement les serveurs
 trap cleanup SIGINT SIGTERM
 
-echo "GeneaIA est en cours d'exécution!"
+echo "geneamap est en cours d'exécution!"
 echo "Backend URL: http://localhost:3001"
 echo "Frontend URL: http://localhost:5173"
 echo "Appuyez sur Ctrl+C pour arrêter les serveurs"

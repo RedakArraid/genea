@@ -9,23 +9,23 @@ const templates = {
     const greeting = name ? `Bonjour ${name},` : 'Bonjour,';
     return `${greeting}
 
-Votre code de connexion GeneaIA pour le numéro ${phoneDisplay} : *${code}*
+Votre code de connexion geneamap pour le numéro ${phoneDisplay} : *${code}*
 
 Ce code est valable ${OTP_EXPIRES_MINUTES} minutes.
 Si vous n'avez pas demandé ce code, ignorez ce message.
 
-— L'équipe GeneaIA`;
+— L'équipe geneamap`;
   },
   en: (code, name, phoneDisplay) => {
     const greeting = name ? `Hello ${name},` : 'Hello,';
     return `${greeting}
 
-Your GeneaIA login code for ${phoneDisplay}: *${code}*
+Your geneamap login code for ${phoneDisplay}: *${code}*
 
 This code is valid for ${OTP_EXPIRES_MINUTES} minutes.
 If you did not request this code, please ignore this message.
 
-— The GeneaIA team`;
+— The geneamap team`;
   },
 };
 
@@ -35,7 +35,7 @@ function buildOtpWhatsappMessage({ code, name, phoneDisplay, locale }) {
 }
 
 function buildOtpTestMessage() {
-  return `GeneaIA — test OpenWA
+  return `geneamap — test OpenWA
 
 Si vous recevez ce message, l'intégration WhatsApp fonctionne correctement.`;
 }

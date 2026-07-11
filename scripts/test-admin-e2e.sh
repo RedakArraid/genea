@@ -29,7 +29,7 @@ fi
 echo "→ Installation navigateur Chromium…"
 npx playwright install chromium
 
-echo "=== GeneaIA — Tests E2E ($SPECS) ==="
+echo "=== geneamap — Tests E2E ($SPECS) ==="
 echo "Frontend: $FRONTEND_URL"
 echo
 

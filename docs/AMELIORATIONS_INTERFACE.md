@@ -1,7 +1,7 @@
-# Améliorations d'Interface pour l'Ajout de Personnes - GeneaIA
+# Améliorations d'Interface pour l'Ajout de Personnes - geneamap
 
 ## 🎯 Objectif
-Améliorer l'expérience utilisateur en rendant l'ajout de personnes plus intuitif et accessible dans l'application GeneaIA.
+Améliorer l'expérience utilisateur en rendant l'ajout de personnes plus intuitif et accessible dans l'application geneamap.
 
 ## ✨ Nouvelles Fonctionnalités Implémentées
 
@@ -228,7 +228,7 @@ npm run dev
 
 ## 🎉 Conclusion
 
-Ces améliorations transforment radicalement l'expérience d'ajout de personnes dans GeneaIA. L'interface devient plus accessible, intuitive et efficace, répondant aux besoins des utilisateurs novices comme experts.
+Ces améliorations transforment radicalement l'expérience d'ajout de personnes dans geneamap. L'interface devient plus accessible, intuitive et efficace, répondant aux besoins des utilisateurs novices comme experts.
 
 Les **4 points d'accès** pour ajouter une personne garantissent que chaque utilisateur trouvera la méthode qui lui convient, tandis que les raccourcis clavier et l'aide contextuelle améliorent significativement la productivité.
 

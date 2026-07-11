@@ -1,4 +1,4 @@
-# Instructions pour les agents IA — GeneaIA
+# Instructions pour les agents IA — geneamap
 
 ## Règle n°1 : la mémoire projet
 
@@ -21,9 +21,9 @@
 | Téléphone | Email | Mot de passe | Rôle |
 |---|---|---|---|
 | 0700000001 | test@example.com | password123 | Utilisateur test |
-| 0700000002 | demo@geneaia.app | password123 | Propriétaire arbre démo |
-| 0700000003 | famille40@geneaia.app | password123 | Famille Traoré (40 personnes, 5 générations) |
-| 0700000004 | testeur@geneaia.app | password123 | Testeur paiement |
+| 0700000002 | demo@geneamap.com | password123 | Propriétaire arbre démo |
+| 0700000003 | famille40@geneamap.com | password123 | Famille Traoré (40 personnes, 5 générations) |
+| 0700000004 | testeur@geneamap.com | password123 | Testeur paiement |
 | 0700000010 | admin@geneamap.com | admin123 | Admin |
 
 ## Commandes utiles

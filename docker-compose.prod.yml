@@ -1,15 +1,15 @@
 # Production — VPS Contabo (Traefik + Let's Encrypt)
 # Domaines : geneamap.com (frontend) / api.geneamap.com (backend)
 # Stockage : Cloudflare R2 (bucket geneamap-prod) — voir docs/CLOUDFLARE_R2.md
-# Déployé dans /root/geneaia/ avec un fichier .env (voir .env.production.example)
+# Déployé dans /root/geneamap/ avec un fichier .env (voir .env.production.example)
 
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: geneaia-db-prod
+    container_name: geneamap-db-prod
     environment:
-      POSTGRES_DB: geneaia_production
-      POSTGRES_USER: geneaia_prod
+      POSTGRES_DB: geneamap_production
+      POSTGRES_USER: geneamap_prod
       POSTGRES_PASSWORD: ${PROD_DB_PASSWORD:?PROD_DB_PASSWORD requis}
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
@@ -18,17 +18,17 @@ services:
       - internal
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U geneaia_prod -d geneaia_production"]
+      test: ["CMD-SHELL", "pg_isready -U geneamap_prod -d geneamap_production"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   backend:
-    image: ghcr.io/redakarraid/geneaia-backend:latest
-    container_name: geneaia-backend-prod
+    image: ghcr.io/redakarraid/geneamap-backend:latest
+    container_name: geneamap-backend-prod
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://geneaia_prod:${PROD_DB_PASSWORD}@postgres:5432/geneaia_production?schema=public
+      - DATABASE_URL=postgresql://geneamap_prod:${PROD_DB_PASSWORD}@postgres:5432/geneamap_production?schema=public
       - JWT_SECRET=${PROD_JWT_SECRET:?PROD_JWT_SECRET requis}
       - PORT=3001
       - CORS_ORIGIN=https://geneamap.com,https://www.geneamap.com
@@ -55,7 +55,7 @@ services:
       - SMTP_SECURE=${SMTP_SECURE:-false}
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASS=${SMTP_PASS:-}
-      - SMTP_FROM=${SMTP_FROM:-GeneaIA <noreply@geneamap.com>}
+      - SMTP_FROM=${SMTP_FROM:-geneamap <noreply@geneamap.com>}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@geneamap.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - ADMIN_PHONE=${ADMIN_PHONE:-+2250700000010}
@@ -77,27 +77,27 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik_network
-      - traefik.http.routers.geneaia-api.rule=Host(`api.geneamap.com`)
-      - traefik.http.routers.geneaia-api.entrypoints=websecure
-      - traefik.http.routers.geneaia-api.tls.certresolver=mytlschallenge
-      - traefik.http.services.geneaia-api.loadbalancer.server.port=3001
-      - traefik.http.services.geneaia-api.loadbalancer.healthcheck.path=/api/health
-      - traefik.http.services.geneaia-api.loadbalancer.healthcheck.interval=5s
-      - traefik.http.services.geneaia-api.loadbalancer.healthcheck.timeout=3s
+      - traefik.http.routers.geneamap-api.rule=Host(`api.geneamap.com`)
+      - traefik.http.routers.geneamap-api.entrypoints=websecure
+      - traefik.http.routers.geneamap-api.tls.certresolver=mytlschallenge
+      - traefik.http.services.geneamap-api.loadbalancer.server.port=3001
+      - traefik.http.services.geneamap-api.loadbalancer.healthcheck.path=/api/health
+      - traefik.http.services.geneamap-api.loadbalancer.healthcheck.interval=5s
+      - traefik.http.services.geneamap-api.loadbalancer.healthcheck.timeout=3s
 
   frontend:
-    image: ghcr.io/redakarraid/geneaia-frontend:latest
-    container_name: geneaia-frontend-prod
+    image: ghcr.io/redakarraid/geneamap-frontend:latest
+    container_name: geneamap-frontend-prod
     networks:
       - traefik_network
     restart: unless-stopped
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik_network
-      - traefik.http.routers.geneaia-front.rule=Host(`geneamap.com`) || Host(`www.geneamap.com`)
-      - traefik.http.routers.geneaia-front.entrypoints=websecure
-      - traefik.http.routers.geneaia-front.tls.certresolver=mytlschallenge
-      - traefik.http.services.geneaia-front.loadbalancer.server.port=80
+      - traefik.http.routers.geneamap-front.rule=Host(`geneamap.com`) || Host(`www.geneamap.com`)
+      - traefik.http.routers.geneamap-front.entrypoints=websecure
+      - traefik.http.routers.geneamap-front.tls.certresolver=mytlschallenge
+      - traefik.http.services.geneamap-front.loadbalancer.server.port=80
 
 volumes:
   postgres_prod_data:
@@ -105,6 +105,6 @@ volumes:
 
 networks:
   internal:
-    name: geneaia-prod-internal
+    name: geneamap-prod-internal
   traefik_network:
     external: true

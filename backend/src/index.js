@@ -1,5 +1,5 @@
 /**
- * Point d'entrée principal de l'API GeneaIA
+ * Point d'entrée principal de l'API geneamap
  * 
  * Ce fichier initialise le serveur Express, configure les middlewares
  * et enregistre toutes les routes de l'API.
@@ -60,11 +60,11 @@ app.use(morgan('dev'));
 
 // Routes de base
 app.get('/', (req, res) => {
-  res.json({ message: 'Bienvenue sur l\'API GeneaIA' });
+  res.json({ message: 'Bienvenue sur l\'API geneamap' });
 });
 
 const healthResponse = (req, res) => {
-  res.json({ status: 'ok', service: 'geneaia-backend' });
+  res.json({ status: 'ok', service: 'geneamap-backend' });
 };
 
 app.get('/health', healthResponse);

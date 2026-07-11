@@ -1,5 +1,5 @@
 /**
- * Script de vérification de santé pour le backend GeneaIA
+ * Script de vérification de santé pour le backend geneamap
  * Utilisé par Docker pour vérifier que l'application fonctionne correctement
  */
 

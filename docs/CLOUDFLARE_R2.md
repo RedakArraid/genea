@@ -1,6 +1,6 @@
 # Cloudflare R2 — configuration du stockage VPS
 
-GeneaIA utilise MinIO en local et **Cloudflare R2** sur le VPS (staging + production).
+geneamap utilise MinIO en local et **Cloudflare R2** sur le VPS (staging + production).
 Le backend parle S3 via `@aws-sdk/client-s3` — seuls des variables d'environnement changent.
 
 ## 1. Créer les buckets (dashboard Cloudflare)
@@ -95,9 +95,9 @@ Si des fichiers existent déjà dans MinIO et doivent être conservés :
 
 ```bash
 # Avec le client MinIO (mc)
-mc alias set local http://localhost:9000 geneaia_minio geneaia_minio_password
+mc alias set local http://localhost:9000 geneamap_minio geneamap_minio_password
 mc alias set r2 https://<ACCOUNT_ID>.r2.cloudflarestorage.com <ACCESS_KEY> <SECRET_KEY>
-mc mirror local/geneaia r2/geneamap-prod
+mc mirror local/geneamap r2/geneamap-prod
 ```
 
 Les URLs en base pointent vers le proxy API (`/api/uploads/file/...`), donc **aucune mise à jour de la base** n'est nécessaire tant que `API_PUBLIC_URL` reste cohérent.

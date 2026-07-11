@@ -1,4 +1,4 @@
-# 🚀 Configuration déploiement automatique GeneaIA
+# 🚀 Configuration déploiement automatique geneamap
 
 ## Situation actuelle
 ✅ Docker installé sur srv826675 (168.231.86.179)
@@ -16,14 +16,14 @@ Déploiement automatique via Pull Request → GitHub Actions → Serveur
 
 ```bash
 # 1. Créer un utilisateur dédié pour les déploiements (optionnel mais recommandé)
-useradd -m -s /bin/bash geneaia-deploy
-usermod -aG docker geneaia-deploy
+useradd -m -s /bin/bash geneamap-deploy
+usermod -aG docker geneamap-deploy
 
 # 2. Ou utiliser root directement (plus simple)
 # Nous allons utiliser root pour simplifier
 
 # 3. Générer une clé SSH dédiée pour GitHub Actions
-ssh-keygen -t ed25519 -C "github-actions-geneaia" -f /root/.ssh/github-actions -N ""
+ssh-keygen -t ed25519 -C "github-actions-geneamap" -f /root/.ssh/github-actions -N ""
 
 # 4. Autoriser cette clé pour les connexions
 cat /root/.ssh/github-actions.pub >> /root/.ssh/authorized_keys
@@ -55,13 +55,13 @@ ssh -i /root/.ssh/github-actions root@localhost "echo 'SSH OK'"
 | `STAGING_HOST` | `168.231.86.179` |
 | `STAGING_USER` | `root` |
 | `STAGING_SSH_KEY` | *[Clé privée de /root/.ssh/github-actions]* |
-| `STAGING_PATH` | `/var/www/geneaia-staging` |
+| `STAGING_PATH` | `/var/www/geneamap-staging` |
 | `STAGING_DB_PASSWORD` | `7xRr77PJmojqFftNgfmgeovF8` |
 | `STAGING_JWT_SECRET` | `2nyEzaFtRa0iXSJYGTIUdMPet` |
 | `PROD_HOST` | `168.231.86.179` |
 | `PROD_USER` | `root` |
 | `PROD_SSH_KEY` | *[Même clé privée]* |
-| `PROD_PATH` | `/var/www/geneaia-production` |
+| `PROD_PATH` | `/var/www/geneamap-production` |
 | `PROD_DB_PASSWORD` | `PTcyZlFKwZk3tFYM9O02xuzR9` |
 | `PROD_JWT_SECRET` | `LcIRXVW9E9vrDLTDHbdE3lhas` |
 
@@ -74,7 +74,7 @@ ssh -i /root/.ssh/github-actions root@localhost "echo 'SSH OK'"
 ### Sur votre machine locale :
 
 ```bash
-cd /Users/kader/Desktop/projet-en-cours/geneaIA
+cd /Users/kader/Desktop/projet-en-cours/geneamap
 
 # 1. Créer ou basculer sur la branche staging
 git checkout -b staging || git checkout staging
@@ -90,7 +90,7 @@ git push origin staging
 ### Suivre le déploiement :
 
 1. **Aller sur GitHub** → Votre repo → **Actions**
-2. **Voir le workflow** "🚀 GeneaIA CI/CD - Production Ready" en cours
+2. **Voir le workflow** "🚀 geneamap CI/CD - Production Ready" en cours
 3. **Attendre** que le job "Deploy to Staging" soit ✅
 
 ### URLs après déploiement staging :
@@ -159,11 +159,11 @@ git push origin main
 
 ```bash
 # Logs staging
-cd /var/www/geneaia-staging
+cd /var/www/geneamap-staging
 docker-compose logs -f
 
 # Logs production
-cd /var/www/geneaia-production
+cd /var/www/geneamap-production
 docker-compose logs -f
 
 # Status des services
@@ -202,7 +202,7 @@ docker ps
 
 ```bash
 # Sur le serveur, reset staging
-cd /var/www/geneaia-staging
+cd /var/www/geneamap-staging
 docker-compose down
 docker volume prune -f
 docker-compose up -d

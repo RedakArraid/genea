@@ -1,23 +1,23 @@
 version: '3.8'
 
 # Ports hôte configurables via .env à la racine (voir .env.example).
-# Ex. si 3001/5173 sont occupés : GENEAIA_BACKEND_HOST_PORT=3002, GENEAIA_FRONTEND_HOST_PORT=5174
+# Ex. si 3001/5173 sont occupés : GENEAMAP_BACKEND_HOST_PORT=3002, GENEAMAP_FRONTEND_HOST_PORT=5174
 
 services:
   # Base de données PostgreSQL
   postgres:
     image: postgres:15-alpine
-    container_name: geneaia-db-local-v2
+    container_name: geneamap-db-local-v2
     environment:
-      POSTGRES_DB: geneaia_local
-      POSTGRES_USER: geneaia_user
-      POSTGRES_PASSWORD: geneaia_password
+      POSTGRES_DB: geneamap_local
+      POSTGRES_USER: geneamap_user
+      POSTGRES_PASSWORD: geneamap_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "${GENEAIA_POSTGRES_HOST_PORT:-5436}:5432"
+      - "${GENEAMAP_POSTGRES_HOST_PORT:-5436}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U geneaia_user -d geneaia_local"]
+      test: ["CMD-SHELL", "pg_isready -U geneamap_user -d geneamap_local"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,22 +29,22 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: production
-    container_name: geneaia-backend-local-v2
+    container_name: geneamap-backend-local-v2
     env_file:
       - ./backend/.env
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgresql://geneaia_user:geneaia_password@postgres:5432/geneaia_local?schema=public
+      - DATABASE_URL=postgresql://geneamap_user:geneamap_password@postgres:5432/geneamap_local?schema=public
       - JWT_SECRET=dev-secret-key-for-local-development-only
-      - CORS_ORIGIN=http://localhost:${GENEAIA_FRONTEND_HOST_PORT:-5173}
+      - CORS_ORIGIN=http://localhost:${GENEAMAP_FRONTEND_HOST_PORT:-5173}
       - S3_ENDPOINT=http://minio:9000
-      - S3_ACCESS_KEY=geneaia_minio
-      - S3_SECRET_KEY=geneaia_minio_password
-      - S3_BUCKET=geneaia
+      - S3_ACCESS_KEY=geneamap_minio
+      - S3_SECRET_KEY=geneamap_minio_password
+      - S3_BUCKET=geneamap
       - S3_REGION=us-east-1
-      - S3_PUBLIC_URL=http://localhost:${GENEAIA_MINIO_API_PORT:-9000}/geneaia
-      - API_PUBLIC_URL=http://localhost:${GENEAIA_BACKEND_HOST_PORT:-3001}
-      - FRONTEND_URL=http://localhost:${GENEAIA_FRONTEND_HOST_PORT:-5173}
+      - S3_PUBLIC_URL=http://localhost:${GENEAMAP_MINIO_API_PORT:-9000}/geneamap
+      - API_PUBLIC_URL=http://localhost:${GENEAMAP_BACKEND_HOST_PORT:-3001}
+      - FRONTEND_URL=http://localhost:${GENEAMAP_FRONTEND_HOST_PORT:-5173}
       - STORAGE_USE_PROXY=true
       - STORAGE_PHOTO_PREFIX=photos
       - STORAGE_DOCUMENT_PREFIX=documents
@@ -53,12 +53,12 @@ services:
       - SMTP_HOST=mailpit
       - SMTP_PORT=1025
       - SMTP_SECURE=false
-      - SMTP_FROM=GeneaIA <noreply@geneaia.local>
+      - SMTP_FROM=geneamap <noreply@geneamap.local>
     volumes:
       - ./backend:/app
       - /app/node_modules
     ports:
-      - "${GENEAIA_BACKEND_HOST_PORT:-3001}:3001"
+      - "${GENEAMAP_BACKEND_HOST_PORT:-3001}:3001"
     command: ["sh", "docker-entrypoint.sh"]
     depends_on:
       postgres:
@@ -77,16 +77,16 @@ services:
   # MinIO — stockage objet (photos, fichiers)
   minio:
     image: minio/minio:latest
-    container_name: geneaia-minio-local-v2
+    container_name: geneamap-minio-local-v2
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: geneaia_minio
-      MINIO_ROOT_PASSWORD: geneaia_minio_password
+      MINIO_ROOT_USER: geneamap_minio
+      MINIO_ROOT_PASSWORD: geneamap_minio_password
     volumes:
       - minio_data:/data
     ports:
-      - "${GENEAIA_MINIO_API_PORT:-9000}:9000"
-      - "${GENEAIA_MINIO_CONSOLE_PORT:-9001}:9001"
+      - "${GENEAMAP_MINIO_API_PORT:-9000}:9000"
+      - "${GENEAMAP_MINIO_CONSOLE_PORT:-9001}:9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -97,10 +97,10 @@ services:
   # Mailpit — SMTP de dev (capture les emails OTP)
   mailpit:
     image: axllent/mailpit:latest
-    container_name: geneaia-mailpit-local
+    container_name: geneamap-mailpit-local
     ports:
-      - "${GENEAIA_MAILPIT_SMTP_PORT:-1025}:1025"
-      - "${GENEAIA_MAILPIT_UI_PORT:-8025}:8025"
+      - "${GENEAMAP_MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${GENEAMAP_MAILPIT_UI_PORT:-8025}:8025"
     restart: unless-stopped
 
   # Frontend React
@@ -108,14 +108,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
-    container_name: geneaia-frontend-local-v2
+    container_name: geneamap-frontend-local-v2
     environment:
-      - VITE_API_URL=http://localhost:${GENEAIA_BACKEND_HOST_PORT:-3001}/api
+      - VITE_API_URL=http://localhost:${GENEAMAP_BACKEND_HOST_PORT:-3001}/api
     volumes:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "${GENEAIA_FRONTEND_HOST_PORT:-5173}:5173"
+      - "${GENEAMAP_FRONTEND_HOST_PORT:-5173}:5173"
     depends_on:
       - backend
     restart: unless-stopped
@@ -128,4 +128,4 @@ volumes:
 
 networks:
   default:
-    name: geneaia-local
+    name: geneamap-local

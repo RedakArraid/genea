@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { cn } from "@/lib/utils"
 import { isOrganizationTree } from "@/lib/tree-type"
 
 const navItems: Array<{
@@ -76,7 +77,7 @@ export function AppShell() {
         <SidebarHeader className="border-b border-sidebar-border p-4">
           <Link to="/dashboard" className="flex items-center gap-2 font-semibold">
             <TreePine className="size-5" />
-            <span>GeneaIA</span>
+            <span>geneamap</span>
           </Link>
         </SidebarHeader>
         <SidebarContent>
@@ -162,7 +163,7 @@ export function AppShell() {
           <Separator orientation="vertical" className="h-4" />
           <div className="flex flex-1 items-center justify-between gap-2">
             <div className="truncate text-sm text-muted-foreground">
-              {currentTree?.name || "GeneaIA"}
+              {currentTree?.name || "geneamap"}
             </div>
             <div className="flex items-center gap-2">
               <LanguageSwitcher />

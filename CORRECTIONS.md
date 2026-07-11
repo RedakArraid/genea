@@ -1,4 +1,4 @@
-# Instructions de Correction du Projet GeneaIA
+# Instructions de Correction du Projet geneamap
 
 ## Corrections Appliquées
 

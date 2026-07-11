@@ -1,15 +1,15 @@
 # Staging — VPS Contabo (Traefik + Let's Encrypt)
 # Domaines : staging.geneamap.com (frontend) / api-staging.geneamap.com (backend)
 # Stockage : Cloudflare R2 (bucket geneamap-staging) — voir docs/CLOUDFLARE_R2.md
-# Déployé dans /root/geneaia-staging/ avec un fichier .env
+# Déployé dans /root/geneamap-staging/ avec un fichier .env
 
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: geneaia-db-staging
+    container_name: geneamap-db-staging
     environment:
-      POSTGRES_DB: geneaia_staging
-      POSTGRES_USER: geneaia_staging
+      POSTGRES_DB: geneamap_staging
+      POSTGRES_USER: geneamap_staging
       POSTGRES_PASSWORD: ${STAGING_DB_PASSWORD:?STAGING_DB_PASSWORD requis}
     volumes:
       - postgres_staging_data:/var/lib/postgresql/data
@@ -17,17 +17,17 @@ services:
       - internal
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U geneaia_staging -d geneaia_staging"]
+      test: ["CMD-SHELL", "pg_isready -U geneamap_staging -d geneamap_staging"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   backend:
-    image: ghcr.io/redakarraid/geneaia-backend:staging
-    container_name: geneaia-backend-staging
+    image: ghcr.io/redakarraid/geneamap-backend:staging
+    container_name: geneamap-backend-staging
     environment:
       - NODE_ENV=staging
-      - DATABASE_URL=postgresql://geneaia_staging:${STAGING_DB_PASSWORD}@postgres:5432/geneaia_staging?schema=public
+      - DATABASE_URL=postgresql://geneamap_staging:${STAGING_DB_PASSWORD}@postgres:5432/geneamap_staging?schema=public
       - JWT_SECRET=${STAGING_JWT_SECRET:?STAGING_JWT_SECRET requis}
       - PORT=3001
       - CORS_ORIGIN=https://staging.geneamap.com,https://www.staging.geneamap.com
@@ -54,7 +54,7 @@ services:
       - SMTP_SECURE=${SMTP_SECURE:-false}
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASS=${SMTP_PASS:-}
-      - SMTP_FROM=${SMTP_FROM:-GeneaIA Staging <noreply@geneamap.com>}
+      - SMTP_FROM=${SMTP_FROM:-geneamap Staging <noreply@geneamap.com>}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@geneamap.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - ADMIN_PHONE=${ADMIN_PHONE:-+2250700000010}
@@ -74,27 +74,27 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik_network
-      - traefik.http.routers.geneaia-api-staging.rule=Host(`api-staging.geneamap.com`)
-      - traefik.http.routers.geneaia-api-staging.entrypoints=websecure
-      - traefik.http.routers.geneaia-api-staging.tls.certresolver=mytlschallenge
-      - traefik.http.services.geneaia-api-staging.loadbalancer.server.port=3001
-      - traefik.http.services.geneaia-api-staging.loadbalancer.healthcheck.path=/api/health
-      - traefik.http.services.geneaia-api-staging.loadbalancer.healthcheck.interval=5s
-      - traefik.http.services.geneaia-api-staging.loadbalancer.healthcheck.timeout=3s
+      - traefik.http.routers.geneamap-api-staging.rule=Host(`api-staging.geneamap.com`)
+      - traefik.http.routers.geneamap-api-staging.entrypoints=websecure
+      - traefik.http.routers.geneamap-api-staging.tls.certresolver=mytlschallenge
+      - traefik.http.services.geneamap-api-staging.loadbalancer.server.port=3001
+      - traefik.http.services.geneamap-api-staging.loadbalancer.healthcheck.path=/api/health
+      - traefik.http.services.geneamap-api-staging.loadbalancer.healthcheck.interval=5s
+      - traefik.http.services.geneamap-api-staging.loadbalancer.healthcheck.timeout=3s
 
   frontend:
-    image: ghcr.io/redakarraid/geneaia-frontend:staging
-    container_name: geneaia-frontend-staging
+    image: ghcr.io/redakarraid/geneamap-frontend:staging
+    container_name: geneamap-frontend-staging
     networks:
       - traefik_network
     restart: unless-stopped
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik_network
-      - traefik.http.routers.geneaia-front-staging.rule=Host(`staging.geneamap.com`) || Host(`www.staging.geneamap.com`)
-      - traefik.http.routers.geneaia-front-staging.entrypoints=websecure
-      - traefik.http.routers.geneaia-front-staging.tls.certresolver=mytlschallenge
-      - traefik.http.services.geneaia-front-staging.loadbalancer.server.port=80
+      - traefik.http.routers.geneamap-front-staging.rule=Host(`staging.geneamap.com`) || Host(`www.staging.geneamap.com`)
+      - traefik.http.routers.geneamap-front-staging.entrypoints=websecure
+      - traefik.http.routers.geneamap-front-staging.tls.certresolver=mytlschallenge
+      - traefik.http.services.geneamap-front-staging.loadbalancer.server.port=80
 
 volumes:
   postgres_staging_data:
@@ -102,6 +102,6 @@ volumes:
 
 networks:
   internal:
-    name: geneaia-staging-internal
+    name: geneamap-staging-internal
   traefik_network:
     external: true

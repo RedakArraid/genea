@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Configuration du projet GeneaIA
-echo "Configuration du projet GeneaIA..."
+# Configuration du projet geneamap
+echo "Configuration du projet geneamap..."
 
 # Rendre les scripts exécutables
 chmod +x start.sh

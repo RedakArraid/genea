@@ -39,7 +39,7 @@ export function MarketingHeader({ variant = "default" }: MarketingHeaderProps) {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link to="/" className="flex shrink-0 items-center gap-2 font-semibold">
           <TreePine className="size-5" />
-          GeneaIA
+          geneamap
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm sm:flex">
@@ -107,7 +107,7 @@ export function MarketingHeader({ variant = "default" }: MarketingHeaderProps) {
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="right" className="w-[min(100vw-2rem,320px)]">
           <SheetHeader>
-            <SheetTitle>GeneaIA</SheetTitle>
+            <SheetTitle>geneamap</SheetTitle>
           </SheetHeader>
           <nav className="mt-6 flex flex-col gap-4">
             {isHome ? (

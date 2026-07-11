@@ -40,9 +40,9 @@ git --version
 
 ```bash
 # Créer la structure
-mkdir -p /var/www/geneaia-staging
-mkdir -p /var/www/geneaia-production
-cd /var/www/geneaia-staging
+mkdir -p /var/www/geneamap-staging
+mkdir -p /var/www/geneamap-production
+cd /var/www/geneamap-staging
 ```
 
 ### 3. Récupération du code
@@ -58,7 +58,7 @@ git clone https://github.com/RedakArraid/genea.git .
 ### 4. Configuration Docker Compose
 
 ```bash
-cd /var/www/geneaia-staging
+cd /var/www/geneamap-staging
 
 cat > docker-compose.yml << 'EOF'
 version: '3.8'
@@ -66,10 +66,10 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: geneaia-db-staging
+    container_name: geneamap-db-staging
     environment:
-      POSTGRES_DB: geneaia_staging
-      POSTGRES_USER: geneaia_staging
+      POSTGRES_DB: geneamap_staging
+      POSTGRES_USER: geneamap_staging
       POSTGRES_PASSWORD: 7xRr77PJmojqFftNgfmgeovF8
     volumes:
       - postgres_staging_data:/var/lib/postgresql/data
@@ -77,7 +77,7 @@ services:
       - "5433:5432"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U geneaia_staging -d geneaia_staging"]
+      test: ["CMD-SHELL", "pg_isready -U geneamap_staging -d geneamap_staging"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -86,10 +86,10 @@ services:
     build: 
       context: ./backend
       dockerfile: Dockerfile
-    container_name: geneaia-backend-staging
+    container_name: geneamap-backend-staging
     environment:
       - NODE_ENV=staging
-      - DATABASE_URL=postgresql://geneaia_staging:7xRr77PJmojqFftNgfmgeovF8@postgres:5432/geneaia_staging?schema=public
+      - DATABASE_URL=postgresql://geneamap_staging:7xRr77PJmojqFftNgfmgeovF8@postgres:5432/geneamap_staging?schema=public
       - JWT_SECRET=2nyEzaFtRa0iXSJYGTIUdMPet
       - CORS_ORIGIN=http://168.231.86.179:3010
       - PORT=3001
@@ -107,7 +107,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: http://168.231.86.179:3011/api
-    container_name: geneaia-frontend-staging
+    container_name: geneamap-frontend-staging
     ports:
       - "3010:80"
     restart: unless-stopped
@@ -140,7 +140,7 @@ Si vous voulez une solution ultra-rapide sans compilation :
 ### 1. Configuration simplifiée
 
 ```bash
-cd /var/www/geneaia-staging
+cd /var/www/geneamap-staging
 
 cat > docker-compose.yml << 'EOF'
 version: '3.8'
@@ -148,10 +148,10 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: geneaia-db-staging
+    container_name: geneamap-db-staging
     environment:
-      POSTGRES_DB: geneaia_staging
-      POSTGRES_USER: geneaia_staging
+      POSTGRES_DB: geneamap_staging
+      POSTGRES_USER: geneamap_staging
       POSTGRES_PASSWORD: 7xRr77PJmojqFftNgfmgeovF8
     volumes:
       - postgres_staging_data:/var/lib/postgresql/data
@@ -162,11 +162,11 @@ services:
   # Backend temporaire avec Express minimal
   backend:
     image: node:18-alpine
-    container_name: geneaia-backend-staging
+    container_name: geneamap-backend-staging
     working_dir: /app
     environment:
       - NODE_ENV=staging
-      - DATABASE_URL=postgresql://geneaia_staging:7xRr77PJmojqFftNgfmgeovF8@postgres:5432/geneaia_staging?schema=public
+      - DATABASE_URL=postgresql://geneamap_staging:7xRr77PJmojqFftNgfmgeovF8@postgres:5432/geneamap_staging?schema=public
       - JWT_SECRET=2nyEzaFtRa0iXSJYGTIUdMPet
       - PORT=3001
     ports:
@@ -183,7 +183,7 @@ services:
   # Frontend temporaire avec page statique
   frontend:
     image: nginx:alpine
-    container_name: geneaia-frontend-staging
+    container_name: geneamap-frontend-staging
     ports:
       - "3010:80"
     volumes:
@@ -214,7 +214,7 @@ app.use(express.json());
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
-    message: 'GeneaIA API is running',
+    message: 'geneamap API is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
@@ -230,7 +230,7 @@ app.post('/api/auth/login', (req, res) => {
 
 // Route racine
 app.get('/', (req, res) => {
-  res.json({ message: 'Bienvenue sur l\'API GeneaIA' });
+  res.json({ message: 'Bienvenue sur l\'API geneamap' });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
@@ -240,7 +240,7 @@ EOF
 
 cat > backend-simple/package.json << 'EOF'
 {
-  "name": "geneaia-backend-simple",
+  "name": "geneamap-backend-simple",
   "version": "1.0.0",
   "main": "server.js",
   "dependencies": {
@@ -261,7 +261,7 @@ cat > frontend-simple/index.html << 'EOF'
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeneaIA - Arbre Généalogique</title>
+    <title>geneamap - Arbre Généalogique</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -313,7 +313,7 @@ cat > frontend-simple/index.html << 'EOF'
 </head>
 <body>
     <div class="container">
-        <h1>🌳 GeneaIA</h1>
+        <h1>🌳 geneamap</h1>
         <p class="subtitle">Votre arbre généalogique intelligent</p>
         
         <div class="status">

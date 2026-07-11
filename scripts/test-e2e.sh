@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests E2E Playwright — GeneaIA (tous les specs)
+# Tests E2E Playwright — geneamap (tous les specs)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -29,7 +29,7 @@ fi
 echo "→ Installation navigateur Chromium (si nécessaire)…"
 npx playwright install chromium
 
-echo "=== GeneaIA — Tests E2E Playwright ==="
+echo "=== geneamap — Tests E2E Playwright ==="
 echo "Frontend: $FRONTEND_URL"
 echo "API:      $API_URL"
 echo

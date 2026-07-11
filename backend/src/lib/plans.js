@@ -1,5 +1,5 @@
 /**
- * Forfaits GeneaIA — tarification internationale (USD)
+ * Forfaits geneamap — tarification internationale (USD)
  *
  * Essai : $5 — paiement unique
  * Famille : $30/an
@@ -34,7 +34,7 @@ const PLANS = {
     canVersioning: false,
     features: [
       '1 arbre, jusqu\'à 25 fiches',
-      '90 jours pour tester GeneaIA',
+      '90 jours pour tester geneamap',
       'Partage privé (2 collaborateurs)',
       'Paiement carte sécurisé',
     ],
