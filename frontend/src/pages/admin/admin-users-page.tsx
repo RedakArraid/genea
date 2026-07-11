@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { Eye, Pencil, Trash2 } from "lucide-react"
 import { formatMediumDate } from "@/lib/format"
 import { toast } from "sonner"
@@ -34,6 +35,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import type { PlanId } from "@/types"
 
 export default function AdminUsersPage() {
+  const { t } = useTranslation("admin")
   const currentUser = useAuthStore((s) => s.user)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,15 +58,15 @@ export default function AdminUsersPage() {
       setUsers(list)
       setTotalPages(pagination.pages)
     } catch {
-      toast.error("Impossible de charger les utilisateurs")
+      toast.error(t("users.toasts.loadFailed"))
     } finally {
       setLoading(false)
     }
-  }, [search, planFilter, page])
+  }, [search, planFilter, page, t])
 
   useEffect(() => {
-    const t = setTimeout(load, search ? 300 : 0)
-    return () => clearTimeout(t)
+    const timer = setTimeout(load, search ? 300 : 0)
+    return () => clearTimeout(timer)
   }, [load, search])
 
   const openEdit = (user: AdminUser) => {
@@ -81,26 +83,26 @@ export default function AdminUsersPage() {
     setSaving(true)
     try {
       await updateAdminUser(editUser.id, editForm)
-      toast.success("Utilisateur mis à jour")
+      toast.success(t("users.toasts.updateSuccess"))
       setEditUser(null)
       load()
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message
-      toast.error(msg || "Erreur de mise à jour")
+      toast.error(msg || t("common.toasts.updateFailed"))
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (user: AdminUser) => {
-    if (!confirm(`Supprimer ${user.email} ?`)) return
+    if (!confirm(t("users.deleteConfirm", { email: user.email }))) return
     try {
       await deleteAdminUser(user.id)
-      toast.success("Utilisateur supprimé")
+      toast.success(t("users.toasts.deleteSuccess"))
       load()
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message
-      toast.error(msg || "Suppression impossible")
+      toast.error(msg || t("common.toasts.deleteFailed"))
     }
   }
 
@@ -109,14 +111,14 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Utilisateurs</h1>
-        <p className="text-muted-foreground">Gestion des comptes et forfaits</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("users.title")}</h1>
+        <p className="text-muted-foreground">{t("users.subtitle")}</p>
       </div>
 
       <AdminDataTable
         search={search}
         onSearchChange={(v) => { setSearch(v); setPage(1) }}
-        searchPlaceholder="Email ou nom…"
+        searchPlaceholder={t("users.searchPlaceholder")}
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
@@ -125,13 +127,13 @@ export default function AdminUsersPage() {
           <div className="flex flex-wrap gap-2">
             <Select value={planFilter} onValueChange={(v) => v && (setPlanFilter(v), setPage(1))}>
               <SelectTrigger className="w-full sm:w-[160px]">
-              <SelectValue placeholder="Forfait" />
+              <SelectValue placeholder={t("users.planFilter")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous forfaits</SelectItem>
-              <SelectItem value="SOLO">Solo</SelectItem>
-              <SelectItem value="FAMILY">Famille</SelectItem>
-              <SelectItem value="PATRIMONY">Patrimoine</SelectItem>
+              <SelectItem value="all">{t("common.plans.all")}</SelectItem>
+              <SelectItem value="SOLO">{t("common.plans.solo")}</SelectItem>
+              <SelectItem value="FAMILY">{t("common.plans.family")}</SelectItem>
+              <SelectItem value="PATRIMONY">{t("common.plans.patrimony")}</SelectItem>
             </SelectContent>
           </Select>
           </div>
@@ -142,13 +144,13 @@ export default function AdminUsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead className="hidden md:table-cell">Nom</TableHead>
-                <TableHead className="hidden md:table-cell">Forfait</TableHead>
-                <TableHead className="hidden lg:table-cell">Rôle</TableHead>
-                <TableHead className="hidden lg:table-cell">Arbres</TableHead>
-                <TableHead className="hidden xl:table-cell">Inscription</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("common.email")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("common.name")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("common.plan")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t("common.role")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t("common.trees")}</TableHead>
+                <TableHead className="hidden xl:table-cell">{t("common.registration")}</TableHead>
+                <TableHead className="text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -159,10 +161,10 @@ export default function AdminUsersPage() {
                       {user.email}
                     </Link>
                     <p className="text-xs text-muted-foreground md:hidden">
-                      {user.name || "—"} · {getPlanById(user.plan).name}
+                      {user.name || t("common.dash")} · {getPlanById(user.plan).name}
                     </p>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">{user.name || "—"}</TableCell>
+                  <TableCell className="hidden md:table-cell">{user.name || t("common.dash")}</TableCell>
                   <TableCell className="hidden md:table-cell">{getPlanById(user.plan).name}</TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>{user.role}</Badge>
@@ -190,7 +192,7 @@ export default function AdminUsersPage() {
               {users.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    Aucun utilisateur
+                    {t("users.noUsers")}
                   </TableCell>
                 </TableRow>
               )}
@@ -203,11 +205,11 @@ export default function AdminUsersPage() {
       <Dialog open={!!editUser} onOpenChange={(o) => !o && setEditUser(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifier {editUser?.email}</DialogTitle>
+            <DialogTitle>{t("users.editTitle", { email: editUser?.email })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Nom</Label>
+              <Label htmlFor="name">{t("common.name")}</Label>
               <Input
                 id="name"
                 value={editForm.name}
@@ -215,18 +217,18 @@ export default function AdminUsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Forfait</Label>
+              <Label>{t("common.plan")}</Label>
               <Select value={editForm.plan} onValueChange={(v) => v && setEditForm({ ...editForm, plan: v as PlanId })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SOLO">Solo</SelectItem>
-                  <SelectItem value="FAMILY">Famille</SelectItem>
-                  <SelectItem value="PATRIMONY">Patrimoine</SelectItem>
+                  <SelectItem value="SOLO">{t("common.plans.solo")}</SelectItem>
+                  <SelectItem value="FAMILY">{t("common.plans.family")}</SelectItem>
+                  <SelectItem value="PATRIMONY">{t("common.plans.patrimony")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Rôle</Label>
+              <Label>{t("common.role")}</Label>
               <Select
                 value={editForm.role}
                 onValueChange={(v) => v && setEditForm({ ...editForm, role: v as "USER" | "ADMIN" })}
@@ -234,18 +236,20 @@ export default function AdminUsersPage() {
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USER">USER</SelectItem>
-                  <SelectItem value="ADMIN">ADMIN</SelectItem>
+                  <SelectItem value="USER">{t("common.roles.user")}</SelectItem>
+                  <SelectItem value="ADMIN">{t("common.roles.admin")}</SelectItem>
                 </SelectContent>
               </Select>
               {editUser && isSelf(editUser.id) && (
-                <p className="text-xs text-muted-foreground">Vous ne pouvez pas retirer votre propre rôle admin.</p>
+                <p className="text-xs text-muted-foreground">{t("users.cannotRemoveOwnAdmin")}</p>
               )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditUser(null)}>Annuler</Button>
-            <Button onClick={handleSave} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Button>
+            <Button variant="outline" onClick={() => setEditUser(null)}>{t("common.cancel")}</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? t("common.saving") : t("common.save")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

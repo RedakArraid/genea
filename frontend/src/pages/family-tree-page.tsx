@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
 import { uploadPersonPhoto, setPersonPhoto } from "@/lib/upload"
 import { exportTreeGedcom, exportTreePdf } from "@/lib/export-api"
+import { importTreeGedcom } from "@/lib/import-api"
 import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
 
 interface FamilyTreePageProps {
@@ -75,9 +76,12 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   const canChangePhoto = canWrite
   const canShare = !isDemo && treeAccess?.role === "owner"
   const canExport = !!isAuthenticated && !!treeAccess?.canExport && !isDemo
+  const canImport = canExport && canWrite
+  const canVersioning = !!isAuthenticated && !!treeAccess?.canVersioning && !isDemo
   const pageHeight = publicDemo || isPublicRoute ? "flex min-h-0 flex-1 flex-col" : "h-full min-h-0"
 
   const [exportBusy, setExportBusy] = useState(false)
+  const [importBusy, setImportBusy] = useState(false)
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hoverId, setHoverId] = useState<string | null>(null)
@@ -407,6 +411,20 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     }
   }
 
+  const runImportGedcom = async (file: File) => {
+    if (!treeId) return
+    setImportBusy(true)
+    try {
+      const result = await importTreeGedcom(treeId, file)
+      await fetchTreeById(treeId)
+      toast.success(t("page.importGedcomSuccess", { count: result.importedPersons }))
+    } catch (err) {
+      toast.error(translateApiError(getApiErrorPayload(err), "page.importFailed"))
+    } finally {
+      setImportBusy(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className={`flex ${pageHeight} items-center justify-center`}>
@@ -482,9 +500,12 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           isDemo={isDemo}
           canShare={canShare}
           canExport={canExport}
+          canImport={canImport}
           exportBusy={exportBusy}
+          importBusy={importBusy}
           onExportGedcom={() => void runExport("gedcom")}
           onExportPdf={() => void runExport("pdf")}
+          onImportGedcom={(file) => void runImportGedcom(file)}
           onCardDragStateChange={(dragging, pending) => {
             isDraggingCardRef.current = dragging
             if (dragging) {
@@ -522,6 +543,8 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           readOnly={readOnly}
           canEditInfo={canEditPerson}
           canChangePhoto={canChangePhoto}
+          canVersioning={canVersioning}
+          onPersonRestored={() => treeId && void fetchTreeById(treeId)}
           onChangePhoto={handleChangePhoto}
         />
       )}

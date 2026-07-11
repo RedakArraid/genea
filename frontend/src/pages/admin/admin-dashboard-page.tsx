@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { FileText, GitBranch, Sparkles, Users } from "lucide-react"
 import { formatRelativeDate } from "@/lib/format"
 import { fetchAdminStats, type AdminStats } from "@/lib/admin-api"
@@ -11,6 +12,7 @@ import { getPlanById } from "@/lib/plans"
 import type { PlanId } from "@/types"
 
 export default function AdminDashboardPage() {
+  const { t } = useTranslation("admin")
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -23,22 +25,43 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Tableau de bord</h1>
-        <p className="text-muted-foreground">Vue d'ensemble de la plateforme GeneaIA</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("dashboard.title")}</h1>
+        <p className="text-muted-foreground">{t("dashboard.subtitle")}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <AdminStatCard title="Utilisateurs" value={stats?.usersTotal ?? 0} icon={Users} loading={loading} description={`+${stats?.newUsersWeek ?? 0} cette semaine`} />
-        <AdminStatCard title="Arbres" value={stats?.treesTotal ?? 0} icon={GitBranch} loading={loading} description={`${stats?.demoTrees ?? 0} démo · ${stats?.publicTrees ?? 0} publics`} />
-        <AdminStatCard title="Personnes" value={stats?.personsTotal ?? 0} loading={loading} />
-        <AdminStatCard title="Documents" value={stats?.documentsTotal ?? 0} icon={FileText} loading={loading} description={`${stats?.photosTotal ?? 0} photos`} />
+        <AdminStatCard
+          title={t("dashboard.stats.users")}
+          value={stats?.usersTotal ?? 0}
+          icon={Users}
+          loading={loading}
+          description={t("dashboard.stats.usersWeek", { count: stats?.newUsersWeek ?? 0 })}
+        />
+        <AdminStatCard
+          title={t("dashboard.stats.trees")}
+          value={stats?.treesTotal ?? 0}
+          icon={GitBranch}
+          loading={loading}
+          description={t("dashboard.stats.treesDesc", {
+            demo: stats?.demoTrees ?? 0,
+            public: stats?.publicTrees ?? 0,
+          })}
+        />
+        <AdminStatCard title={t("dashboard.stats.persons")} value={stats?.personsTotal ?? 0} loading={loading} />
+        <AdminStatCard
+          title={t("dashboard.stats.documents")}
+          value={stats?.documentsTotal ?? 0}
+          icon={FileText}
+          loading={loading}
+          description={t("dashboard.stats.photos", { count: stats?.photosTotal ?? 0 })}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Répartition forfaits</CardTitle>
-            <CardDescription>Utilisateurs par plan</CardDescription>
+            <CardTitle>{t("dashboard.planDistribution.title")}</CardTitle>
+            <CardDescription>{t("dashboard.planDistribution.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {(stats?.planDistribution ?? []).map(({ plan, count }) => {
@@ -57,27 +80,27 @@ export default function AdminDashboardPage() {
               )
             })}
             {!loading && !stats?.planDistribution?.length && (
-              <p className="text-sm text-muted-foreground">Aucune donnée</p>
+              <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Visibilité arbres</CardTitle>
-            <CardDescription>Public vs privé</CardDescription>
+            <CardTitle>{t("dashboard.treeVisibility.title")}</CardTitle>
+            <CardDescription>{t("dashboard.treeVisibility.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm">Publics</span>
+              <span className="text-sm">{t("dashboard.treeVisibility.public")}</span>
               <Badge variant="secondary">{stats?.publicTrees ?? 0}</Badge>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm">Privés</span>
+              <span className="text-sm">{t("dashboard.treeVisibility.private")}</span>
               <Badge variant="outline">{stats?.privateTrees ?? 0}</Badge>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm">Arbres démo</span>
+              <span className="text-sm">{t("dashboard.treeVisibility.demo")}</span>
               <Badge>{stats?.demoTrees ?? 0}</Badge>
             </div>
           </CardContent>
@@ -87,15 +110,15 @@ export default function AdminDashboardPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Dernières inscriptions</CardTitle>
-            <CardDescription>5 comptes les plus récents</CardDescription>
+            <CardTitle>{t("dashboard.recentUsers.title")}</CardTitle>
+            <CardDescription>{t("dashboard.recentUsers.description")}</CardDescription>
           </div>
           <Link
             to="/admin/users"
             data-testid="admin-dashboard-recent-users"
             className={buttonVariants({ variant: "outline", size: "sm" })}
           >
-            Voir tout
+            {t("dashboard.recentUsers.seeAll")}
           </Link>
         </CardHeader>
         <CardContent>
@@ -121,11 +144,11 @@ export default function AdminDashboardPage() {
       <div className="flex flex-wrap gap-2">
         <Link to="/admin/users" data-testid="admin-dashboard-manage-users" className={buttonVariants()}>
           <Users className="mr-2 size-4" />
-          Gérer les comptes
+          {t("dashboard.actions.manageUsers")}
         </Link>
         <Link to="/admin/demo" data-testid="admin-dashboard-reset-demo" className={buttonVariants({ variant: "outline" })}>
           <Sparkles className="mr-2 size-4" />
-          Réinitialiser démo
+          {t("dashboard.actions.resetDemo")}
         </Link>
       </div>
     </div>

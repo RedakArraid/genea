@@ -4,7 +4,7 @@ import { Check, CreditCard } from "lucide-react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
-import { PLANS, formatPrice, getPlanPrice } from "@/lib/plans"
+import { PLANS, formatDualPrice, formatDualPriceFromUsd, getPlanPrice } from "@/lib/plans"
 import type { BillingInterval } from "@/lib/billing-api"
 import type { PlanId } from "@/types"
 import { initializeCheckout, previewCheckout } from "@/lib/billing-api"
@@ -174,10 +174,10 @@ export default function PricingPage() {
                     {isCurrent && <Badge variant="secondary" className="ml-auto text-xs">{t("pricing.current")}</Badge>}
                   </CardTitle>
                   <CardDescription className="text-2xl font-semibold text-foreground">
-                    {formatPrice(finalAmount)}
+                    {formatDualPriceFromUsd(finalAmount)}
                     {finalAmount < basePrice && (
                       <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
-                        {formatPrice(basePrice)}
+                        {formatDualPrice(plan.id, interval)}
                       </span>
                     )}
                   </CardDescription>

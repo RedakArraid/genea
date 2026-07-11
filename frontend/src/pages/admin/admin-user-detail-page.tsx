@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { ArrowLeft, ExternalLink, Pencil, Trash2 } from "lucide-react"
 import { formatDateTime, formatMediumDate } from "@/lib/format"
 import { toast } from "sonner"
@@ -35,6 +36,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import type { PlanId } from "@/types"
 
 export default function AdminUserDetailPage() {
+  const { t } = useTranslation("admin")
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const currentUser = useAuthStore((s) => s.user)
@@ -53,7 +55,7 @@ export default function AdminUserDetailPage() {
         setEditForm({ name: u.name || "", plan: u.plan, role: u.role })
       })
       .catch(() => {
-        toast.error("Utilisateur introuvable")
+        toast.error(t("userDetail.toasts.notFound"))
         navigate("/admin/users")
       })
       .finally(() => setLoading(false))
@@ -71,11 +73,11 @@ export default function AdminUserDetailPage() {
     try {
       const updated = await updateAdminUser(user.id, editForm)
       setUser({ ...user, ...updated })
-      toast.success("Utilisateur mis à jour")
+      toast.success(t("users.toasts.updateSuccess"))
       setEditOpen(false)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message
-      toast.error(msg || "Erreur de mise à jour")
+      toast.error(msg || t("common.toasts.updateFailed"))
     } finally {
       setSaving(false)
     }
@@ -83,14 +85,14 @@ export default function AdminUserDetailPage() {
 
   const handleDelete = async () => {
     if (!user || isSelf) return
-    if (!confirm(`Supprimer ${user.email} ?`)) return
+    if (!confirm(t("users.deleteConfirm", { email: user.email }))) return
     try {
       await deleteAdminUser(user.id)
-      toast.success("Utilisateur supprimé")
+      toast.success(t("users.toasts.deleteSuccess"))
       navigate("/admin/users")
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message
-      toast.error(msg || "Suppression impossible")
+      toast.error(msg || t("common.toasts.deleteFailed"))
     }
   }
 
@@ -114,7 +116,7 @@ export default function AdminUserDetailPage() {
           className={buttonVariants({ variant: "ghost", size: "sm" })}
         >
           <ArrowLeft className="mr-1 size-4" />
-          Liste des utilisateurs
+          {t("userDetail.backToList")}
         </Link>
       </div>
 
@@ -126,11 +128,11 @@ export default function AdminUserDetailPage() {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setEditOpen(true)}>
             <Pencil className="mr-2 size-4" />
-            Modifier
+            {t("common.edit")}
           </Button>
           <Button variant="destructive" disabled={isSelf} onClick={handleDelete}>
             <Trash2 className="mr-2 size-4" />
-            Supprimer
+            {t("common.delete")}
           </Button>
         </div>
       </div>
@@ -138,7 +140,7 @@ export default function AdminUserDetailPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Forfait</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("common.plan")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-lg font-semibold">{getPlanById(user.plan).name}</p>
@@ -146,7 +148,7 @@ export default function AdminUserDetailPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Rôle</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("common.role")}</CardTitle>
           </CardHeader>
           <CardContent>
             <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>{user.role}</Badge>
@@ -154,7 +156,7 @@ export default function AdminUserDetailPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Arbres</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("common.trees")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-lg font-semibold">{user._count?.FamilyTree ?? user.FamilyTree?.length ?? 0}</p>
@@ -162,7 +164,7 @@ export default function AdminUserDetailPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Collaborations</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("userDetail.collaborations")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-lg font-semibold">{user._count?.TreeCollaborator ?? 0}</p>
@@ -172,23 +174,23 @@ export default function AdminUserDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Informations</CardTitle>
-          <CardDescription>Métadonnées du compte</CardDescription>
+          <CardTitle>{t("userDetail.info.title")}</CardTitle>
+          <CardDescription>{t("userDetail.info.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div>
-              <dt className="text-muted-foreground">Inscription</dt>
+              <dt className="text-muted-foreground">{t("common.registration")}</dt>
               <dd>{formatDateTime(user.createdAt)}</dd>
             </div>
             {user.updatedAt && (
               <div>
-                <dt className="text-muted-foreground">Dernière MAJ</dt>
+                <dt className="text-muted-foreground">{t("common.lastUpdated")}</dt>
                 <dd>{formatDateTime(user.updatedAt)}</dd>
               </div>
             )}
             <div>
-              <dt className="text-muted-foreground">ID</dt>
+              <dt className="text-muted-foreground">{t("userDetail.info.id")}</dt>
               <dd className="font-mono text-xs">{user.id}</dd>
             </div>
           </dl>
@@ -197,8 +199,10 @@ export default function AdminUserDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Arbres possédés</CardTitle>
-          <CardDescription>{user.FamilyTree?.length ?? 0} arbre(s)</CardDescription>
+          <CardTitle>{t("userDetail.ownedTrees.title")}</CardTitle>
+          <CardDescription>
+            {t("userDetail.ownedTrees.description", { count: user.FamilyTree?.length ?? 0 })}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
@@ -206,11 +210,11 @@ export default function AdminUserDetailPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Personnes</TableHead>
-                  <TableHead className="hidden md:table-cell">Visibilité</TableHead>
-                  <TableHead className="hidden lg:table-cell">Créé le</TableHead>
-                  <TableHead className="text-right">Voir</TableHead>
+                  <TableHead>{t("common.name")}</TableHead>
+                  <TableHead>{t("common.persons")}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t("common.visibility")}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t("common.registration")}</TableHead>
+                  <TableHead className="text-right">{t("common.view")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -219,7 +223,7 @@ export default function AdminUserDetailPage() {
                     <TableCell>
                       <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
                         <span className="font-medium">{tree.name}</span>
-                        {tree.isDemo && <Badge>Démo</Badge>}
+                        {tree.isDemo && <Badge>{t("common.demo")}</Badge>}
                         <span className="text-xs text-muted-foreground md:hidden">{tree.visibility}</span>
                       </div>
                     </TableCell>
@@ -240,7 +244,7 @@ export default function AdminUserDetailPage() {
                 {!user.FamilyTree?.length && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      Aucun arbre
+                      {t("userDetail.ownedTrees.noTrees")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -254,11 +258,11 @@ export default function AdminUserDetailPage() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifier {user.email}</DialogTitle>
+            <DialogTitle>{t("users.editTitle", { email: user.email })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="detail-name">Nom</Label>
+              <Label htmlFor="detail-name">{t("common.name")}</Label>
               <Input
                 id="detail-name"
                 value={editForm.name}
@@ -266,18 +270,18 @@ export default function AdminUserDetailPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Forfait</Label>
+              <Label>{t("common.plan")}</Label>
               <Select value={editForm.plan} onValueChange={(v) => v && setEditForm({ ...editForm, plan: v as PlanId })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SOLO">Solo</SelectItem>
-                  <SelectItem value="FAMILY">Famille</SelectItem>
-                  <SelectItem value="PATRIMONY">Patrimoine</SelectItem>
+                  <SelectItem value="SOLO">{t("common.plans.solo")}</SelectItem>
+                  <SelectItem value="FAMILY">{t("common.plans.family")}</SelectItem>
+                  <SelectItem value="PATRIMONY">{t("common.plans.patrimony")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Rôle</Label>
+              <Label>{t("common.role")}</Label>
               <Select
                 value={editForm.role}
                 onValueChange={(v) => v && setEditForm({ ...editForm, role: v as "USER" | "ADMIN" })}
@@ -285,15 +289,17 @@ export default function AdminUserDetailPage() {
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USER">USER</SelectItem>
-                  <SelectItem value="ADMIN">ADMIN</SelectItem>
+                  <SelectItem value="USER">{t("common.roles.user")}</SelectItem>
+                  <SelectItem value="ADMIN">{t("common.roles.admin")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>Annuler</Button>
-            <Button onClick={handleSave} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Button>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>{t("common.cancel")}</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? t("common.saving") : t("common.save")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

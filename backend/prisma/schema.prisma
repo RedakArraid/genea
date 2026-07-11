@@ -50,6 +50,7 @@ model FamilyTree {
   isPublic         Boolean            @default(false)
   visibility       TreeVisibility     @default(PRIVATE)
   isDemo           Boolean            @default(false)
+  matchingOptIn    Boolean            @default(false)
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   ownerId          String
@@ -90,6 +91,20 @@ model Person {
   FamilyTree                                 FamilyTree     @relation(fields: [treeId], references: [id], onDelete: Cascade)
   Relationship_Relationship_sourceIdToPerson Relationship[] @relation("Relationship_sourceIdToPerson")
   Relationship_Relationship_targetIdToPerson Relationship[] @relation("Relationship_targetIdToPerson")
+  PersonRevision                             PersonRevision[]
+}
+
+model PersonRevision {
+  id        String   @id @default(uuid())
+  personId  String
+  treeId    String
+  userId    String
+  action    String
+  snapshot  Json
+  createdAt DateTime @default(now())
+  Person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([personId, createdAt])
 }
 
 model Relationship {

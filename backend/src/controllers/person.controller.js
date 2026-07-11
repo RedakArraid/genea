@@ -5,6 +5,7 @@
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { assertMediaAssetLimit, getEffectivePlanLimits } = require('../lib/planAccess');
+const { recordPersonRevision, listPersonRevisions, ownerCanVersion } = require('../lib/versioning');
 const storage = require('../lib/storage');
 const { sendError, sendValidationErrors } = require('../lib/apiErrors');
 
@@ -162,6 +163,12 @@ exports.updatePerson = async (req, res, next) => {
     }
     
     try {
+      const existing = await prisma.person.findUnique({ where: { id } });
+      if (!existing) {
+        return sendError(res, 404, 'PERSON_NOT_FOUND', 'Personne non trouvée');
+      }
+      await recordPersonRevision(existing, req.user?.id, 'UPDATE');
+
       const updatedPerson = await prisma.person.update({
         where: { id },
         data: updateData
@@ -191,8 +198,13 @@ exports.deletePerson = async (req, res, next) => {
 
     const person = await prisma.person.findUnique({
       where: { id },
-      select: { photoUrl: true, PersonDocument: { select: { fileKey: true, fileUrl: true } } },
+      select: { photoUrl: true, treeId: true, firstName: true, lastName: true, birthDate: true, birthPlace: true, deathDate: true, occupation: true, biography: true, gender: true, PersonDocument: { select: { fileKey: true, fileUrl: true } } },
     });
+    if (!person) {
+      return sendError(res, 404, 'PERSON_NOT_FOUND', 'Personne non trouvée');
+    }
+
+    await recordPersonRevision(person, req.user?.id, 'DELETE');
     if (person?.photoUrl) {
       await storage.deleteByUrl(person.photoUrl);
     }
@@ -260,6 +272,61 @@ exports.updatePersonPhoto = async (req, res, next) => {
     if (error.code === 'P2025') {
       return sendError(res, 404, 'PERSON_NOT_FOUND', 'Personne non trouvée');
     }
+    next(error);
+  }
+};
+
+exports.getPersonRevisions = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const person = await prisma.person.findUnique({ where: { id } });
+    if (!person) {
+      return sendError(res, 404, 'PERSON_NOT_FOUND', 'Personne non trouvée');
+    }
+    const allowed = await ownerCanVersion(person.treeId);
+    if (!allowed) {
+      return res.status(403).json({ message: 'Historique réservé au forfait Patrimoine', code: 'VERSIONING_NOT_ALLOWED' });
+    }
+    const revisions = await listPersonRevisions(id);
+    res.json({ revisions });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.restorePersonRevision = async (req, res, next) => {
+  try {
+    const { id, revisionId } = req.params;
+    const person = await prisma.person.findUnique({ where: { id } });
+    if (!person) {
+      return sendError(res, 404, 'PERSON_NOT_FOUND', 'Personne non trouvée');
+    }
+    const allowed = await ownerCanVersion(person.treeId);
+    if (!allowed) {
+      return res.status(403).json({ message: 'Historique réservé au forfait Patrimoine', code: 'VERSIONING_NOT_ALLOWED' });
+    }
+    const revision = await prisma.personRevision.findFirst({ where: { id: revisionId, personId: id } });
+    if (!revision) {
+      return sendError(res, 404, 'NOT_FOUND', 'Révision introuvable');
+    }
+    await recordPersonRevision(person, req.user?.id, 'UPDATE');
+    const snap = revision.snapshot;
+    const updated = await prisma.person.update({
+      where: { id },
+      data: {
+        firstName: snap.firstName,
+        lastName: snap.lastName,
+        birthDate: snap.birthDate ? new Date(snap.birthDate) : null,
+        birthPlace: snap.birthPlace,
+        deathDate: snap.deathDate ? new Date(snap.deathDate) : null,
+        occupation: snap.occupation,
+        biography: snap.biography,
+        gender: snap.gender,
+        photoUrl: snap.photoUrl,
+      },
+    });
+    res.json({ message: 'Version restaurée', person: updated });
+  } catch (error) {
     next(error);
   }
 };

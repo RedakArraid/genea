@@ -1,5 +1,5 @@
 const prisma = require('../lib/prisma');
-const { CURRENCY, getPlanPrice, getPlanLimits, serializePlan, toPaystackAmount } = require('../lib/plans');
+const { CURRENCY, getPlanPrice, getPlanLimits, serializePlan, toPaystackAmount, getPlanDisplayAmounts } = require('../lib/plans');
 const { validatePromoCode, applyDiscount } = require('../lib/promo');
 const { generateReference, fulfillPayment } = require('../lib/payments/fulfill');
 const payments = require('../lib/payments');
@@ -34,12 +34,16 @@ exports.previewCheckout = async (req, res, next) => {
       }
     }
     const finalAmount = applyDiscount(baseAmount, promo);
+    const display = getPlanDisplayAmounts(plan, billingInterval);
     res.json({
       plan,
       billingInterval,
       currency: CURRENCY,
       baseAmount,
       finalAmount,
+      displayXof: display.xof,
+      displayUsd: display.usd,
+      fxRate: display.fxRate,
       promo: promo ? { code: promo.code, discountType: promo.discountType, discountValue: promo.discountValue } : null,
       promoError,
       limits: serializePlan(getPlanLimits(plan)),

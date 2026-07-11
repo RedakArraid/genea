@@ -23,6 +23,15 @@ export interface PlanDefinition {
 }
 
 /** Tarifs internationaux — synchronisés avec backend/src/lib/plans.js */
+export const FX_USD_XOF = 650
+
+export const PRICE_XOF: Record<PlanId, number> & { PATRIMONY_MONTHLY: number } = {
+  SOLO: 3250,
+  FAMILY: 19500,
+  PATRIMONY: 32500,
+  PATRIMONY_MONTHLY: 3250,
+}
+
 export const PLANS: PlanDefinition[] = [
   {
     id: "SOLO",
@@ -84,14 +93,15 @@ export const PLANS: PlanDefinition[] = [
     maxMediaAssets: Infinity,
     canPublicMatching: true,
     canExport: true,
-    canVersioning: false,
+    canVersioning: true,
     cta: "Choisir annuel",
     ctaMonthly: "Choisir mensuel",
     features: [
       "Personnes et arbres illimités",
       "Photos & documents illimités",
+      "Export & import GEDCOM, PDF",
+      "Historique des modifications",
       "Arbres publics en lecture seule",
-      "Export GEDCOM & PDF",
       "Support prioritaire",
     ],
   },
@@ -118,5 +128,28 @@ export function formatPrice(amountUsd: number) {
   }).format(amountUsd)
 }
 
-/** @deprecated */
-export const formatXof = formatPrice
+export function formatXof(amountXof: number) {
+  return new Intl.NumberFormat("fr-CI", {
+    style: "currency",
+    currency: "XOF",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amountXof)
+}
+
+export function getPlanPriceXof(planId: PlanId, interval: BillingInterval = "yearly") {
+  if (planId === "PATRIMONY" && interval === "monthly") return PRICE_XOF.PATRIMONY_MONTHLY
+  return PRICE_XOF[planId]
+}
+
+export function formatDualPrice(planId: PlanId, interval: BillingInterval = "yearly") {
+  const plan = getPlanById(planId)
+  const usd = getPlanPrice(plan, interval)
+  const xof = getPlanPriceXof(planId, interval)
+  return `${formatXof(xof)} (${formatPrice(usd)})`
+}
+
+export function formatDualPriceFromUsd(amountUsd: number) {
+  const xof = Math.round(amountUsd * FX_USD_XOF)
+  return `${formatXof(xof)} (${formatPrice(amountUsd)})`
+}

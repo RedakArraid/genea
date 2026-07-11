@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Database, FileText, Image } from "lucide-react"
 import { formatDateTime } from "@/lib/format"
 import { toast } from "sonner"
@@ -8,48 +9,57 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} o`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+function formatBytes(bytes: number, t: (key: string, opts?: { count: string }) => string) {
+  if (bytes < 1024) return t("storage.bytes.bytes", { count: String(bytes) })
+  if (bytes < 1024 * 1024) return t("storage.bytes.kb", { count: (bytes / 1024).toFixed(1) })
+  return t("storage.bytes.mb", { count: (bytes / (1024 * 1024)).toFixed(1) })
 }
 
 export default function AdminStoragePage() {
+  const { t } = useTranslation("admin")
   const [info, setInfo] = useState<AdminStorageInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchAdminStorage()
       .then(setInfo)
-      .catch(() => toast.error("Impossible de charger le stockage"))
+      .catch(() => toast.error(t("storage.toasts.loadFailed")))
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   const storage = info?.storage
+
+  const minioStatus = loading
+    ? "…"
+    : storage?.ready
+      ? t("storage.minioReady")
+      : storage?.enabled
+        ? t("storage.minioUnavailable")
+        : t("storage.minioDisabled")
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Stockage</h1>
-        <p className="text-muted-foreground">MinIO et fichiers en base</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("storage.title")}</h1>
+        <p className="text-muted-foreground">{t("storage.subtitle")}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <AdminStatCard
-          title="Statut MinIO"
-          value={loading ? "…" : storage?.ready ? "Prêt" : storage?.enabled ? "Indisponible" : "Désactivé"}
+          title={t("storage.minioStatus")}
+          value={minioStatus}
           icon={Database}
           loading={loading}
-          description={storage?.proxyUrl ? `Proxy : ${storage.proxyUrl}` : undefined}
+          description={storage?.proxyUrl ? t("storage.proxy", { url: storage.proxyUrl }) : undefined}
         />
-        <AdminStatCard title="Documents" value={info?.counts.documents ?? 0} icon={FileText} loading={loading} />
-        <AdminStatCard title="Photos profil" value={info?.counts.photos ?? 0} icon={Image} loading={loading} />
+        <AdminStatCard title={t("storage.documents")} value={info?.counts.documents ?? 0} icon={FileText} loading={loading} />
+        <AdminStatCard title={t("storage.profilePhotos")} value={info?.counts.photos ?? 0} icon={Image} loading={loading} />
       </div>
 
       {storage?.publicConfig && (
         <Card>
           <CardHeader>
-            <CardTitle>Configuration</CardTitle>
+            <CardTitle>{t("storage.configuration")}</CardTitle>
           </CardHeader>
           <CardContent>
             <pre className="overflow-auto rounded-md bg-muted p-3 text-xs">
@@ -61,8 +71,8 @@ export default function AdminStoragePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Derniers documents</CardTitle>
-          <CardDescription>10 uploads les plus récents</CardDescription>
+          <CardTitle>{t("storage.recentDocuments.title")}</CardTitle>
+          <CardDescription>{t("storage.recentDocuments.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
@@ -70,11 +80,11 @@ export default function AdminStoragePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Titre</TableHead>
-                  <TableHead className="hidden md:table-cell">Personne</TableHead>
-                  <TableHead className="hidden md:table-cell">Type</TableHead>
-                  <TableHead className="hidden lg:table-cell">Taille</TableHead>
-                  <TableHead className="hidden md:table-cell">Date</TableHead>
+                  <TableHead>{t("storage.table.title")}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t("storage.table.person")}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t("storage.table.type")}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t("storage.table.size")}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t("storage.table.date")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -91,13 +101,13 @@ export default function AdminStoragePage() {
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{doc.Person.firstName} {doc.Person.lastName}</TableCell>
                     <TableCell className="hidden md:table-cell"><Badge variant="outline">{doc.category}</Badge></TableCell>
-                    <TableCell className="hidden lg:table-cell">{formatBytes(doc.sizeBytes)}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{formatBytes(doc.sizeBytes, t)}</TableCell>
                     <TableCell className="hidden md:table-cell">{formatDateTime(doc.createdAt)}</TableCell>
                   </TableRow>
                 ))}
                 {!loading && !info?.recentDocuments?.length && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">Aucun document</TableCell>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">{t("storage.noDocuments")}</TableCell>
                   </TableRow>
                 )}
               </TableBody>

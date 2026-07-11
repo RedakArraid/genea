@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Loader2, MessageCircle, RefreshCw, Send } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -25,17 +26,8 @@ const emptyForm = {
   sessionId: "",
 }
 
-const sessionStatusLabel: Record<string, string> = {
-  created: "Créée",
-  initializing: "Initialisation",
-  qr_ready: "QR code prêt",
-  authenticating: "Authentification",
-  ready: "Connectée",
-  disconnected: "Déconnectée",
-  failed: "Échec",
-}
-
 export default function AdminOpenWaPage() {
+  const { t } = useTranslation("admin")
   const [settings, setSettings] = useState<AdminOpenWaSettings | null>(null)
   const [status, setStatus] = useState<AdminOpenWaStatusResponse | null>(null)
   const [form, setForm] = useState(emptyForm)
@@ -44,6 +36,9 @@ export default function AdminOpenWaPage() {
   const [statusLoading, setStatusLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
+
+  const sessionStatusLabel = (statusKey: string) =>
+    t(`openwa.sessionStatus.${statusKey}`, { defaultValue: statusKey })
 
   const loadSettings = useCallback(async () => {
     setLoading(true)
@@ -57,11 +52,11 @@ export default function AdminOpenWaPage() {
         sessionId: openwa.sessionId || "",
       })
     } catch {
-      toast.error("Impossible de charger la configuration OpenWA")
+      toast.error(t("openwa.toasts.loadFailed"))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   const loadStatus = useCallback(async () => {
     setStatusLoading(true)
@@ -69,11 +64,11 @@ export default function AdminOpenWaPage() {
       const result = await fetchOpenWaStatus()
       setStatus(result)
     } catch {
-      setStatus({ reachable: false, configured: false, message: "Erreur de statut" })
+      setStatus({ reachable: false, configured: false, message: t("openwa.toasts.statusError") })
     } finally {
       setStatusLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     loadSettings()
@@ -92,10 +87,10 @@ export default function AdminOpenWaPage() {
       })
       setSettings(openwa)
       setForm((f) => ({ ...f, apiKey: "" }))
-      toast.success("Configuration OpenWA enregistrée")
+      toast.success(t("openwa.toasts.saveSuccess"))
       await loadStatus()
     } catch {
-      toast.error("Échec de l'enregistrement OpenWA")
+      toast.error(t("openwa.toasts.saveFailed"))
     } finally {
       setSaving(false)
     }
@@ -103,7 +98,7 @@ export default function AdminOpenWaPage() {
 
   const handleTest = async () => {
     if (!testPhone.trim()) {
-      toast.error("Indiquez un numéro de téléphone de test")
+      toast.error(t("openwa.test.phoneRequired"))
       return
     }
     setTesting(true)
@@ -112,7 +107,7 @@ export default function AdminOpenWaPage() {
       toast.success(result.message)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-      toast.error(msg || "Échec du test OpenWA")
+      toast.error(msg || t("openwa.toasts.testFailed"))
     } finally {
       setTesting(false)
     }
@@ -120,55 +115,71 @@ export default function AdminOpenWaPage() {
 
   const sourceLabel =
     settings?.source === "db"
-      ? "Base de données (admin)"
+      ? t("common.source.db")
       : settings?.source === "env"
-        ? "Variables d'environnement"
-        : "Non configuré"
+        ? t("common.source.env")
+        : t("common.source.none")
 
   const session = status?.session
   const sessionLabel = session?.status
-    ? sessionStatusLabel[session.status] || session.status
-    : "—"
+    ? sessionStatusLabel(session.status)
+    : t("common.dash")
 
   const testBlockedReason = !settings?.configured
-    ? "Configuration incomplète (URL, clé API, ID session)."
+    ? t("openwa.test.blockedIncomplete")
     : !status?.reachable && status?.message
       ? status.message
       : session && !session.connected
-        ? `Session non connectée (statut : ${sessionLabel}). Scannez le QR code dans le dashboard OpenWA.`
+        ? t("openwa.test.blockedNotConnected", { status: sessionLabel })
         : !session?.connected
-          ? status?.message || "Session WhatsApp introuvable ou non connectée."
+          ? status?.message || t("openwa.test.blockedNoSession")
           : null
 
   const canTest = Boolean(settings?.configured && session?.connected)
 
+  const integrationValue = loading
+    ? "…"
+    : settings?.enabled && settings?.configured
+      ? t("openwa.integrationActive")
+      : settings?.configured
+        ? t("openwa.integrationConfiguredInactive")
+        : t("openwa.integrationNotConfigured")
+
+  const sessionValue = statusLoading
+    ? "…"
+    : session?.connected
+      ? t("openwa.sessionConnected")
+      : session
+        ? sessionLabel
+        : status?.message || t("common.dash")
+
+  const openWaDashboardUrl = form.baseUrl?.replace(/\/api\/?$/, "") || t("common.dash")
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">WhatsApp / OpenWA</h1>
-        <p className="text-muted-foreground">
-          Configuration de l'envoi des codes OTP via WhatsApp (OpenWA self-hosted)
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("openwa.title")}</h1>
+        <p className="text-muted-foreground">{t("openwa.subtitle")}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <AdminStatCard
-          title="Intégration"
-          value={loading ? "…" : settings?.enabled && settings?.configured ? "Activée" : settings?.configured ? "Configurée (inactive)" : "Non configurée"}
+          title={t("openwa.integration")}
+          value={integrationValue}
           icon={MessageCircle}
           loading={loading}
           description={sourceLabel}
         />
         <AdminStatCard
-          title="Session WhatsApp"
-          value={statusLoading ? "…" : session?.connected ? "Connectée" : session ? sessionLabel : status?.message || "—"}
+          title={t("openwa.whatsappSession")}
+          value={sessionValue}
           icon={MessageCircle}
           loading={statusLoading}
           description={session?.phone ? `+${session.phone}` : undefined}
         />
         <AdminStatCard
-          title="Dernière mise à jour"
-          value={settings?.updatedAt ? formatDateTime(settings.updatedAt) : "—"}
+          title={t("smtp.lastUpdated")}
+          value={settings?.updatedAt ? formatDateTime(settings.updatedAt) : t("common.dash")}
           icon={MessageCircle}
           loading={loading}
         />
@@ -176,12 +187,8 @@ export default function AdminOpenWaPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Connexion OpenWA</CardTitle>
-          <CardDescription>
-            OpenWA doit tourner en service séparé (Docker). Créez une session et scannez le QR code
-            depuis le dashboard OpenWA, puis renseignez l'URL de l'API, la clé API et l'ID de session.
-            WhatsApp est utilisé en priorité pour l'OTP ; l'email SMTP reste le canal de secours.
-          </CardDescription>
+          <CardTitle>{t("openwa.connection.title")}</CardTitle>
+          <CardDescription>{t("openwa.connection.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4 max-w-xl">
@@ -191,11 +198,11 @@ export default function AdminOpenWaPage() {
                 checked={form.enabled}
                 onCheckedChange={(enabled) => setForm({ ...form, enabled })}
               />
-              <Label htmlFor="openwa-enabled">Activer l'envoi OTP par WhatsApp</Label>
+              <Label htmlFor="openwa-enabled">{t("openwa.fields.enabled")}</Label>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="openwa-base-url">URL de l'API</Label>
+              <Label htmlFor="openwa-base-url">{t("openwa.fields.apiUrl")}</Label>
               <Input
                 id="openwa-base-url"
                 placeholder="http://openwa:2785/api"
@@ -203,12 +210,12 @@ export default function AdminOpenWaPage() {
                 onChange={(e) => setForm({ ...form, baseUrl: e.target.value })}
               />
               <p className="text-xs text-muted-foreground">
-                URL de base incluant <code>/api</code> (ex. http://localhost:2785/api)
+                {t("openwa.fields.apiUrlHint")}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="openwa-session-id">ID de session</Label>
+              <Label htmlFor="openwa-session-id">{t("openwa.fields.sessionId")}</Label>
               <Input
                 id="openwa-session-id"
                 placeholder="uuid de la session OpenWA"
@@ -219,10 +226,10 @@ export default function AdminOpenWaPage() {
 
             <div className="space-y-2">
               <Label htmlFor="openwa-api-key">
-                Clé API
+                {t("openwa.fields.apiKey")}
                 {settings?.hasApiKey && (
                   <Badge variant="outline" className="ml-2 text-xs">
-                    Définie
+                    {t("common.defined")}
                   </Badge>
                 )}
               </Label>
@@ -230,7 +237,7 @@ export default function AdminOpenWaPage() {
                 id="openwa-api-key"
                 type="password"
                 autoComplete="new-password"
-                placeholder={settings?.hasApiKey ? "Laisser vide pour ne pas changer" : ""}
+                placeholder={settings?.hasApiKey ? t("common.leaveBlankToKeep") : ""}
                 value={form.apiKey}
                 onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
               />
@@ -239,7 +246,7 @@ export default function AdminOpenWaPage() {
             <div className="flex flex-wrap gap-2">
               <Button type="submit" disabled={saving}>
                 {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-                Enregistrer
+                {t("common.save")}
               </Button>
               <Button type="button" variant="outline" onClick={loadStatus} disabled={statusLoading}>
                 {statusLoading ? (
@@ -247,7 +254,7 @@ export default function AdminOpenWaPage() {
                 ) : (
                   <RefreshCw className="mr-2 size-4" />
                 )}
-                Actualiser le statut
+                {t("openwa.refreshStatus")}
               </Button>
             </div>
           </form>
@@ -257,12 +264,10 @@ export default function AdminOpenWaPage() {
       {status?.message && !session?.connected && (
         <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40">
           <CardContent className="pt-6 text-sm text-amber-900 dark:text-amber-100">
-            <p className="font-medium">Session WhatsApp indisponible</p>
+            <p className="font-medium">{t("openwa.sessionUnavailable.title")}</p>
             <p className="mt-1">{status.message}</p>
             <p className="mt-2 text-muted-foreground">
-              Vérifiez l&apos;ID de session complet (UUID entier, ex.{" "}
-              <code className="text-xs">56d4768d-8e7a-4b2c-9d1f-xxxxxxxxxxxx</code>
-              ) dans le dashboard OpenWA ({form.baseUrl?.replace(/\/api\/?$/, "") || "votre instance"}).
+              {t("openwa.sessionUnavailable.hint", { url: openWaDashboardUrl })}
             </p>
           </CardContent>
         </Card>
@@ -271,26 +276,26 @@ export default function AdminOpenWaPage() {
       {session && (
         <Card>
           <CardHeader>
-            <CardTitle>Détails session</CardTitle>
+            <CardTitle>{t("openwa.sessionDetails.title")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm sm:grid-cols-2 max-w-xl">
             <div>
-              <span className="text-muted-foreground">Nom : </span>
+              <span className="text-muted-foreground">{t("openwa.sessionDetails.name")} </span>
               {session.name}
             </div>
             <div>
-              <span className="text-muted-foreground">Statut : </span>
+              <span className="text-muted-foreground">{t("openwa.sessionDetails.status")} </span>
               {sessionLabel}
             </div>
             {session.pushName && (
               <div>
-                <span className="text-muted-foreground">Profil : </span>
+                <span className="text-muted-foreground">{t("openwa.sessionDetails.profile")} </span>
                 {session.pushName}
               </div>
             )}
             {session.lastError && (
               <div className="sm:col-span-2 text-destructive">
-                Erreur : {session.lastError}
+                {t("openwa.sessionDetails.error")} {session.lastError}
               </div>
             )}
           </CardContent>
@@ -299,15 +304,12 @@ export default function AdminOpenWaPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Test d'envoi</CardTitle>
-          <CardDescription>
-            Enregistrez la configuration et assurez-vous que la session est connectée, puis envoyez
-            un message WhatsApp de test.
-          </CardDescription>
+          <CardTitle>{t("openwa.test.title")}</CardTitle>
+          <CardDescription>{t("openwa.test.description")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3 max-w-xl">
           <div className="flex-1 space-y-2 min-w-[200px]">
-            <Label htmlFor="test-phone">Numéro (format international)</Label>
+            <Label htmlFor="test-phone">{t("openwa.test.phone")}</Label>
             <Input
               id="test-phone"
               placeholder="+2250700000001"
@@ -322,7 +324,7 @@ export default function AdminOpenWaPage() {
             disabled={testing || !canTest}
           >
             {testing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Send className="mr-2 size-4" />}
-            Envoyer un test
+            {t("common.sendTest")}
           </Button>
           {testBlockedReason && !canTest && (
             <p className="w-full text-sm text-muted-foreground">{testBlockedReason}</p>

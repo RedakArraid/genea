@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo, useCallback } from "react"
-import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2, MoreVertical, UserPlus, Link2, FileDown } from "lucide-react"
+import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2, MoreVertical, UserPlus, Link2, FileDown, Upload } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { PersonCard } from "./person-card"
 import { buildConnections, computeLineage, getCardDimensions } from "@/utils/tree-layout"
@@ -130,9 +130,12 @@ interface TreeCanvasProps {
   isDemo?: boolean
   canShare?: boolean
   canExport?: boolean
+  canImport?: boolean
   exportBusy?: boolean
+  importBusy?: boolean
   onExportGedcom?: () => void
   onExportPdf?: () => void
+  onImportGedcom?: (file: File) => void
   onCardDragStateChange?: (dragging: boolean, pending?: { id: string; x: number; y: number }) => void
 }
 
@@ -159,12 +162,16 @@ export function TreeCanvas({
   isDemo = false,
   canShare = true,
   canExport = false,
+  canImport = false,
   exportBusy = false,
+  importBusy = false,
   onExportGedcom,
   onExportPdf,
+  onImportGedcom,
   onCardDragStateChange,
 }: TreeCanvasProps) {
   const { t } = useTranslation("tree")
+  const importInputRef = useRef<HTMLInputElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const innerRef = useRef<HTMLDivElement>(null)
   const lastFitKeyRef = useRef<string | null>(null)
@@ -504,6 +511,12 @@ export function TreeCanvas({
                 <Settings className="mr-2 size-4" />
                 {t("canvas.settings", { defaultValue: "Paramètres" })}
               </DropdownMenuItem>
+              {canImport && onImportGedcom && (
+                <DropdownMenuItem disabled={importBusy} onClick={() => importInputRef.current?.click()}>
+                  <Upload className="mr-2 size-4" />
+                  {t("canvas.importGedcom")}
+                </DropdownMenuItem>
+              )}
               {canExport && onExportGedcom && onExportPdf && (
                 <>
                   <DropdownMenuItem disabled={exportBusy} onClick={onExportGedcom}>
@@ -585,6 +598,17 @@ export function TreeCanvas({
         <Button size="sm" variant="ghost" onClick={onOpenTweaks}>
           <Settings className="size-4" />
         </Button>
+        {canImport && onImportGedcom && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={importBusy}
+            onClick={() => importInputRef.current?.click()}
+          >
+            <Upload className="mr-1 size-4" />
+            {t("canvas.importGedcom")}
+          </Button>
+        )}
         {canExport && onExportGedcom && onExportPdf && (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -761,6 +785,17 @@ export function TreeCanvas({
           </div>
         </div>
       )}
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".ged,text/plain"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file && onImportGedcom) onImportGedcom(file)
+          e.target.value = ""
+        }}
+      />
     </div>
   )
 }

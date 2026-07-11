@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -18,7 +19,7 @@ interface AdminDataTableProps {
 export function AdminDataTable({
   search,
   onSearchChange,
-  searchPlaceholder = "Rechercher…",
+  searchPlaceholder,
   page = 1,
   totalPages = 1,
   onPageChange,
@@ -26,6 +27,8 @@ export function AdminDataTable({
   children,
   filters,
 }: AdminDataTableProps) {
+  const { t } = useTranslation("admin")
+
   return (
     <div className="space-y-4">
       {(onSearchChange || filters) && (
@@ -35,7 +38,7 @@ export function AdminDataTable({
               <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
               <Input
                 className="pl-9"
-                placeholder={searchPlaceholder}
+                placeholder={searchPlaceholder ?? t("common.searchPlaceholder")}
                 value={search ?? ""}
                 onChange={(e) => onSearchChange(e.target.value)}
               />
@@ -61,7 +64,7 @@ export function AdminDataTable({
             <ChevronLeft className="size-4" />
           </Button>
           <span className="text-sm text-muted-foreground">
-            Page {page} / {totalPages}
+            {t("common.pagination", { page, totalPages })}
           </span>
           <Button
             variant="outline"

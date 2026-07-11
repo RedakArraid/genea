@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { PersonDocuments } from "@/components/family-tree/person-documents"
+import { PersonHistory } from "@/components/family-tree/person-history"
 import { ChildAddMenu } from "@/components/family-tree/child-add-menu"
 import { useIsMobile } from "@/hooks/use-mobile"
 
@@ -40,6 +41,8 @@ interface SidePanelProps {
   readOnly?: boolean
   canEditInfo?: boolean
   canChangePhoto?: boolean
+  canVersioning?: boolean
+  onPersonRestored?: () => void
 }
 
 function formatDate(dateStr: string | null) {
@@ -150,6 +153,8 @@ function SidePanelContent({
   readOnly = false,
   canEditInfo = true,
   canChangePhoto = false,
+  canVersioning = false,
+  onPersonRestored,
 }: SidePanelProps) {
   const { t } = useTranslation("tree")
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -442,6 +447,18 @@ function SidePanelContent({
           )}
 
           <Separator />
+
+          {canVersioning && (
+            <>
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {t("history.title")}
+                </span>
+                <PersonHistory personId={person.id} onRestored={onPersonRestored} />
+              </div>
+              <Separator />
+            </>
+          )}
 
           <PersonDocuments personId={person.id} readOnly={readOnly} />
         </div>

@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import {
   ArrowLeft,
   CreditCard,
@@ -14,6 +15,7 @@ import {
   Users,
 } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import {
   Sidebar,
   SidebarContent,
@@ -32,18 +34,19 @@ import {
 import { Separator } from "@/components/ui/separator"
 
 const adminNav = [
-  { title: "Tableau de bord", href: "/admin", icon: LayoutDashboard, exact: true },
-  { title: "Utilisateurs", href: "/admin/users", icon: Users },
-  { title: "Arbres", href: "/admin/trees", icon: GitBranch },
-  { title: "Stockage", href: "/admin/storage", icon: Database },
-  { title: "Email / SMTP", href: "/admin/smtp", icon: Mail },
-  { title: "WhatsApp / OpenWA", href: "/admin/openwa", icon: MessageCircle },
-  { title: "Démo", href: "/admin/demo", icon: Sparkles },
-  { title: "Forfaits", href: "/admin/plans", icon: CreditCard },
-  { title: "Codes promo", href: "/admin/promo", icon: Tag },
-]
+  { titleKey: "shell.nav.dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
+  { titleKey: "shell.nav.users", href: "/admin/users", icon: Users },
+  { titleKey: "shell.nav.trees", href: "/admin/trees", icon: GitBranch },
+  { titleKey: "shell.nav.storage", href: "/admin/storage", icon: Database },
+  { titleKey: "shell.nav.smtp", href: "/admin/smtp", icon: Mail },
+  { titleKey: "shell.nav.openwa", href: "/admin/openwa", icon: MessageCircle },
+  { titleKey: "shell.nav.demo", href: "/admin/demo", icon: Sparkles },
+  { titleKey: "shell.nav.plans", href: "/admin/plans", icon: CreditCard },
+  { titleKey: "shell.nav.promo", href: "/admin/promo", icon: Tag },
+] as const
 
 export function AdminShell() {
+  const { t } = useTranslation("admin")
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
@@ -59,15 +62,16 @@ export function AdminShell() {
         <SidebarHeader className="border-b border-sidebar-border p-4">
           <Link to="/admin" className="flex items-center gap-2 font-semibold">
             <Shield className="size-5 text-primary" />
-            <span>Admin GeneaIA</span>
+            <span>{t("shell.brand")}</span>
           </Link>
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Back-office</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("shell.backOffice")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {adminNav.map((item) => {
+                  const title = t(item.titleKey)
                   const active = item.exact
                     ? location.pathname === item.href
                     : location.pathname.startsWith(item.href)
@@ -79,13 +83,13 @@ export function AdminShell() {
                           <Link
                             to={item.href}
                             data-testid={`admin-nav-${navId}`}
-                            aria-label={`Admin — ${item.title}`}
+                            aria-label={t("shell.navAria", { title })}
                           />
                         }
                         isActive={active}
                       >
                         <item.icon />
-                        <span>{item.title}</span>
+                        <span>{title}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )
@@ -99,13 +103,13 @@ export function AdminShell() {
             <SidebarMenuItem>
               <SidebarMenuButton render={<Link to="/dashboard" />}>
                 <ArrowLeft />
-                <span>Retour app</span>
+                <span>{t("shell.backToApp")}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton onClick={handleLogout}>
                 <LogOut />
-                <span>Déconnexion</span>
+                <span>{t("shell.logout")}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -117,8 +121,11 @@ export function AdminShell() {
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-4" />
           <div className="flex flex-1 items-center justify-between gap-2">
-            <span className="truncate text-sm text-muted-foreground">Administration plateforme</span>
-            <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
+            <span className="truncate text-sm text-muted-foreground">{t("shell.header")}</span>
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
+            </div>
           </div>
         </header>
         <main className="flex-1 p-4 sm:p-6">

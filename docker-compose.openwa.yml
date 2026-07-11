@@ -1,0 +1,20 @@
+# OpenWA — WhatsApp OTP (optionnel, profil séparé)
+# Usage : docker compose -f docker-compose.openwa.yml up -d
+# Voir docs/OPENWA.md
+
+services:
+  openwa:
+    image: openwa/wa-automate:latest
+    container_name: geneaia-openwa-local
+    environment:
+      - SESSION_ID=${OPENWA_SESSION_ID:-geneaia}
+      - MULTI_DEVICE=true
+      - HEADLESS=true
+    ports:
+      - "${OPENWA_HOST_PORT:-2785}:2785"
+    volumes:
+      - openwa_session:/sessions
+    restart: unless-stopped
+
+volumes:
+  openwa_session:

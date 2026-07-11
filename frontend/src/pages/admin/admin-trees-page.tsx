@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { ExternalLink, Trash2 } from "lucide-react"
 import { formatMediumDate } from "@/lib/format"
 import { toast } from "sonner"
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/select"
 
 export default function AdminTreesPage() {
+  const { t } = useTranslation("admin")
   const [trees, setTrees] = useState<AdminTree[]>([])
   const [loading, setLoading] = useState(true)
   const [demoFilter, setDemoFilter] = useState("all")
@@ -35,11 +37,11 @@ export default function AdminTreesPage() {
       setTrees(list)
       setTotalPages(pagination.pages)
     } catch {
-      toast.error("Impossible de charger les arbres")
+      toast.error(t("trees.toasts.loadFailed"))
     } finally {
       setLoading(false)
     }
-  }, [demoFilter, visibilityFilter, page])
+  }, [demoFilter, visibilityFilter, page, t])
 
   useEffect(() => {
     load()
@@ -47,25 +49,25 @@ export default function AdminTreesPage() {
 
   const handleDelete = async (tree: AdminTree) => {
     if (tree.isDemo) {
-      toast.error("Utilisez la page Démo pour réinitialiser l'arbre démo")
+      toast.error(t("trees.toasts.demoUseDemoPage"))
       return
     }
-    if (!confirm(`Supprimer l'arbre "${tree.name}" ?`)) return
+    if (!confirm(t("trees.deleteConfirm", { name: tree.name }))) return
     try {
       await deleteAdminTree(tree.id)
-      toast.success("Arbre supprimé")
+      toast.success(t("trees.toasts.deleteSuccess"))
       load()
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message
-      toast.error(msg || "Suppression impossible")
+      toast.error(msg || t("common.toasts.deleteFailed"))
     }
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Arbres</h1>
-        <p className="text-muted-foreground">Tous les arbres généalogiques</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("trees.title")}</h1>
+        <p className="text-muted-foreground">{t("trees.subtitle")}</p>
       </div>
 
       <AdminDataTable
@@ -76,20 +78,20 @@ export default function AdminTreesPage() {
         filters={
           <div className="flex flex-wrap gap-2">
             <Select value={demoFilter} onValueChange={(v) => v && (setDemoFilter(v), setPage(1))}>
-              <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder="Démo" /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder={t("trees.demoFilter")} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
-                <SelectItem value="true">Démo</SelectItem>
-                <SelectItem value="false">Perso</SelectItem>
+                <SelectItem value="all">{t("common.demoFilter.all")}</SelectItem>
+                <SelectItem value="true">{t("common.demoFilter.demo")}</SelectItem>
+                <SelectItem value="false">{t("common.demoFilter.personal")}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={visibilityFilter} onValueChange={(v) => v && (setVisibilityFilter(v), setPage(1))}>
-              <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder="Visibilité" /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder={t("common.visibility")} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes</SelectItem>
-                <SelectItem value="PRIVATE">Privé</SelectItem>
-                <SelectItem value="SHARED">Partagé</SelectItem>
-                <SelectItem value="PUBLIC">Public</SelectItem>
+                <SelectItem value="all">{t("common.visibilityOptions.all")}</SelectItem>
+                <SelectItem value="PRIVATE">{t("common.visibilityOptions.private")}</SelectItem>
+                <SelectItem value="SHARED">{t("common.visibilityOptions.shared")}</SelectItem>
+                <SelectItem value="PUBLIC">{t("common.visibilityOptions.public")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -100,12 +102,12 @@ export default function AdminTreesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead className="hidden md:table-cell">Propriétaire</TableHead>
-                <TableHead>Personnes</TableHead>
-                <TableHead className="hidden md:table-cell">Visibilité</TableHead>
-                <TableHead className="hidden lg:table-cell">MAJ</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("common.name")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("common.owner")}</TableHead>
+                <TableHead>{t("common.persons")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("common.visibility")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t("common.updatedAt")}</TableHead>
+                <TableHead className="text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -114,11 +116,11 @@ export default function AdminTreesPage() {
                   <TableCell>
                     <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
                       <span className="font-medium">{tree.name}</span>
-                      {tree.isDemo && <Badge>Démo</Badge>}
-                      <span className="text-xs text-muted-foreground md:hidden">{tree.User?.email ?? "—"}</span>
+                      {tree.isDemo && <Badge>{t("common.demo")}</Badge>}
+                      <span className="text-xs text-muted-foreground md:hidden">{tree.User?.email ?? t("common.dash")}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">{tree.User?.email ?? "—"}</TableCell>
+                  <TableCell className="hidden md:table-cell">{tree.User?.email ?? t("common.dash")}</TableCell>
                   <TableCell>{tree._count?.Person ?? 0}</TableCell>
                   <TableCell className="hidden md:table-cell">
                     <Badge variant="outline">{tree.visibility}</Badge>
@@ -140,7 +142,7 @@ export default function AdminTreesPage() {
               ))}
               {trees.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">Aucun arbre</TableCell>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">{t("trees.noTrees")}</TableCell>
                 </TableRow>
               )}
             </TableBody>

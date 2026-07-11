@@ -3,13 +3,26 @@
  */
 
 const express = require('express');
+const multer = require('multer');
 const { body } = require('express-validator');
 const familyTreeController = require('../controllers/familyTree.controller');
 const collaborationController = require('../controllers/collaboration.controller');
 const { isAuth, optionalAuth } = require('../middleware/auth.middleware');
-const { canReadTree } = require('../middleware/treeAccess.middleware');
+const { canReadTree, canWriteTree } = require('../middleware/treeAccess.middleware');
 
 const router = express.Router();
+
+const gedcomUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter(_req, file, cb) {
+    if (file.originalname?.toLowerCase().endsWith('.ged') || file.mimetype === 'text/plain') {
+      cb(null, true);
+    } else {
+      cb(new Error('Fichier .ged requis'));
+    }
+  },
+});
 
 router.get('/', isAuth, familyTreeController.getAllTrees);
 
@@ -24,6 +37,9 @@ router.put('/:id/visibility', isAuth, collaborationController.updateVisibility);
 
 router.get('/:id/export/gedcom', isAuth, canReadTree, familyTreeController.exportGedcom);
 router.get('/:id/export/pdf', isAuth, canReadTree, familyTreeController.exportPdf);
+router.post('/:id/import/gedcom', isAuth, canWriteTree, gedcomUpload.single('gedcom'), familyTreeController.importGedcom);
+router.get('/:id/matches', isAuth, canReadTree, familyTreeController.getTreeMatches);
+router.put('/:id/matching-opt-in', isAuth, familyTreeController.updateMatchingOptIn);
 
 router.get('/:id', optionalAuth, canReadTree, familyTreeController.getTreeById);
 

@@ -7,6 +7,15 @@
  */
 
 const CURRENCY = 'USD';
+const FX_USD_XOF = Number(process.env.FX_USD_XOF) || 650;
+
+/** Prix affichage FCFA (paiement reste USD via Paystack) */
+const PRICE_XOF = {
+  SOLO: 3250,
+  FAMILY: 19500,
+  PATRIMONY: 32500,
+  PATRIMONY_MONTHLY: 3250,
+};
 
 const PLANS = {
   SOLO: {
@@ -68,12 +77,13 @@ const PLANS = {
     maxMediaAssets: Infinity,
     canPublicMatching: true,
     canExport: true,
-    canVersioning: false,
+    canVersioning: true,
     features: [
       'Personnes et arbres illimités',
       'Photos & documents illimités',
       'Arbres publics en lecture seule',
-      'Export GEDCOM & PDF',
+      'Export & import GEDCOM, PDF',
+      'Historique des modifications',
       'Support prioritaire',
     ],
   },
@@ -91,9 +101,21 @@ function getPlanPrice(planId, billingInterval = 'yearly') {
   return plan.priceUsd;
 }
 
-/** @deprecated alias */
-function getPlanPriceXof(planId, billingInterval) {
-  return getPlanPrice(planId, billingInterval);
+/** Prix FCFA affichage (forfait + intervalle) */
+function getPlanPriceXof(planId, billingInterval = 'yearly') {
+  if (planId === 'PATRIMONY' && billingInterval === 'monthly') {
+    return PRICE_XOF.PATRIMONY_MONTHLY;
+  }
+  return PRICE_XOF[planId] ?? Math.round(getPlanPrice(planId, billingInterval) * FX_USD_XOF);
+}
+
+function getPlanDisplayAmounts(planId, billingInterval = 'yearly') {
+  const usd = getPlanPrice(planId, billingInterval);
+  return {
+    usd,
+    xof: getPlanPriceXof(planId, billingInterval),
+    fxRate: FX_USD_XOF,
+  };
 }
 
 function getPlanDurationDays(planId, billingInterval = 'yearly') {
@@ -140,6 +162,9 @@ module.exports = {
   getPlanLimits,
   getPlanPrice,
   getPlanPriceXof,
+  getPlanDisplayAmounts,
+  FX_USD_XOF,
+  PRICE_XOF,
   getPlanDurationDays,
   isPaidPlan,
   computeDiscountedAmount,

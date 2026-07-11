@@ -1,4 +1,4 @@
-const { generateGedcom } = require('../lib/gedcom');
+const { generateGedcom, parseGedcom } = require('../lib/gedcom');
 
 describe('gedcom generator', () => {
   it('produces valid INDI and TRLR records', () => {
@@ -57,5 +57,31 @@ describe('gedcom generator', () => {
     expect(ged).toContain('0 @F1@ FAM');
     expect(ged).toContain('1 CHIL @p3@');
     expect(ged).toContain('0 TRLR');
+  });
+
+  it('parseGedcom round-trips generated export', () => {
+    const tree = { id: 't1', name: 'Famille Test', description: 'Note arbre' };
+    const persons = [
+      {
+        id: 'p1',
+        firstName: 'Jean',
+        lastName: 'Dupont',
+        gender: 'male',
+        birthDate: new Date('1980-05-01T00:00:00.000Z'),
+        birthPlace: 'Abidjan',
+        deathDate: null,
+        occupation: null,
+        biography: null,
+        photoUrl: null,
+      },
+    ];
+    const relationships = [];
+
+    const ged = generateGedcom(tree, persons, relationships);
+    const parsed = parseGedcom(ged);
+
+    expect(parsed.individuals).toHaveLength(1);
+    expect(parsed.individuals[0].name).toContain('Jean');
+    expect(parsed.individuals[0].name).toContain('Dupont');
   });
 });

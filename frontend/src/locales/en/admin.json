@@ -1,0 +1,369 @@
+{
+  "shell": {
+    "brand": "GeneaIA Admin",
+    "backOffice": "Back office",
+    "header": "Platform administration",
+    "backToApp": "Back to app",
+    "logout": "Log out",
+    "navAria": "Admin — {{title}}",
+    "nav": {
+      "dashboard": "Dashboard",
+      "users": "Users",
+      "trees": "Trees",
+      "storage": "Storage",
+      "smtp": "Email / SMTP",
+      "openwa": "WhatsApp / OpenWA",
+      "demo": "Demo",
+      "plans": "Plans",
+      "promo": "Promo codes"
+    }
+  },
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search…",
+    "searchPlaceholder": "Search…",
+    "pagination": "Page {{page}} / {{totalPages}}",
+    "noData": "No data",
+    "dash": "—",
+    "actions": "Actions",
+    "view": "View",
+    "name": "Name",
+    "email": "Email",
+    "plan": "Plan",
+    "role": "Role",
+    "trees": "Trees",
+    "persons": "Persons",
+    "visibility": "Visibility",
+    "owner": "Owner",
+    "registration": "Registered",
+    "updatedAt": "Updated",
+    "lastUpdated": "Last updated",
+    "demo": "Demo",
+    "all": "All",
+    "configured": "Configured",
+    "notConfigured": "Not configured",
+    "defined": "Set",
+    "leaveBlankToKeep": "Leave blank to keep existing",
+    "sendTest": "Send test",
+    "source": {
+      "db": "Database (admin)",
+      "env": "Environment variables",
+      "none": "Not configured"
+    },
+    "plans": {
+      "all": "All plans",
+      "solo": "Solo",
+      "family": "Family",
+      "patrimony": "Patrimony"
+    },
+    "roles": {
+      "user": "USER",
+      "admin": "ADMIN"
+    },
+    "visibilityOptions": {
+      "all": "All",
+      "private": "Private",
+      "shared": "Shared",
+      "public": "Public"
+    },
+    "demoFilter": {
+      "all": "All",
+      "demo": "Demo",
+      "personal": "Personal"
+    },
+    "toasts": {
+      "loadFailed": "Failed to load data",
+      "updateSuccess": "Updated",
+      "updateFailed": "Update failed",
+      "deleteSuccess": "Deleted",
+      "deleteFailed": "Could not delete",
+      "saveSuccess": "Saved",
+      "saveFailed": "Save failed"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "GeneaIA platform overview",
+    "stats": {
+      "users": "Users",
+      "usersWeek": "+{{count}} this week",
+      "trees": "Trees",
+      "treesDesc": "{{demo}} demo · {{public}} public",
+      "persons": "Persons",
+      "documents": "Documents",
+      "photos": "{{count}} photos"
+    },
+    "planDistribution": {
+      "title": "Plan distribution",
+      "description": "Users by plan"
+    },
+    "treeVisibility": {
+      "title": "Tree visibility",
+      "description": "Public vs private",
+      "public": "Public",
+      "private": "Private",
+      "demo": "Demo trees"
+    },
+    "recentUsers": {
+      "title": "Recent sign-ups",
+      "description": "5 most recent accounts",
+      "seeAll": "View all"
+    },
+    "actions": {
+      "manageUsers": "Manage accounts",
+      "resetDemo": "Reset demo"
+    }
+  },
+  "users": {
+    "title": "Users",
+    "subtitle": "Account and plan management",
+    "searchPlaceholder": "Email or name…",
+    "planFilter": "Plan",
+    "noUsers": "No users",
+    "editTitle": "Edit {{email}}",
+    "cannotRemoveOwnAdmin": "You cannot remove your own admin role.",
+    "deleteConfirm": "Delete {{email}}?",
+    "toasts": {
+      "loadFailed": "Failed to load users",
+      "updateSuccess": "User updated",
+      "deleteSuccess": "User deleted"
+    }
+  },
+  "userDetail": {
+    "backToList": "User list",
+    "collaborations": "Collaborations",
+    "info": {
+      "title": "Information",
+      "description": "Account metadata",
+      "id": "ID"
+    },
+    "ownedTrees": {
+      "title": "Owned trees",
+      "description": "{{count}} tree(s)",
+      "noTrees": "No trees"
+    },
+    "toasts": {
+      "notFound": "User not found"
+    }
+  },
+  "trees": {
+    "title": "Trees",
+    "subtitle": "All family trees",
+    "demoFilter": "Demo",
+    "noTrees": "No trees",
+    "deleteConfirm": "Delete tree \"{{name}}\"?",
+    "toasts": {
+      "loadFailed": "Failed to load trees",
+      "deleteSuccess": "Tree deleted",
+      "demoUseDemoPage": "Use the Demo page to reset the demo tree"
+    }
+  },
+  "storage": {
+    "title": "Storage",
+    "subtitle": "MinIO and database files",
+    "minioStatus": "MinIO status",
+    "minioReady": "Ready",
+    "minioUnavailable": "Unavailable",
+    "minioDisabled": "Disabled",
+    "proxy": "Proxy: {{url}}",
+    "documents": "Documents",
+    "profilePhotos": "Profile photos",
+    "configuration": "Configuration",
+    "recentDocuments": {
+      "title": "Recent documents",
+      "description": "10 most recent uploads"
+    },
+    "table": {
+      "title": "Title",
+      "person": "Person",
+      "type": "Type",
+      "size": "Size",
+      "date": "Date"
+    },
+    "noDocuments": "No documents",
+    "bytes": {
+      "bytes": "{{count}} B",
+      "kb": "{{count}} KB",
+      "mb": "{{count}} MB"
+    },
+    "toasts": {
+      "loadFailed": "Failed to load storage"
+    }
+  },
+  "smtp": {
+    "title": "Email / SMTP",
+    "subtitle": "Configuration for OTP codes and email notifications",
+    "status": "Status",
+    "lastUpdated": "Last updated",
+    "server": {
+      "title": "SMTP server",
+      "description": "Settings saved here override server environment variables. The \"From\" address must match the SMTP account (otherwise the mail server uses the authenticated account). Leave the password blank to keep the existing one."
+    },
+    "fields": {
+      "host": "Host",
+      "port": "Port",
+      "secure": "Secure connection (TLS/SSL)",
+      "user": "Username",
+      "password": "Password",
+      "from": "Sender (From)"
+    },
+    "test": {
+      "title": "Send test",
+      "description": "Save the configuration first, then send a test email.",
+      "recipient": "Recipient",
+      "emailRequired": "Enter a test email address"
+    },
+    "toasts": {
+      "loadFailed": "Failed to load SMTP configuration",
+      "saveSuccess": "SMTP configuration saved",
+      "saveFailed": "Failed to save SMTP configuration",
+      "testFailed": "SMTP test failed"
+    }
+  },
+  "openwa": {
+    "title": "WhatsApp / OpenWA",
+    "subtitle": "OTP delivery via WhatsApp (self-hosted OpenWA)",
+    "integration": "Integration",
+    "integrationActive": "Active",
+    "integrationConfiguredInactive": "Configured (inactive)",
+    "integrationNotConfigured": "Not configured",
+    "whatsappSession": "WhatsApp session",
+    "sessionConnected": "Connected",
+    "connection": {
+      "title": "OpenWA connection",
+      "description": "OpenWA must run as a separate service (Docker). Create a session and scan the QR code from the OpenWA dashboard, then enter the API URL, API key, and session ID. WhatsApp is used first for OTP; SMTP email remains the fallback channel."
+    },
+    "fields": {
+      "enabled": "Enable OTP delivery via WhatsApp",
+      "apiUrl": "API URL",
+      "apiUrlHint": "Base URL including /api (e.g. http://localhost:2785/api)",
+      "sessionId": "Session ID",
+      "apiKey": "API key"
+    },
+    "refreshStatus": "Refresh status",
+    "sessionUnavailable": {
+      "title": "WhatsApp session unavailable",
+      "hint": "Check the full session ID (full UUID, e.g. 56d4768d-8e7a-4b2c-9d1f-xxxxxxxxxxxx) in the OpenWA dashboard ({{url}})."
+    },
+    "sessionDetails": {
+      "title": "Session details",
+      "name": "Name:",
+      "status": "Status:",
+      "profile": "Profile:",
+      "error": "Error:"
+    },
+    "sessionStatus": {
+      "created": "Created",
+      "initializing": "Initializing",
+      "qr_ready": "QR code ready",
+      "authenticating": "Authenticating",
+      "ready": "Connected",
+      "disconnected": "Disconnected",
+      "failed": "Failed"
+    },
+    "test": {
+      "title": "Send test",
+      "description": "Save the configuration and ensure the session is connected, then send a test WhatsApp message.",
+      "phone": "Phone number (international format)",
+      "phoneRequired": "Enter a test phone number",
+      "blockedIncomplete": "Incomplete configuration (URL, API key, session ID).",
+      "blockedNotConnected": "Session not connected (status: {{status}}). Scan the QR code in the OpenWA dashboard.",
+      "blockedNoSession": "WhatsApp session not found or not connected."
+    },
+    "toasts": {
+      "loadFailed": "Failed to load OpenWA configuration",
+      "saveSuccess": "OpenWA configuration saved",
+      "saveFailed": "Failed to save OpenWA configuration",
+      "testFailed": "OpenWA test failed",
+      "statusError": "Status error"
+    }
+  },
+  "demo": {
+    "title": "Demo tree",
+    "subtitle": "Dupont family — shared environment",
+    "warning": {
+      "title": "Shared mutations",
+      "description": "The demo tree can be edited by all visitors. Use reset to restore the initial state."
+    },
+    "card": {
+      "title": "Dupont family",
+      "description": "Public demonstration tree"
+    },
+    "fields": {
+      "id": "ID",
+      "persons": "Persons",
+      "owner": "Owner",
+      "lastUpdated": "Last updated"
+    },
+    "notFound": "No demo tree found. Run the seed or reset.",
+    "reset": "Reset demo",
+    "resetting": "Resetting…",
+    "viewDemo": "View /demo",
+    "resetConfirm": "Reset the Dupont family demo tree? All changes will be lost.",
+    "toasts": {
+      "loadFailed": "Failed to load demo tree",
+      "resetSuccess": "Demo tree reset",
+      "resetFailed": "Reset failed"
+    }
+  },
+  "plans": {
+    "title": "Plans",
+    "subtitle_one": "Code-defined limits — {{count}} user total",
+    "subtitle_other": "Code-defined limits — {{count}} users total",
+    "usersCount": "{{count}} users ({{pct}}%)",
+    "limits": {
+      "trees": "Trees: {{value}}",
+      "personsPerTree": "Persons per tree: {{value}}",
+      "media": "Photos & docs: {{value}}",
+      "collaborators": "Collaborators: {{value}}"
+    },
+    "toasts": {
+      "loadFailed": "Failed to load plans"
+    }
+  },
+  "promo": {
+    "title": "Promo codes",
+    "subtitle": "Discounts by market or campaign — create one code per country/region (e.g. France launch, Senegal partner).",
+    "newCode": "New code",
+    "noCodes": "No promo codes",
+    "editTitle": "Edit code",
+    "createTitle": "New promo code",
+    "table": {
+      "code": "Code",
+      "discount": "Discount",
+      "uses": "Uses",
+      "validity": "Validity",
+      "status": "Status",
+      "usesShort": "uses"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "form": {
+      "code": "Code",
+      "description": "Description",
+      "descriptionPlaceholder": "e.g. France launch -50%, CI partner",
+      "type": "Type",
+      "typePercent": "Percentage",
+      "typeFixed": "Fixed amount (USD)",
+      "value": "Value",
+      "maxUses": "Max uses (empty = unlimited)",
+      "expiresOn": "Expires on",
+      "active": "Active"
+    },
+    "deleteConfirm": "Delete code {{code}}?",
+    "toasts": {
+      "loadFailed": "Failed to load promo codes",
+      "updateSuccess": "Code updated",
+      "createSuccess": "Code created",
+      "deleteSuccess": "Code deleted",
+      "error": "Error"
+    }
+  }
+}

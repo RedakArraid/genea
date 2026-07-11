@@ -61,8 +61,13 @@ function slugifyFilename(name) {
     .slice(0, 80) || 'arbre';
 }
 
+async function assertCanImportExportTree(tree) {
+  return assertCanExportTree(tree);
+}
+
 module.exports = {
   loadTreeExportData,
   assertCanExportTree,
+  assertCanImportExportTree,
   slugifyFilename,
 };

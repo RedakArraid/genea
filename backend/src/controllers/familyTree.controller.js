@@ -9,6 +9,8 @@ const { requireTreeRead } = require('../lib/treeAccess');
 const { loadTreeExportData, assertCanExportTree, slugifyFilename } = require('../lib/exportAccess');
 const { generateGedcom } = require('../lib/gedcom');
 const { generateTreePdf } = require('../lib/treePdf');
+const { importGedcomIntoTree } = require('../lib/gedcomImport');
+const { findTreeMatches } = require('../lib/matching/findMatches');
 
 exports.getAllTrees = async (req, res, next) => {
   try {
@@ -270,6 +272,84 @@ async function handleTreeExport(req, res, next, format) {
 exports.exportGedcom = (req, res, next) => handleTreeExport(req, res, next, 'gedcom');
 
 exports.exportPdf = (req, res, next) => handleTreeExport(req, res, next, 'pdf');
+
+exports.importGedcom = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { tree } = await loadTreeExportData(id);
+    await assertCanExportTree(tree);
+
+    const access = req.treeAccess || await requireTreeRead(req.user.id, id);
+    if (!access.canWrite) {
+      return res.status(403).json({ message: 'Droits d\'écriture requis pour importer' });
+    }
+
+    const gedcomText = req.body?.gedcom || req.file?.buffer?.toString('utf8');
+    if (!gedcomText?.trim()) {
+      return res.status(400).json({ message: 'Fichier GEDCOM requis', code: 'GEDCOM_REQUIRED' });
+    }
+
+    const owner = await prisma.user.findUnique({ where: { id: tree.ownerId } });
+    const limits = getEffectivePlanLimits(owner);
+    const currentCount = tree.Person?.length ?? await prisma.person.count({ where: { treeId: id } });
+    const parsedPreview = require('../lib/gedcom').parseGedcom(gedcomText);
+    if (currentCount + parsedPreview.individuals.length > limits.maxPersonsPerTree) {
+      return res.status(403).json({
+        message: `Import dépasserait la limite de ${limits.maxPersonsPerTree} personnes`,
+        code: 'PLAN_LIMIT_REACHED',
+      });
+    }
+
+    const result = await importGedcomIntoTree(id, gedcomText);
+    res.status(201).json({ message: 'Import GEDCOM réussi', ...result });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message, code: error.code || undefined });
+    }
+    next(error);
+  }
+};
+
+exports.getTreeMatches = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const access = req.treeAccess || await requireTreeRead(req.user.id, id);
+    if (!access.canRead) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const result = await findTreeMatches(id);
+    res.json(result);
+  } catch (error) {
+    if (error.statusCode) return res.status(error.statusCode).json({ message: error.message });
+    next(error);
+  }
+};
+
+exports.updateMatchingOptIn = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { matchingOptIn } = req.body;
+    const tree = await prisma.familyTree.findUnique({ where: { id } });
+    if (!tree || tree.ownerId !== req.user.id) {
+      return res.status(403).json({ message: 'Seul le propriétaire peut modifier cette option' });
+    }
+    const owner = await prisma.user.findUnique({ where: { id: tree.ownerId } });
+    const limits = getEffectivePlanLimits(owner);
+    if (matchingOptIn && !limits.canPublicMatching) {
+      return res.status(403).json({
+        message: 'Correspondances publiques réservées aux forfaits Famille et Patrimoine',
+        code: 'MATCHING_NOT_ALLOWED',
+      });
+    }
+    const updated = await prisma.familyTree.update({
+      where: { id },
+      data: { matchingOptIn: !!matchingOptIn },
+    });
+    res.json({ tree: updated, matchingOptIn: updated.matchingOptIn });
+  } catch (error) {
+    next(error);
+  }
+};
 
 /**
  * Supprimer un arbre généalogique

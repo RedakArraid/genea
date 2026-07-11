@@ -13,6 +13,7 @@
     "export": "Export",
     "exportGedcom": "GEDCOM (.ged)",
     "exportPdf": "PDF (.pdf)",
+    "importGedcom": "Import GEDCOM",
     "add": "Add",
     "addChild": "Add a child",
     "emptyTree": "Empty tree",
@@ -149,12 +150,24 @@
   "matches": {
     "kicker": "Kinship search",
     "title": "Family matches",
-    "subtitle": "Public trees overlap with people in yours. With their consent, you could merge branches.",
-    "privacy": "Privacy",
+    "subtitle": "Public trees may overlap with people in yours. Opt in to appear in results.",
+    "optIn": "Join matching",
+    "optOut": "Leave matching",
+    "optInEnabled": "Matching participation enabled",
+    "optInDisabled": "Matching participation disabled",
+    "loading": "Searching…",
+    "empty": "No matches yet",
     "sharedPersons": "shared people",
     "via": "via {{name}}",
-    "examine": "Review the match",
-    "demoNotice": "Demo data — the matching API is not connected yet"
+    "examine": "View tree"
+  },
+  "history": {
+    "title": "History",
+    "loading": "Loading…",
+    "empty": "No saved versions",
+    "restore": "Restore",
+    "restored": "Version restored",
+    "restoreFailed": "Could not restore"
   },
   "timeline": {
     "kicker": "Timeline · {{tree}}",
@@ -185,7 +198,9 @@
     "createMyTree": "Create my tree",
     "exportGedcomSuccess": "GEDCOM export downloaded",
     "exportPdfSuccess": "PDF export downloaded",
-    "exportFailed": "Export failed"
+    "exportFailed": "Export failed",
+    "importGedcomSuccess": "GEDCOM import successful ({{count}} people)",
+    "importFailed": "Import failed"
   },
   "store": {
     "fetchTreesError": "Error loading trees",

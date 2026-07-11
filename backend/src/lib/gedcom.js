@@ -226,8 +226,80 @@ function generateGedcom(tree, persons, relationships) {
   return `${lines.join('\n')}\n`;
 }
 
+/** Parse GEDCOM 5.5.1 minimal (INDI + FAM) */
+function parseGedcom(text) {
+  const lines = String(text || '').split(/\r?\n/);
+  const records = [];
+  let current = null;
+  let currentLines = [];
+
+  const flush = () => {
+    if (current) records.push({ ...current, block: currentLines.join('\n') });
+    current = null;
+    currentLines = [];
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    if (!line.trim()) continue;
+    const match = line.match(/^(\d+)\s+(@[^@]+@)?\s*(\S+)?\s*(.*)?$/);
+    if (!match) continue;
+    const level = parseInt(match[1], 10);
+    const xref = match[2] || null;
+    const tag = match[3] || '';
+    const value = (match[4] || '').trim();
+
+    if (level === 0) {
+      flush();
+      if (xref && tag) current = { xref, type: tag };
+      currentLines.push(line);
+      continue;
+    }
+
+    if (current) currentLines.push(line);
+  }
+  flush();
+
+  const individuals = [];
+  const families = [];
+  const warnings = [];
+
+  for (const rec of records) {
+    if (rec.type === 'INDI') {
+      const block = rec.block;
+      const name = (block.match(/^1 NAME (.+)$/m) || [])[1] || '';
+      const sex = (block.match(/^1 SEX (\S+)/m) || [])[1] || 'U';
+      const birt = block.match(/1 BIRT[\s\S]*?(?=^1 [A-Z]|^0 @|\Z)/m);
+      const deat = block.match(/1 DEAT[\s\S]*?(?=^1 [A-Z]|^0 @|\Z)/m);
+      individuals.push({
+        xref: rec.xref,
+        name,
+        sex,
+        birthDate: birt ? ((birt[0].match(/^2 DATE (.+)$/m) || [])[1] || null) : null,
+        birthPlace: birt ? ((birt[0].match(/^2 PLAC (.+)$/m) || [])[1] || null) : null,
+        deathDate: deat ? ((deat[0].match(/^2 DATE (.+)$/m) || [])[1] || null) : null,
+        occupation: (block.match(/^1 OCCU (.+)$/m) || [])[1] || null,
+        note: (block.match(/^1 NOTE (.+)$/m) || [])[1] || null,
+      });
+    }
+    if (rec.type === 'FAM') {
+      const block = rec.block;
+      families.push({
+        xref: rec.xref,
+        husb: (block.match(/^1 HUSB (@[^@]+@)/m) || [])[1] || null,
+        wife: (block.match(/^1 WIFE (@[^@]+@)/m) || [])[1] || null,
+        children: [...block.matchAll(/^1 CHIL (@[^@]+@)/gm)].map((m) => m[1]),
+      });
+    }
+  }
+
+  if (!individuals.length) warnings.push('Aucun individu (INDI) trouvé dans le fichier');
+  return { individuals, families, warnings };
+}
+
 module.exports = {
   generateGedcom,
+  parseGedcom,
   formatGedcomDate,
   escapeGedcom,
 };

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Pencil, Plus, Trash2 } from "lucide-react"
 import { formatMediumDate } from "@/lib/format"
 import { toast } from "sonner"
@@ -43,6 +44,7 @@ const emptyForm = {
 }
 
 export default function AdminPromoPage() {
+  const { t } = useTranslation("admin")
   const [codes, setCodes] = useState<PromoCode[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -56,11 +58,11 @@ export default function AdminPromoPage() {
       const list = await fetchPromoCodes()
       setCodes(list)
     } catch {
-      toast.error("Impossible de charger les codes promo")
+      toast.error(t("promo.toasts.loadFailed"))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     load()
@@ -102,44 +104,50 @@ export default function AdminPromoPage() {
     try {
       if (editId) {
         await updatePromoCode(editId, payload)
-        toast.success("Code mis à jour")
+        toast.success(t("promo.toasts.updateSuccess"))
       } else {
         await createPromoCode(payload)
-        toast.success("Code créé")
+        toast.success(t("promo.toasts.createSuccess"))
       }
       setOpen(false)
       load()
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message
-      toast.error(msg || "Erreur")
+      toast.error(msg || t("promo.toasts.error"))
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (promo: PromoCode) => {
-    if (!confirm(`Supprimer le code ${promo.code} ?`)) return
+    if (!confirm(t("promo.deleteConfirm", { code: promo.code }))) return
     try {
       await deletePromoCode(promo.id)
-      toast.success("Code supprimé")
+      toast.success(t("promo.toasts.deleteSuccess"))
       load()
     } catch {
-      toast.error("Suppression impossible")
+      toast.error(t("common.toasts.deleteFailed"))
     }
   }
+
+  const formatDiscount = (promo: PromoCode) =>
+    promo.discountType === "PERCENT"
+      ? `${promo.discountValue}%`
+      : `${promo.discountValue} USD`
+
+  const formatUses = (promo: PromoCode) =>
+    `${promo.usedCount}${promo.maxUses != null ? `/${promo.maxUses}` : ""}`
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Codes promo</h1>
-          <p className="text-muted-foreground">
-            Réductions par marché ou campagne — créez un code par pays/région (ex. lancement France, partenaire Sénégal).
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("promo.title")}</h1>
+          <p className="text-muted-foreground">{t("promo.subtitle")}</p>
         </div>
         <Button onClick={openCreate} className="w-full shrink-0 sm:w-auto">
           <Plus className="mr-2 size-4" />
-          Nouveau code
+          {t("promo.newCode")}
         </Button>
       </div>
 
@@ -148,12 +156,12 @@ export default function AdminPromoPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Code</TableHead>
-              <TableHead className="hidden sm:table-cell">Réduction</TableHead>
-              <TableHead className="hidden md:table-cell">Utilisations</TableHead>
-              <TableHead className="hidden lg:table-cell">Validité</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t("promo.table.code")}</TableHead>
+              <TableHead className="hidden sm:table-cell">{t("promo.table.discount")}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("promo.table.uses")}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t("promo.table.validity")}</TableHead>
+              <TableHead>{t("promo.table.status")}</TableHead>
+              <TableHead className="text-right">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -162,27 +170,23 @@ export default function AdminPromoPage() {
                 <TableCell className="font-mono font-medium">
                   {promo.code}
                   <p className="mt-0.5 font-sans text-xs font-normal text-muted-foreground md:hidden">
-                    {promo.discountType === "PERCENT" ? `${promo.discountValue}%` : `${promo.discountValue} USD`}
+                    {formatDiscount(promo)}
                     {" · "}
-                    {promo.usedCount}{promo.maxUses != null ? `/${promo.maxUses}` : ""} util.
+                    {formatUses(promo)} {t("promo.table.usesShort")}
                   </p>
                 </TableCell>
-                <TableCell className="hidden sm:table-cell">
-                  {promo.discountType === "PERCENT"
-                    ? `${promo.discountValue}%`
-                    : `${promo.discountValue} USD`}
-                </TableCell>
+                <TableCell className="hidden sm:table-cell">{formatDiscount(promo)}</TableCell>
                 <TableCell className="hidden md:table-cell">
                   {promo.usedCount}{promo.maxUses != null ? ` / ${promo.maxUses}` : ""}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell">
                   {promo.validUntil
                     ? formatMediumDate(promo.validUntil)
-                    : "—"}
+                    : t("common.dash")}
                 </TableCell>
                 <TableCell>
                   <Badge variant={promo.active ? "default" : "secondary"}>
-                    {promo.active ? "Actif" : "Inactif"}
+                    {promo.active ? t("promo.status.active") : t("promo.status.inactive")}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -198,7 +202,7 @@ export default function AdminPromoPage() {
             {!loading && codes.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  Aucun code promo
+                  {t("promo.noCodes")}
                 </TableCell>
               </TableRow>
             )}
@@ -210,11 +214,11 @@ export default function AdminPromoPage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editId ? "Modifier le code" : "Nouveau code promo"}</DialogTitle>
+            <DialogTitle>{editId ? t("promo.editTitle") : t("promo.createTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>Code</Label>
+              <Label>{t("promo.form.code")}</Label>
               <Input
                 value={form.code}
                 onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
@@ -222,26 +226,26 @@ export default function AdminPromoPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label>{t("promo.form.description")}</Label>
               <Input
-                placeholder="ex. Lancement France -50%, Partenaire CI"
+                placeholder={t("promo.form.descriptionPlaceholder")}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Type</Label>
+                <Label>{t("promo.form.type")}</Label>
                 <Select value={form.discountType} onValueChange={(v) => v && setForm({ ...form, discountType: v as "PERCENT" | "FIXED" })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PERCENT">Pourcentage</SelectItem>
-                    <SelectItem value="FIXED">Montant fixe (USD)</SelectItem>
+                    <SelectItem value="PERCENT">{t("promo.form.typePercent")}</SelectItem>
+                    <SelectItem value="FIXED">{t("promo.form.typeFixed")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Valeur</Label>
+                <Label>{t("promo.form.value")}</Label>
                 <Input
                   type="number"
                   value={form.discountValue}
@@ -250,21 +254,23 @@ export default function AdminPromoPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Utilisations max (vide = illimité)</Label>
+              <Label>{t("promo.form.maxUses")}</Label>
               <Input value={form.maxUses} onChange={(e) => setForm({ ...form, maxUses: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Expire le</Label>
+              <Label>{t("promo.form.expiresOn")}</Label>
               <Input type="date" value={form.validUntil} onChange={(e) => setForm({ ...form, validUntil: e.target.value })} />
             </div>
             <div className="flex items-center gap-2">
               <Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
-              <Label>Actif</Label>
+              <Label>{t("promo.form.active")}</Label>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
-            <Button onClick={handleSave} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? t("common.saving") : t("common.save")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

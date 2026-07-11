@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Loader2, Mail, Send } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -26,6 +27,7 @@ const emptyForm = {
 }
 
 export default function AdminSmtpPage() {
+  const { t } = useTranslation("admin")
   const [settings, setSettings] = useState<AdminSmtpSettings | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [testEmail, setTestEmail] = useState("")
@@ -48,11 +50,11 @@ export default function AdminSmtpPage() {
       })
       if (!testEmail && smtp.user) setTestEmail(smtp.user)
     } catch {
-      toast.error("Impossible de charger la configuration SMTP")
+      toast.error(t("smtp.toasts.loadFailed"))
     } finally {
       setLoading(false)
     }
-  }, [testEmail])
+  }, [testEmail, t])
 
   useEffect(() => {
     load()
@@ -72,9 +74,9 @@ export default function AdminSmtpPage() {
       })
       setSettings(smtp)
       setForm((f) => ({ ...f, pass: "" }))
-      toast.success("Configuration SMTP enregistrée")
+      toast.success(t("smtp.toasts.saveSuccess"))
     } catch {
-      toast.error("Échec de l'enregistrement SMTP")
+      toast.error(t("smtp.toasts.saveFailed"))
     } finally {
       setSaving(false)
     }
@@ -82,7 +84,7 @@ export default function AdminSmtpPage() {
 
   const handleTest = async () => {
     if (!testEmail.trim()) {
-      toast.error("Indiquez une adresse email de test")
+      toast.error(t("smtp.test.emailRequired"))
       return
     }
     setTesting(true)
@@ -91,7 +93,7 @@ export default function AdminSmtpPage() {
       toast.success(result.message)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-      toast.error(msg || "Échec du test SMTP")
+      toast.error(msg || t("smtp.toasts.testFailed"))
     } finally {
       setTesting(false)
     }
@@ -99,31 +101,29 @@ export default function AdminSmtpPage() {
 
   const sourceLabel =
     settings?.source === "db"
-      ? "Base de données (admin)"
+      ? t("common.source.db")
       : settings?.source === "env"
-        ? "Variables d'environnement"
-        : "Non configuré"
+        ? t("common.source.env")
+        : t("common.source.none")
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Email / SMTP</h1>
-        <p className="text-muted-foreground">
-          Configuration pour l'envoi des codes OTP et notifications par email
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("smtp.title")}</h1>
+        <p className="text-muted-foreground">{t("smtp.subtitle")}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <AdminStatCard
-          title="Statut"
-          value={loading ? "…" : settings?.configured ? "Configuré" : "Non configuré"}
+          title={t("smtp.status")}
+          value={loading ? "…" : settings?.configured ? t("common.configured") : t("common.notConfigured")}
           icon={Mail}
           loading={loading}
           description={sourceLabel}
         />
         <AdminStatCard
-          title="Dernière mise à jour"
-          value={settings?.updatedAt ? formatDateTime(settings.updatedAt) : "—"}
+          title={t("smtp.lastUpdated")}
+          value={settings?.updatedAt ? formatDateTime(settings.updatedAt) : t("common.dash")}
           icon={Mail}
           loading={loading}
         />
@@ -131,17 +131,13 @@ export default function AdminSmtpPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Serveur SMTP</CardTitle>
-          <CardDescription>
-            Les paramètres enregistrés ici remplacent les variables d'environnement du serveur.
-            L'adresse « Expéditeur » doit correspondre au compte SMTP (sinon le serveur mail utilise le compte authentifié).
-            Laissez le mot de passe vide pour conserver l'existant.
-          </CardDescription>
+          <CardTitle>{t("smtp.server.title")}</CardTitle>
+          <CardDescription>{t("smtp.server.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4 max-w-xl">
             <div className="space-y-2">
-              <Label htmlFor="smtp-host">Hôte</Label>
+              <Label htmlFor="smtp-host">{t("smtp.fields.host")}</Label>
               <Input
                 id="smtp-host"
                 placeholder="smtp.example.com"
@@ -152,7 +148,7 @@ export default function AdminSmtpPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="smtp-port">Port</Label>
+                <Label htmlFor="smtp-port">{t("smtp.fields.port")}</Label>
                 <Input
                   id="smtp-port"
                   type="number"
@@ -166,12 +162,12 @@ export default function AdminSmtpPage() {
                   checked={form.secure}
                   onCheckedChange={(secure) => setForm({ ...form, secure })}
                 />
-                <Label htmlFor="smtp-secure">Connexion sécurisée (TLS/SSL)</Label>
+                <Label htmlFor="smtp-secure">{t("smtp.fields.secure")}</Label>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="smtp-user">Utilisateur</Label>
+              <Label htmlFor="smtp-user">{t("smtp.fields.user")}</Label>
               <Input
                 id="smtp-user"
                 autoComplete="off"
@@ -182,10 +178,10 @@ export default function AdminSmtpPage() {
 
             <div className="space-y-2">
               <Label htmlFor="smtp-pass">
-                Mot de passe
+                {t("smtp.fields.password")}
                 {settings?.hasPassword && (
                   <Badge variant="outline" className="ml-2 text-xs">
-                    Défini
+                    {t("common.defined")}
                   </Badge>
                 )}
               </Label>
@@ -193,14 +189,14 @@ export default function AdminSmtpPage() {
                 id="smtp-pass"
                 type="password"
                 autoComplete="new-password"
-                placeholder={settings?.hasPassword ? "Laisser vide pour ne pas changer" : ""}
+                placeholder={settings?.hasPassword ? t("common.leaveBlankToKeep") : ""}
                 value={form.pass}
                 onChange={(e) => setForm({ ...form, pass: e.target.value })}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="smtp-from">Expéditeur (From)</Label>
+              <Label htmlFor="smtp-from">{t("smtp.fields.from")}</Label>
               <Input
                 id="smtp-from"
                 placeholder="GeneaIA <noreply@geneamap.com>"
@@ -212,7 +208,7 @@ export default function AdminSmtpPage() {
             <div className="flex flex-wrap gap-2">
               <Button type="submit" disabled={saving}>
                 {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-                Enregistrer
+                {t("common.save")}
               </Button>
             </div>
           </form>
@@ -221,12 +217,12 @@ export default function AdminSmtpPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Test d'envoi</CardTitle>
-          <CardDescription>Enregistrez d'abord la configuration, puis envoyez un email de test.</CardDescription>
+          <CardTitle>{t("smtp.test.title")}</CardTitle>
+          <CardDescription>{t("smtp.test.description")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3 max-w-xl">
           <div className="flex-1 space-y-2 min-w-[200px]">
-            <Label htmlFor="test-email">Destinataire</Label>
+            <Label htmlFor="test-email">{t("smtp.test.recipient")}</Label>
             <Input
               id="test-email"
               type="email"
@@ -237,7 +233,7 @@ export default function AdminSmtpPage() {
           </div>
           <Button type="button" variant="outline" onClick={handleTest} disabled={testing || !settings?.configured}>
             {testing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Send className="mr-2 size-4" />}
-            Envoyer un test
+            {t("common.sendTest")}
           </Button>
         </CardContent>
       </Card>

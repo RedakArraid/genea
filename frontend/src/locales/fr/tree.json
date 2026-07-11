@@ -13,6 +13,7 @@
     "export": "Exporter",
     "exportGedcom": "GEDCOM (.ged)",
     "exportPdf": "PDF (.pdf)",
+    "importGedcom": "Importer GEDCOM",
     "add": "Ajouter",
     "addChild": "Ajouter un enfant",
     "emptyTree": "Arbre vide",
@@ -149,12 +150,24 @@
   "matches": {
     "kicker": "Recherche de parentés",
     "title": "Correspondances familiales",
-    "subtitle": "Des arbres publics croisent des personnes du vôtre. Avec leur accord, vous pourriez fusionner des branches.",
-    "privacy": "Confidentialité",
+    "subtitle": "Des arbres publics croisent des personnes du vôtre. Activez la participation pour apparaître dans les résultats.",
+    "optIn": "Participer aux correspondances",
+    "optOut": "Ne plus participer",
+    "optInEnabled": "Participation aux correspondances activée",
+    "optInDisabled": "Participation désactivée",
+    "loading": "Recherche en cours…",
+    "empty": "Aucune correspondance pour le moment",
     "sharedPersons": "personnes partagées",
     "via": "via {{name}}",
-    "examine": "Examiner la correspondance",
-    "demoNotice": "Données de démonstration — l'API de correspondances n'est pas encore connectée"
+    "examine": "Voir l'arbre"
+  },
+  "history": {
+    "title": "Historique",
+    "loading": "Chargement…",
+    "empty": "Aucune version enregistrée",
+    "restore": "Restaurer",
+    "restored": "Version restaurée",
+    "restoreFailed": "Restauration impossible"
   },
   "timeline": {
     "kicker": "Chronologie · {{tree}}",
@@ -185,7 +198,9 @@
     "createMyTree": "Créer mon arbre",
     "exportGedcomSuccess": "Export GEDCOM téléchargé",
     "exportPdfSuccess": "Export PDF téléchargé",
-    "exportFailed": "Export impossible"
+    "exportFailed": "Export impossible",
+    "importGedcomSuccess": "Import GEDCOM réussi ({{count}} personnes)",
+    "importFailed": "Import impossible"
   },
   "store": {
     "fetchTreesError": "Erreur lors du chargement des arbres",

@@ -9,6 +9,7 @@ import frTree from "@/locales/fr/tree.json"
 import frDashboard from "@/locales/fr/dashboard.json"
 import frBilling from "@/locales/fr/billing.json"
 import frErrors from "@/locales/fr/errors.json"
+import frAdmin from "@/locales/fr/admin.json"
 
 import enCommon from "@/locales/en/common.json"
 import enAuth from "@/locales/en/auth.json"
@@ -17,6 +18,7 @@ import enTree from "@/locales/en/tree.json"
 import enDashboard from "@/locales/en/dashboard.json"
 import enBilling from "@/locales/en/billing.json"
 import enErrors from "@/locales/en/errors.json"
+import enAdmin from "@/locales/en/admin.json"
 
 export const SUPPORTED_LOCALES = ["fr", "en"] as const
 export type Locale = (typeof SUPPORTED_LOCALES)[number]
@@ -31,6 +33,7 @@ export const resources = {
     dashboard: frDashboard,
     billing: frBilling,
     errors: frErrors,
+    admin: frAdmin,
   },
   en: {
     common: enCommon,
@@ -40,6 +43,7 @@ export const resources = {
     dashboard: enDashboard,
     billing: enBilling,
     errors: enErrors,
+    admin: enAdmin,
   },
 } as const
 
@@ -51,7 +55,7 @@ i18n
     fallbackLng: DEFAULT_LOCALE,
     supportedLngs: [...SUPPORTED_LOCALES],
     defaultNS: "common",
-    ns: ["common", "auth", "marketing", "tree", "dashboard", "billing", "errors"],
+    ns: ["common", "auth", "marketing", "tree", "dashboard", "billing", "errors", "admin"],
     detection: {
       order: ["localStorage", "navigator"],
       lookupLocalStorage: "geneaia_locale",

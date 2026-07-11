@@ -21,6 +21,7 @@ export interface TreeAccess {
   canWrite: boolean
   canEditPerson?: boolean
   canExport?: boolean
+  canVersioning?: boolean
   role: "owner" | "editor" | "viewer" | "demo" | "none" | string
   isDemo: boolean
 }

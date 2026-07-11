@@ -3,7 +3,7 @@
 > Source de vérité partagée entre toutes les IA et développeurs.
 > À lire en début de session, à mettre à jour en fin de tâche (voir [AGENTS.md](../AGENTS.md)).
 
-Dernière mise à jour : **2026-07-05**
+Dernière mise à jour : **2026-07-11**
 
 ---
 
@@ -37,7 +37,8 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 - Connexion par **téléphone (identifiant principal) + mot de passe** ou **OTP par code** ; email optionnel.
 - Rôles USER/ADMIN, plans SOLO/FAMILY/PATRIMONY avec expiration.
 - Billing **100 % international** : Paystack USD uniquement (carte). Codes promo par marché/campagne via l'admin.
-- **Internationalisation fr/en** : i18next (namespaces `common`, `auth`, `marketing`, `tree`, `dashboard`, `billing`, `errors`), sélecteur FR/EN (header marketing, app connectée, profil), champ `User.locale` synchronisé au login.
+- **Internationalisation fr/en** : i18next (namespaces `common`, `auth`, `marketing`, `tree`, `dashboard`, `billing`, `errors`, `admin`), sélecteur FR/EN (header marketing, app connectée, profil, back-office admin), champ `User.locale` synchronisé au login.
+- **Tarifs dual XOF/USD** : affichage FCFA + USD sur la page Tarifs (`formatDualPrice`, taux indicatif 650 FCFA/USD).
 - **Landing page dynamique** : hero split avec aperçu arbre animé (layout engine + données statiques Famille Dupont), sections marketing (stats, features bento, how-it-works, CTA), scroll-reveal CSS, header sticky avec ancres `#fonctionnalites` / `#prix`.
 - **Responsive mobile/tablette** : SidePanel en Sheet overlay (<768px), toolbar canvas compacte (menu ⋮), header marketing hamburger, pages app/admin adaptées, pinch-to-zoom canvas.
 - **Téléphone international** : `libphonenumber-js` (back + front), indicatif par défaut +225, sélecteur à l'inscription/connexion/profil.
@@ -49,6 +50,9 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 - Dates de naissance futures bloquées (frontend `max` + validation backend express-validator).
 - Photos et documents par personne (upload via proxy API authentifié `/api/uploads/file/...` ; composant `AuthenticatedImage` pour le JWT).
 - Bouton **Réorganiser** : recalcul du layout avec confirmation si positions manuelles ; layout spécial « clusters conjugaux » pour les arbres sans liens parent-enfant (`computeSpouseOnlyLayout`).
+- **Import / export GEDCOM & PDF** : export `GET …/export/gedcom|pdf`, import `POST …/import/gedcom` (forfaits Famille/Patrimoine, plan du propriétaire) ; boutons dans la toolbar arbre.
+- **Correspondances publiques** : API `GET …/matches` + opt-in `PUT …/matching-opt-in` ; page `/trees/:id/matches` branchée sur l'API (plus de mock).
+- **Historique personnes (Patrimoine)** : snapshots `PersonRevision`, routes `GET/POST …/revisions`, panneau latéral « Historique » avec restauration.
 - **Lier enfant existant** : menu « Nouvel enfant / Lier existant » pour rattacher une personne déjà dans l'arbre à un parent ou un couple (2 liens parent créés).
 - Partage : visibilité PRIVATE/SHARED/PUBLIC, invitations collaborateurs (VIEWER/EDITOR) avec **email d'invitation** (lien `/invite/:token` ou accès direct), lien public lecture seule.
 - Arbre démo public « Famille Dupont » (10 personnes), **auto-provisionné** au démarrage API si absent, réinitialisable par l'admin.
@@ -102,7 +106,7 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 - [x] Déploiement staging opérationnel : https://staging.geneamap.com + https://api-staging.geneamap.com (R2 ready).
 - [x] **Production déployée** (2026-07-05 soir) : ancienne app `/root/genea` arrêtée (backup `backups/legacy-genea-*.sql`), nouvelle stack `geneaia-*-prod` sur https://geneamap.com / https://api.geneamap.com (R2 `geneamap-prod` ready).
 - [ ] Finaliser Paystack sur le compte marchand (canaux internationaux/USD) — clés test renseignées sur staging (2026-07-05).
-- [ ] Déployer le service OpenWA sur le VPS (Docker séparé) et connecter la session WhatsApp prod.
+- [ ] Déployer le service OpenWA sur le VPS (Docker séparé) et connecter la session WhatsApp prod — compose local : `docker-compose.openwa.yml`, doc `docs/OPENWA.md`.
 - [ ] Choisir le fournisseur SMTP de production pour l'OTP email (secours ; Mailpit en local).
 - [ ] Protection de branche `main` sur GitHub (PR obligatoire).
 - [ ] Routes SEO `/fr` `/en` + hreflang (hors périmètre i18n phase 1).
@@ -112,6 +116,8 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 - **2026-07-05 (nuit, fix menu ajouter enfant v2)** — Panneau latéral : `modal={false}` sur le dropdown (évite le blocage pointer-events / scroll lock dans le aside scrollable), état `open` contrôlé, callbacks stabilisés (`useCallback`/`useMemo`), z-index positioner `z-[300]`, menu ouvert vers la gauche.
 - **2026-07-05 (nuit, fix menu ajouter enfant)** — Fix menu « + Ajouter » (nouvel enfant / lier existant) : extraction `ChildAddMenu`, `RelSection` et `RelChip` hors du render de `SidePanelContent` (évite remontage React qui fermait le dropdown) ; `queueMicrotask` sur les actions menu ; arête mariage canvas wrappée en `absolute` + z-index.
 - **2026-07-05 (soir, lier enfant existant)** — Menu « Nouvel enfant / Lier existant » (panneau latéral, icône bébé conjoint, arête mariage) ; dialogue `LinkExistingChildDialog` ; fix direction parent/enfant dans « Lier ».
+- **2026-07-11 (nuit, intégration complète)** — Import GEDCOM, API matching, historique Patrimoine (`PersonRevision`), tarifs dual XOF/USD, admin i18n fr/en, OpenWA compose + doc, OTP libellé WhatsApp, `canVersioning`/`canExport` dans `treeAccess`.
+- **2026-07-11 (soir, admin i18n)** — Back-office admin internationalisé fr/en : namespace `admin` (shell, pages dashboard/users/trees/storage/smtp/openwa/demo/plans/promo), `LanguageSwitcher` dans `admin-shell`, `data-testid` E2E inchangés.
 - **2026-07-11 (soir)** — Export **GEDCOM & PDF** : routes `GET /api/family-trees/:id/export/gedcom|pdf`, gating via `canExport` (forfaits Famille/Patrimoine, plan du propriétaire), bouton Exporter dans la toolbar arbre, tests unitaires + intégration.
 - **2026-07-11** — Alignement cohérence projet : compte admin seed/tests/docs (`admin@geneamap.com` / `admin123`), ports locaux unifiés (3001/5173), test intégration inscription avec téléphone, sérialisation `Infinity`→`null` dans API plans, `Payment.amount` en centimes USD, retrait enum `CINETPAY`, features forfaits sans promesses non livrées (GEDCOM/versioning), tests intégration en CI.
 - **2026-07-05 (soir, OpenWA admin)** — Page admin `/admin/openwa` : table `OpenWaSetting`, API GET/PATCH + statut session + test WhatsApp. OTP : WhatsApp prioritaire (OpenWA), email SMTP secours.

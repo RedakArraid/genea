@@ -80,4 +80,7 @@ router.put(
 
 router.delete('/:id', isAuth, canWritePerson, personController.deletePerson);
 
+router.get('/:id/revisions', isAuth, canAccessPerson, personController.getPersonRevisions);
+router.post('/:id/revisions/:revisionId/restore', isAuth, canEditPersonInfo, personController.restorePersonRevision);
+
 module.exports = router;

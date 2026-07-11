@@ -1,0 +1,369 @@
+{
+  "shell": {
+    "brand": "Admin GeneaIA",
+    "backOffice": "Back-office",
+    "header": "Administration plateforme",
+    "backToApp": "Retour app",
+    "logout": "Déconnexion",
+    "navAria": "Admin — {{title}}",
+    "nav": {
+      "dashboard": "Tableau de bord",
+      "users": "Utilisateurs",
+      "trees": "Arbres",
+      "storage": "Stockage",
+      "smtp": "Email / SMTP",
+      "openwa": "WhatsApp / OpenWA",
+      "demo": "Démo",
+      "plans": "Forfaits",
+      "promo": "Codes promo"
+    }
+  },
+  "common": {
+    "loading": "Chargement…",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "search": "Rechercher…",
+    "searchPlaceholder": "Rechercher…",
+    "pagination": "Page {{page}} / {{totalPages}}",
+    "noData": "Aucune donnée",
+    "dash": "—",
+    "actions": "Actions",
+    "view": "Voir",
+    "name": "Nom",
+    "email": "Email",
+    "plan": "Forfait",
+    "role": "Rôle",
+    "trees": "Arbres",
+    "persons": "Personnes",
+    "visibility": "Visibilité",
+    "owner": "Propriétaire",
+    "registration": "Inscription",
+    "updatedAt": "MAJ",
+    "lastUpdated": "Dernière MAJ",
+    "demo": "Démo",
+    "all": "Tous",
+    "configured": "Configuré",
+    "notConfigured": "Non configuré",
+    "defined": "Défini",
+    "leaveBlankToKeep": "Laisser vide pour ne pas changer",
+    "sendTest": "Envoyer un test",
+    "source": {
+      "db": "Base de données (admin)",
+      "env": "Variables d'environnement",
+      "none": "Non configuré"
+    },
+    "plans": {
+      "all": "Tous forfaits",
+      "solo": "Solo",
+      "family": "Famille",
+      "patrimony": "Patrimoine"
+    },
+    "roles": {
+      "user": "USER",
+      "admin": "ADMIN"
+    },
+    "visibilityOptions": {
+      "all": "Toutes",
+      "private": "Privé",
+      "shared": "Partagé",
+      "public": "Public"
+    },
+    "demoFilter": {
+      "all": "Tous",
+      "demo": "Démo",
+      "personal": "Perso"
+    },
+    "toasts": {
+      "loadFailed": "Impossible de charger les données",
+      "updateSuccess": "Mis à jour",
+      "updateFailed": "Erreur de mise à jour",
+      "deleteSuccess": "Supprimé",
+      "deleteFailed": "Suppression impossible",
+      "saveSuccess": "Enregistré",
+      "saveFailed": "Échec de l'enregistrement"
+    }
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "subtitle": "Vue d'ensemble de la plateforme GeneaIA",
+    "stats": {
+      "users": "Utilisateurs",
+      "usersWeek": "+{{count}} cette semaine",
+      "trees": "Arbres",
+      "treesDesc": "{{demo}} démo · {{public}} publics",
+      "persons": "Personnes",
+      "documents": "Documents",
+      "photos": "{{count}} photos"
+    },
+    "planDistribution": {
+      "title": "Répartition forfaits",
+      "description": "Utilisateurs par plan"
+    },
+    "treeVisibility": {
+      "title": "Visibilité arbres",
+      "description": "Public vs privé",
+      "public": "Publics",
+      "private": "Privés",
+      "demo": "Arbres démo"
+    },
+    "recentUsers": {
+      "title": "Dernières inscriptions",
+      "description": "5 comptes les plus récents",
+      "seeAll": "Voir tout"
+    },
+    "actions": {
+      "manageUsers": "Gérer les comptes",
+      "resetDemo": "Réinitialiser démo"
+    }
+  },
+  "users": {
+    "title": "Utilisateurs",
+    "subtitle": "Gestion des comptes et forfaits",
+    "searchPlaceholder": "Email ou nom…",
+    "planFilter": "Forfait",
+    "noUsers": "Aucun utilisateur",
+    "editTitle": "Modifier {{email}}",
+    "cannotRemoveOwnAdmin": "Vous ne pouvez pas retirer votre propre rôle admin.",
+    "deleteConfirm": "Supprimer {{email}} ?",
+    "toasts": {
+      "loadFailed": "Impossible de charger les utilisateurs",
+      "updateSuccess": "Utilisateur mis à jour",
+      "deleteSuccess": "Utilisateur supprimé"
+    }
+  },
+  "userDetail": {
+    "backToList": "Liste des utilisateurs",
+    "collaborations": "Collaborations",
+    "info": {
+      "title": "Informations",
+      "description": "Métadonnées du compte",
+      "id": "ID"
+    },
+    "ownedTrees": {
+      "title": "Arbres possédés",
+      "description": "{{count}} arbre(s)",
+      "noTrees": "Aucun arbre"
+    },
+    "toasts": {
+      "notFound": "Utilisateur introuvable"
+    }
+  },
+  "trees": {
+    "title": "Arbres",
+    "subtitle": "Tous les arbres généalogiques",
+    "demoFilter": "Démo",
+    "noTrees": "Aucun arbre",
+    "deleteConfirm": "Supprimer l'arbre \"{{name}}\" ?",
+    "toasts": {
+      "loadFailed": "Impossible de charger les arbres",
+      "deleteSuccess": "Arbre supprimé",
+      "demoUseDemoPage": "Utilisez la page Démo pour réinitialiser l'arbre démo"
+    }
+  },
+  "storage": {
+    "title": "Stockage",
+    "subtitle": "MinIO et fichiers en base",
+    "minioStatus": "Statut MinIO",
+    "minioReady": "Prêt",
+    "minioUnavailable": "Indisponible",
+    "minioDisabled": "Désactivé",
+    "proxy": "Proxy : {{url}}",
+    "documents": "Documents",
+    "profilePhotos": "Photos profil",
+    "configuration": "Configuration",
+    "recentDocuments": {
+      "title": "Derniers documents",
+      "description": "10 uploads les plus récents"
+    },
+    "table": {
+      "title": "Titre",
+      "person": "Personne",
+      "type": "Type",
+      "size": "Taille",
+      "date": "Date"
+    },
+    "noDocuments": "Aucun document",
+    "bytes": {
+      "bytes": "{{count}} o",
+      "kb": "{{count}} Ko",
+      "mb": "{{count}} Mo"
+    },
+    "toasts": {
+      "loadFailed": "Impossible de charger le stockage"
+    }
+  },
+  "smtp": {
+    "title": "Email / SMTP",
+    "subtitle": "Configuration pour l'envoi des codes OTP et notifications par email",
+    "status": "Statut",
+    "lastUpdated": "Dernière mise à jour",
+    "server": {
+      "title": "Serveur SMTP",
+      "description": "Les paramètres enregistrés ici remplacent les variables d'environnement du serveur. L'adresse « Expéditeur » doit correspondre au compte SMTP (sinon le serveur mail utilise le compte authentifié). Laissez le mot de passe vide pour conserver l'existant."
+    },
+    "fields": {
+      "host": "Hôte",
+      "port": "Port",
+      "secure": "Connexion sécurisée (TLS/SSL)",
+      "user": "Utilisateur",
+      "password": "Mot de passe",
+      "from": "Expéditeur (From)"
+    },
+    "test": {
+      "title": "Test d'envoi",
+      "description": "Enregistrez d'abord la configuration, puis envoyez un email de test.",
+      "recipient": "Destinataire",
+      "emailRequired": "Indiquez une adresse email de test"
+    },
+    "toasts": {
+      "loadFailed": "Impossible de charger la configuration SMTP",
+      "saveSuccess": "Configuration SMTP enregistrée",
+      "saveFailed": "Échec de l'enregistrement SMTP",
+      "testFailed": "Échec du test SMTP"
+    }
+  },
+  "openwa": {
+    "title": "WhatsApp / OpenWA",
+    "subtitle": "Configuration de l'envoi des codes OTP via WhatsApp (OpenWA self-hosted)",
+    "integration": "Intégration",
+    "integrationActive": "Activée",
+    "integrationConfiguredInactive": "Configurée (inactive)",
+    "integrationNotConfigured": "Non configurée",
+    "whatsappSession": "Session WhatsApp",
+    "sessionConnected": "Connectée",
+    "connection": {
+      "title": "Connexion OpenWA",
+      "description": "OpenWA doit tourner en service séparé (Docker). Créez une session et scannez le QR code depuis le dashboard OpenWA, puis renseignez l'URL de l'API, la clé API et l'ID de session. WhatsApp est utilisé en priorité pour l'OTP ; l'email SMTP reste le canal de secours."
+    },
+    "fields": {
+      "enabled": "Activer l'envoi OTP par WhatsApp",
+      "apiUrl": "URL de l'API",
+      "apiUrlHint": "URL de base incluant /api (ex. http://localhost:2785/api)",
+      "sessionId": "ID de session",
+      "apiKey": "Clé API"
+    },
+    "refreshStatus": "Actualiser le statut",
+    "sessionUnavailable": {
+      "title": "Session WhatsApp indisponible",
+      "hint": "Vérifiez l'ID de session complet (UUID entier, ex. 56d4768d-8e7a-4b2c-9d1f-xxxxxxxxxxxx) dans le dashboard OpenWA ({{url}})."
+    },
+    "sessionDetails": {
+      "title": "Détails session",
+      "name": "Nom :",
+      "status": "Statut :",
+      "profile": "Profil :",
+      "error": "Erreur :"
+    },
+    "sessionStatus": {
+      "created": "Créée",
+      "initializing": "Initialisation",
+      "qr_ready": "QR code prêt",
+      "authenticating": "Authentification",
+      "ready": "Connectée",
+      "disconnected": "Déconnectée",
+      "failed": "Échec"
+    },
+    "test": {
+      "title": "Test d'envoi",
+      "description": "Enregistrez la configuration et assurez-vous que la session est connectée, puis envoyez un message WhatsApp de test.",
+      "phone": "Numéro (format international)",
+      "phoneRequired": "Indiquez un numéro de téléphone de test",
+      "blockedIncomplete": "Configuration incomplète (URL, clé API, ID session).",
+      "blockedNotConnected": "Session non connectée (statut : {{status}}). Scannez le QR code dans le dashboard OpenWA.",
+      "blockedNoSession": "Session WhatsApp introuvable ou non connectée."
+    },
+    "toasts": {
+      "loadFailed": "Impossible de charger la configuration OpenWA",
+      "saveSuccess": "Configuration OpenWA enregistrée",
+      "saveFailed": "Échec de l'enregistrement OpenWA",
+      "testFailed": "Échec du test OpenWA",
+      "statusError": "Erreur de statut"
+    }
+  },
+  "demo": {
+    "title": "Arbre démo",
+    "subtitle": "Famille Dupont — environnement partagé",
+    "warning": {
+      "title": "Mutations partagées",
+      "description": "L'arbre démo est modifiable par tous les visiteurs. Utilisez la réinitialisation pour restaurer l'état initial."
+    },
+    "card": {
+      "title": "Famille Dupont",
+      "description": "Arbre public de démonstration"
+    },
+    "fields": {
+      "id": "ID",
+      "persons": "Personnes",
+      "owner": "Propriétaire",
+      "lastUpdated": "Dernière MAJ"
+    },
+    "notFound": "Aucun arbre démo trouvé. Lancez le seed ou réinitialisez.",
+    "reset": "Réinitialiser la démo",
+    "resetting": "Réinitialisation…",
+    "viewDemo": "Voir /demo",
+    "resetConfirm": "Réinitialiser l'arbre démo Famille Dupont ? Toutes les modifications seront perdues.",
+    "toasts": {
+      "loadFailed": "Impossible de charger l'arbre démo",
+      "resetSuccess": "Arbre démo réinitialisé",
+      "resetFailed": "Échec de la réinitialisation"
+    }
+  },
+  "plans": {
+    "title": "Forfaits",
+    "subtitle_one": "Limites définies en code — {{count}} utilisateur au total",
+    "subtitle_other": "Limites définies en code — {{count}} utilisateurs au total",
+    "usersCount": "{{count}} users ({{pct}}%)",
+    "limits": {
+      "trees": "Arbres : {{value}}",
+      "personsPerTree": "Personnes / arbre : {{value}}",
+      "media": "Photos & docs : {{value}}",
+      "collaborators": "Collaborateurs : {{value}}"
+    },
+    "toasts": {
+      "loadFailed": "Impossible de charger les forfaits"
+    }
+  },
+  "promo": {
+    "title": "Codes promo",
+    "subtitle": "Réductions par marché ou campagne — créez un code par pays/région (ex. lancement France, partenaire Sénégal).",
+    "newCode": "Nouveau code",
+    "noCodes": "Aucun code promo",
+    "editTitle": "Modifier le code",
+    "createTitle": "Nouveau code promo",
+    "table": {
+      "code": "Code",
+      "discount": "Réduction",
+      "uses": "Utilisations",
+      "validity": "Validité",
+      "status": "Statut",
+      "usesShort": "util."
+    },
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "form": {
+      "code": "Code",
+      "description": "Description",
+      "descriptionPlaceholder": "ex. Lancement France -50%, Partenaire CI",
+      "type": "Type",
+      "typePercent": "Pourcentage",
+      "typeFixed": "Montant fixe (USD)",
+      "value": "Valeur",
+      "maxUses": "Utilisations max (vide = illimité)",
+      "expiresOn": "Expire le",
+      "active": "Actif"
+    },
+    "deleteConfirm": "Supprimer le code {{code}} ?",
+    "toasts": {
+      "loadFailed": "Impossible de charger les codes promo",
+      "updateSuccess": "Code mis à jour",
+      "createSuccess": "Code créé",
+      "deleteSuccess": "Code supprimé",
+      "error": "Erreur"
+    }
+  }
+}
