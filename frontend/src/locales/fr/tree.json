@@ -34,6 +34,7 @@
     "genderFemale": "Femme",
     "genderOther": "Autre",
     "biography": "Biographie",
+    "occupation": "Profession",
     "photo": "Photo",
     "photoPreview": "Aperçu",
     "photoHint": "JPEG, PNG, WebP — max {{max}} Mo",
@@ -214,6 +215,33 @@
     "addRelationError": "Erreur lors de l'ajout de la relation",
     "deleteRelationError": "Erreur lors de la suppression",
     "inviteError": "Erreur lors de l'invitation"
+  },
+  "org": {
+    "person": {
+      "firstName": "Prénom",
+      "firstNameRequired": "Prénom *",
+      "lastName": "Nom",
+      "role": "Poste / Fonction",
+      "joined": "Date d'entrée",
+      "left": "Date de départ",
+      "site": "Site / Bureau",
+      "notes": "Notes"
+    },
+    "relations": {
+      "managers": "Manager(s)",
+      "team": "Équipe ({{count}})",
+      "addManager": "+ Ajouter",
+      "addTeamMember": "+ Ajouter",
+      "newTeamMember": "Nouveau membre",
+      "linkExistingMember": "Lier un membre existant",
+      "asManager": "manager",
+      "asTeamMember": "membre de l'équipe"
+    },
+    "dialogs": {
+      "addTitle": "Ajouter un membre",
+      "managerOf": "Manager de {{name}}",
+      "teamMemberOf": "Membre de l'équipe de {{name}}"
+    }
   },
   "documents": {
     "title": "Documents ({{count}})",

@@ -1,7 +1,7 @@
 import { create } from "zustand"
 import api from "@/lib/api"
 import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
-import type { FamilyTree, Person, Position, TreeAccess, TreeCollaborator, TreeInvite, TreeVisibility } from "@/types"
+import type { FamilyTree, Person, Position, TreeAccess, TreeCollaborator, TreeInvite, TreeType, TreeVisibility } from "@/types"
 
 function storeError(error: unknown, fallbackKey: string) {
   return translateApiError(getApiErrorPayload(error), fallbackKey)
@@ -32,7 +32,7 @@ interface FamilyTreeState {
   acceptInvite: (token: string) => Promise<{ success: boolean; message?: string; treeId?: string }>
   removeCollaborator: (treeId: string, userId: string) => Promise<{ success: boolean; message?: string }>
   updateVisibility: (treeId: string, visibility: TreeVisibility) => Promise<{ success: boolean; message?: string }>
-  createTree: (data: { name: string; description?: string; isPublic?: boolean }) => Promise<{ success: boolean; tree?: FamilyTree; message?: string }>
+  createTree: (data: { name: string; description?: string; isPublic?: boolean; treeType?: TreeType }) => Promise<{ success: boolean; tree?: FamilyTree; message?: string }>
   updateTree: (treeId: string, data: Partial<FamilyTree>) => Promise<{ success: boolean; message?: string }>
   deleteTree: (treeId: string) => Promise<{ success: boolean; message?: string }>
   addPerson: (treeId: string, personData: Record<string, unknown> & { position?: Position }) => Promise<{ success: boolean; person?: Person; message?: string }>

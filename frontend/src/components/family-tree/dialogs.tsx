@@ -3,7 +3,8 @@ import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { todayIsoDate, validateBirthDate } from "@/lib/person-dates"
 import { Trash2, UserPlus, Link2 } from "lucide-react"
-import type { NormalizedPerson, TreeTweaks, TreeVisibility, TreeCollaborator, TreeInvite } from "@/types"
+import type { NormalizedPerson, TreeTweaks, TreeType, TreeVisibility, TreeCollaborator, TreeInvite } from "@/types"
+import { useTreeLexicon } from "@/hooks/use-tree-lexicon"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
 import { buildInviteUrl } from "@/lib/invite-url"
 import { useStorageConfig, photoMaxBytes } from "@/hooks/use-storage-config"
@@ -45,6 +46,7 @@ interface AddPersonDialogProps {
   parentId?: string | null
   parent2Id?: string | null
   relationType?: string | null
+  treeType?: TreeType
 }
 
 export function AddPersonDialog({
@@ -55,8 +57,10 @@ export function AddPersonDialog({
   parentId,
   parent2Id,
   relationType,
+  treeType,
 }: AddPersonDialogProps) {
   const { t } = useTranslation("tree")
+  const lex = useTreeLexicon(treeType)
   const storageConfig = useStorageConfig()
   const [loading, setLoading] = useState(false)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
@@ -68,6 +72,7 @@ export function AddPersonDialog({
     birthPlace: "",
     deathDate: "",
     gender: "",
+    occupation: "",
     biography: "",
   })
 
@@ -83,7 +88,7 @@ export function AddPersonDialog({
     setLoading(false)
     setPhotoFile(null)
     setPhotoPreview(null)
-    setForm({ firstName: "", lastName: treeName.split(" ").pop() || "", birthDate: "", birthPlace: "", deathDate: "", gender: "", biography: "" })
+    setForm({ firstName: "", lastName: treeName.split(" ").pop() || "", birthDate: "", birthPlace: "", deathDate: "", gender: "", occupation: "", biography: "" })
   }
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,7 +103,13 @@ export function AddPersonDialog({
   }
 
   const relLabel =
-    relationType === "child" ? t("relations.asChild") : relationType === "parent" ? t("relations.asParent") : relationType === "spouse" ? t("relations.asSpouse") : null
+    relationType === "child"
+      ? lex.asTeamMember
+      : relationType === "parent"
+        ? lex.asManager
+        : relationType === "spouse"
+          ? t("relations.asSpouse")
+          : null
 
   const maxBirthDate = todayIsoDate()
 
@@ -106,47 +117,55 @@ export function AddPersonDialog({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t("dialogs.addTitle")}</DialogTitle>
+          <DialogTitle>{lex.addTitle}</DialogTitle>
           {relLabel && <p className="text-sm text-muted-foreground">{t("dialogs.addAs", { relation: relLabel })}</p>}
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label>{t("person.firstNameRequired")}</Label>
+              <Label>{lex.firstNameRequired}</Label>
               <Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>{t("person.lastName")}</Label>
+              <Label>{lex.lastName}</Label>
               <Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label>{t("person.birthDate")}</Label>
+              <Label>{lex.joined}</Label>
               <Input type="date" max={maxBirthDate} value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>{t("person.deathDate")}</Label>
+              <Label>{lex.left}</Label>
               <Input type="date" value={form.deathDate} onChange={(e) => setForm({ ...form, deathDate: e.target.value })} />
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label>{t("person.birthPlace")}</Label>
+            <Label>{lex.site}</Label>
             <Input value={form.birthPlace} onChange={(e) => setForm({ ...form, birthPlace: e.target.value })} />
           </div>
+          {!lex.isOrg && (
+            <div className="flex flex-col gap-1.5">
+              <Label>{t("person.gender")}</Label>
+              <Select value={form.gender || undefined} onValueChange={(v) => v && setForm({ ...form, gender: v })}>
+                <SelectTrigger><SelectValue placeholder={t("person.genderSelect")} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">{t("person.genderMale")}</SelectItem>
+                  <SelectItem value="female">{t("person.genderFemale")}</SelectItem>
+                  <SelectItem value="other">{t("person.genderOther")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {lex.isOrg && (
+            <div className="flex flex-col gap-1.5">
+              <Label>{lex.role}</Label>
+              <Input value={form.occupation} onChange={(e) => setForm({ ...form, occupation: e.target.value })} placeholder="Directeur commercial" />
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
-            <Label>{t("person.gender")}</Label>
-            <Select value={form.gender || undefined} onValueChange={(v) => v && setForm({ ...form, gender: v })}>
-              <SelectTrigger><SelectValue placeholder={t("person.genderSelect")} /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="male">{t("person.genderMale")}</SelectItem>
-                <SelectItem value="female">{t("person.genderFemale")}</SelectItem>
-                <SelectItem value="other">{t("person.genderOther")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>{t("person.biography")}</Label>
+            <Label>{lex.biography}</Label>
             <Textarea value={form.biography} onChange={(e) => setForm({ ...form, biography: e.target.value })} rows={2} />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -679,10 +698,12 @@ interface AddRelationDialogProps {
   person: NormalizedPerson
   people: NormalizedPerson[]
   onSubmit: (sourceId: string, targetId: string, relType: string) => Promise<void>
+  treeType?: TreeType
 }
 
-export function AddRelationDialog({ open, onClose, person, people, onSubmit }: AddRelationDialogProps) {
+export function AddRelationDialog({ open, onClose, person, people, onSubmit, treeType }: AddRelationDialogProps) {
   const { t } = useTranslation("tree")
+  const lex = useTreeLexicon(treeType)
   const [targetId, setTargetId] = useState("")
   const [relType, setRelType] = useState("parent")
   const [loading, setLoading] = useState(false)
@@ -716,9 +737,9 @@ export function AddRelationDialog({ open, onClose, person, people, onSubmit }: A
             <Select value={relType} onValueChange={(v) => v && setRelType(v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="parent">{t("dialogs.parentOf", { name: person.given })}</SelectItem>
-                <SelectItem value="child">{t("dialogs.childOf", { name: person.given })}</SelectItem>
-                <SelectItem value="spouse">{t("relations.spouse")}</SelectItem>
+                <SelectItem value="parent">{lex.managerOf(person.given)}</SelectItem>
+                <SelectItem value="child">{lex.teamMemberOf(person.given)}</SelectItem>
+                {!lex.isOrg && <SelectItem value="spouse">{t("relations.spouse")}</SelectItem>}
               </SelectContent>
             </Select>
           </div>

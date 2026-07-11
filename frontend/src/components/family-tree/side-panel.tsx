@@ -23,6 +23,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { PersonDocuments } from "@/components/family-tree/person-documents"
 import { PersonHistory } from "@/components/family-tree/person-history"
 import { ChildAddMenu } from "@/components/family-tree/child-add-menu"
+import { useTreeLexicon } from "@/hooks/use-tree-lexicon"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 interface SidePanelProps {
@@ -58,6 +59,7 @@ function personToForm(person: NormalizedPerson, raw?: Person) {
     birthPlace: person.place || "",
     deathDate: person.deathDate?.split("T")[0] || "",
     gender: raw?.gender || "",
+    occupation: raw?.occupation || "",
     biography: raw?.biography || person.bio?.fr || "",
   }
 }
@@ -66,7 +68,7 @@ interface RelSectionProps {
   title: string
   readOnly?: boolean
   onAdd?: () => void
-  childAddMenu?: { onNewChild: () => void; onLinkExisting: () => void }
+  childAddMenu?: { onNewChild: () => void; onLinkExisting: () => void; newChildLabel?: string; linkExistingLabel?: string }
   children: React.ReactNode
   addButtonLabel: string
 }
@@ -80,6 +82,8 @@ function RelSection({ title, readOnly, onAdd, childAddMenu, children, addButtonL
           <ChildAddMenu
             onNewChild={childAddMenu.onNewChild}
             onLinkExisting={childAddMenu.onLinkExisting}
+            newChildLabel={childAddMenu.newChildLabel}
+            linkExistingLabel={childAddMenu.linkExistingLabel}
           />
         )}
         {onAdd && !readOnly && !childAddMenu && (
@@ -157,6 +161,7 @@ function SidePanelContent({
   onPersonRestored,
 }: SidePanelProps) {
   const { t } = useTranslation("tree")
+  const lex = useTreeLexicon(currentTree.treeType)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState(() => {
     const raw = currentTree.Person?.find((p) => p.id === person.id)
@@ -259,8 +264,10 @@ function SidePanelContent({
     () => ({
       onNewChild: handleAddNewChild,
       onLinkExisting: handleLinkExistingChildFromSection,
+      newChildLabel: lex.newTeamMember,
+      linkExistingLabel: lex.linkExistingTeamMember,
     }),
-    [handleAddNewChild, handleLinkExistingChildFromSection]
+    [handleAddNewChild, handleLinkExistingChildFromSection, lex.linkExistingTeamMember, lex.newTeamMember]
   )
 
   const renderRelChip = (relative: NormalizedPerson, relType?: string) => (
@@ -306,7 +313,7 @@ function SidePanelContent({
               {canEditInfo && !readOnly ? (
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor="side-first-name" className="text-xs">{t("person.firstName")}</Label>
+                    <Label htmlFor="side-first-name" className="text-xs">{lex.firstName}</Label>
                     <Input
                       id="side-first-name"
                       data-testid="edit-first-name"
@@ -315,7 +322,7 @@ function SidePanelContent({
                     />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <Label htmlFor="side-last-name" className="text-xs">{t("person.lastName")}</Label>
+                    <Label htmlFor="side-last-name" className="text-xs">{lex.lastName}</Label>
                     <Input
                       id="side-last-name"
                       value={form.lastName}
@@ -352,7 +359,7 @@ function SidePanelContent({
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div className="flex flex-col gap-1">
-                  <Label htmlFor="side-birth-date" className="text-xs">{t("person.birthDate")}</Label>
+                  <Label htmlFor="side-birth-date" className="text-xs">{lex.joined}</Label>
                   <Input
                     id="side-birth-date"
                     type="date"
@@ -362,7 +369,7 @@ function SidePanelContent({
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <Label htmlFor="side-death-date" className="text-xs">{t("person.deathDate")}</Label>
+                  <Label htmlFor="side-death-date" className="text-xs">{lex.left}</Label>
                   <Input
                     id="side-death-date"
                     type="date"
@@ -372,26 +379,39 @@ function SidePanelContent({
                 </div>
               </div>
               <div className="flex flex-col gap-1">
-                <Label htmlFor="side-birth-place" className="text-xs">{t("person.birthPlace")}</Label>
+                <Label htmlFor="side-birth-place" className="text-xs">{lex.site}</Label>
                 <Input
                   id="side-birth-place"
                   value={form.birthPlace}
                   onChange={(e) => setForm({ ...form, birthPlace: e.target.value })}
                 />
               </div>
+              {!lex.isOrg && (
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs">{t("person.gender")}</Label>
+                  <Select value={form.gender || undefined} onValueChange={(v) => v && setForm({ ...form, gender: v })}>
+                    <SelectTrigger><SelectValue placeholder={t("person.genderSelect")} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">{t("person.genderMale")}</SelectItem>
+                      <SelectItem value="female">{t("person.genderFemale")}</SelectItem>
+                      <SelectItem value="other">{t("person.genderOther")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {lex.isOrg && (
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="side-occupation" className="text-xs">{lex.role}</Label>
+                  <Input
+                    id="side-occupation"
+                    value={form.occupation}
+                    onChange={(e) => setForm({ ...form, occupation: e.target.value })}
+                    placeholder="Directeur commercial"
+                  />
+                </div>
+              )}
               <div className="flex flex-col gap-1">
-                <Label className="text-xs">{t("person.gender")}</Label>
-                <Select value={form.gender || undefined} onValueChange={(v) => v && setForm({ ...form, gender: v })}>
-                  <SelectTrigger><SelectValue placeholder={t("person.genderSelect")} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">{t("person.genderMale")}</SelectItem>
-                    <SelectItem value="female">{t("person.genderFemale")}</SelectItem>
-                    <SelectItem value="other">{t("person.genderOther")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="side-biography" className="text-xs">{t("person.biography")}</Label>
+                <Label htmlFor="side-biography" className="text-xs">{lex.biography}</Label>
                 <Textarea
                   id="side-biography"
                   value={form.biography}
@@ -402,11 +422,17 @@ function SidePanelContent({
             </div>
           ) : (
             <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-              <span className="text-muted-foreground">{t("person.birthDate")}</span>
+              {lex.isOrg && currentTree.Person?.find((p) => p.id === person.id)?.occupation && (
+                <>
+                  <span className="text-muted-foreground">{lex.role}</span>
+                  <span>{currentTree.Person?.find((p) => p.id === person.id)?.occupation}</span>
+                </>
+              )}
+              <span className="text-muted-foreground">{lex.joined}</span>
               <span>{formatDate(person.birthDate) || person.born || "?"}</span>
               {(person.deathDate || person.died) && (
                 <>
-                  <span className="text-muted-foreground">{t("person.deathDate")}</span>
+                  <span className="text-muted-foreground">{lex.left}</span>
                   <span>{formatDate(person.deathDate) || person.died}</span>
                 </>
               )}
@@ -416,33 +442,35 @@ function SidePanelContent({
           <Separator />
 
           <RelSection
-            title={t("relations.parents")}
+            title={lex.managers}
             readOnly={readOnly}
-            addButtonLabel={t("relations.addButton")}
+            addButtonLabel={lex.addManager}
             onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "parent")}
           >
             {parents.length ? parents.map((p) => renderRelChip(p, "parent")) : <span className="text-xs text-muted-foreground">{t("relations.unknown")}</span>}
           </RelSection>
 
-          <RelSection
-            title={t("relations.spouse")}
-            readOnly={readOnly}
-            addButtonLabel={t("relations.addButton")}
-            onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "spouse")}
-          >
-            {spouses.length ? spouses.map((p) => renderRelChip(p, "spouse")) : <span className="text-xs text-muted-foreground">{t("relations.none")}</span>}
-          </RelSection>
+          {!lex.isOrg && (
+            <RelSection
+              title={t("relations.spouse")}
+              readOnly={readOnly}
+              addButtonLabel={t("relations.addButton")}
+              onAdd={readOnly ? undefined : () => onAddChildRelation(person.id, "spouse")}
+            >
+              {spouses.length ? spouses.map((p) => renderRelChip(p, "spouse")) : <span className="text-xs text-muted-foreground">{t("relations.none")}</span>}
+            </RelSection>
+          )}
 
           <RelSection
-            title={t("relations.children", { count: children.length })}
+            title={lex.team(children.length)}
             readOnly={readOnly}
-            addButtonLabel={t("relations.addButton")}
+            addButtonLabel={lex.addTeamMember}
             childAddMenu={readOnly ? undefined : childrenAddMenu}
           >
             {children.length ? children.map((p) => renderRelChip(p, "child")) : <span className="text-xs text-muted-foreground">{t("relations.none")}</span>}
           </RelSection>
 
-          {siblings.length > 0 && (
+          {!lex.isOrg && siblings.length > 0 && (
             <RelSection title={t("relations.siblings", { count: siblings.length })} readOnly addButtonLabel={t("relations.addButton")}>
               {siblings.map((p) => renderRelChip(p))}
             </RelSection>

@@ -130,6 +130,7 @@ interface TreeCanvasProps {
   isDemo?: boolean
   canShare?: boolean
   canExport?: boolean
+  canExportGedcom?: boolean
   canImport?: boolean
   exportBusy?: boolean
   importBusy?: boolean
@@ -162,6 +163,7 @@ export function TreeCanvas({
   isDemo = false,
   canShare = true,
   canExport = false,
+  canExportGedcom = true,
   canImport = false,
   exportBusy = false,
   importBusy = false,
@@ -517,7 +519,7 @@ export function TreeCanvas({
                   {t("canvas.importGedcom")}
                 </DropdownMenuItem>
               )}
-              {canExport && onExportGedcom && onExportPdf && (
+              {canExport && canExportGedcom && onExportGedcom && onExportPdf && (
                 <>
                   <DropdownMenuItem disabled={exportBusy} onClick={onExportGedcom}>
                     <FileDown className="mr-2 size-4" />
@@ -609,7 +611,7 @@ export function TreeCanvas({
             {t("canvas.importGedcom")}
           </Button>
         )}
-        {canExport && onExportGedcom && onExportPdf && (
+        {canExport && canExportGedcom && onExportGedcom && onExportPdf && (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={<Button size="sm" variant="outline" disabled={exportBusy} />}

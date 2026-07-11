@@ -30,9 +30,18 @@
   "treeCreated": "Tree created",
   "treeDeleted": "Tree deleted",
   "nameRequired": "Name is required",
+  "treeTypeBadge": {
+    "genealogy": "Family",
+    "organization": "Company"
+  },
   "createDialog": {
-    "title": "New family tree",
-    "subtitle": "Give your new family lineage a name",
+    "title": "New tree",
+    "subtitle": "Family lineage or company org chart",
+    "typeLabel": "Tree type",
+    "typeGenealogy": "Family",
+    "typeGenealogyHint": "Family lineage, ancestors, GEDCOM",
+    "typeOrganization": "Company",
+    "typeOrganizationHint": "Org chart — Manager / Team",
     "nameLabel": "Name *",
     "namePlaceholder": "Smith family",
     "descLabel": "Description",

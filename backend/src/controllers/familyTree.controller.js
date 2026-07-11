@@ -6,7 +6,8 @@ const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { assertPlanEntitlement, getEffectivePlanLimits } = require('../lib/planAccess');
 const { requireTreeRead } = require('../lib/treeAccess');
-const { loadTreeExportData, assertCanExportTree, slugifyFilename } = require('../lib/exportAccess');
+const { loadTreeExportData, assertCanExportTree, assertCanExportGedcom, assertCanImportExportTree, slugifyFilename } = require('../lib/exportAccess');
+const { isOrganizationTree } = require('../lib/treeType');
 const { generateGedcom } = require('../lib/gedcom');
 const { generateTreePdf } = require('../lib/treePdf');
 const { importGedcomIntoTree } = require('../lib/gedcomImport');
@@ -98,7 +99,9 @@ exports.createTree = async (req, res, next) => {
       return res.status(400).json({ errors: errors.array() });
     }
     
-    const { name, description, isPublic, rootPerson } = req.body;
+    const { name, description, isPublic, rootPerson, treeType: rawTreeType } = req.body;
+    const treeType = rawTreeType === 'ORGANIZATION' ? 'ORGANIZATION' : 'GENEALOGY';
+    const isOrg = treeType === 'ORGANIZATION';
     const userId = req.user.id;
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -127,19 +130,21 @@ exports.createTree = async (req, res, next) => {
           description,
           isPublic: isPublic || false,
           visibility,
+          treeType,
           ownerId: userId,
         },
       });
       
-      // Créer une personne racine (avec données personnalisées ou par défaut)
       const rootPersonData = {
-        firstName: rootPerson?.firstName || 'Personne',
+        firstName: rootPerson?.firstName || (isOrg ? 'Responsable' : 'Personne'),
         lastName: rootPerson?.lastName || 'Racine',
         birthDate: rootPerson?.birthDate ? new Date(rootPerson.birthDate) : null,
         birthPlace: rootPerson?.birthPlace || null,
-        occupation: rootPerson?.occupation || null,
-        biography: rootPerson?.biography || 'Personne racine de l\'arbre généalogique. Modifiez ces informations.',
-        gender: rootPerson?.gender || 'other',
+        occupation: rootPerson?.occupation || (isOrg ? 'Directeur' : null),
+        biography: rootPerson?.biography || (isOrg
+          ? 'Membre racine de l\'organigramme. Modifiez le poste et les informations.'
+          : 'Personne racine de l\'arbre généalogique. Modifiez ces informations.'),
+        gender: isOrg ? null : (rootPerson?.gender || 'other'),
         treeId: newTree.id
       };
       
@@ -161,7 +166,7 @@ exports.createTree = async (req, res, next) => {
     });
     
     res.status(201).json({ 
-      message: 'Arbre généalogique créé avec succès avec une personne racine',
+      message: isOrg ? 'Organigramme créé avec succès' : 'Arbre généalogique créé avec succès avec une personne racine',
       tree: result.tree,
       rootPerson: result.rootPerson
     });
@@ -238,7 +243,11 @@ async function handleTreeExport(req, res, next, format) {
   try {
     const { id } = req.params;
     const { tree, relationships } = await loadTreeExportData(id);
-    await assertCanExportTree(tree);
+    if (format === 'gedcom') {
+      await assertCanExportGedcom(tree);
+    } else {
+      await assertCanExportTree(tree);
+    }
 
     const access = req.treeAccess || await requireTreeRead(req.user.id, id);
     if (!access.canRead) {
@@ -277,7 +286,7 @@ exports.importGedcom = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { tree } = await loadTreeExportData(id);
-    await assertCanExportTree(tree);
+    await assertCanImportExportTree(tree);
 
     const access = req.treeAccess || await requireTreeRead(req.user.id, id);
     if (!access.canWrite) {
@@ -332,6 +341,12 @@ exports.updateMatchingOptIn = async (req, res, next) => {
     const tree = await prisma.familyTree.findUnique({ where: { id } });
     if (!tree || tree.ownerId !== req.user.id) {
       return res.status(403).json({ message: 'Seul le propriétaire peut modifier cette option' });
+    }
+    if (isOrganizationTree(tree)) {
+      return res.status(403).json({
+        message: 'Correspondances indisponibles pour les organigrammes',
+        code: 'MATCHING_ORG_FORBIDDEN',
+      });
     }
     const owner = await prisma.user.findUnique({ where: { id: tree.ownerId } });
     const limits = getEffectivePlanLimits(owner);

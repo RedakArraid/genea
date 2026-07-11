@@ -6,6 +6,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
 import { normalizePersons, computeLayout } from "@/utils/tree-layout"
 import type { NormalizedPerson, Person, Position, TreeTweaks } from "@/types"
+import { isOrganizationTree } from "@/lib/tree-type"
 import { TreeCanvas } from "@/components/family-tree/tree-canvas"
 import { SidePanel } from "@/components/family-tree/side-panel"
 import {
@@ -75,8 +76,10 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   const readOnly = !canWrite
   const canChangePhoto = canWrite
   const canShare = !isDemo && treeAccess?.role === "owner"
+  const isOrg = isOrganizationTree(currentTree)
   const canExport = !!isAuthenticated && !!treeAccess?.canExport && !isDemo
-  const canImport = canExport && canWrite
+  const canImport = canExport && canWrite && !isOrg
+  const canExportGedcom = canExport && !isOrg
   const canVersioning = !!isAuthenticated && !!treeAccess?.canVersioning && !isDemo
   const pageHeight = publicDemo || isPublicRoute ? "flex min-h-0 flex-1 flex-col" : "h-full min-h-0"
 
@@ -500,6 +503,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           isDemo={isDemo}
           canShare={canShare}
           canExport={canExport}
+          canExportGedcom={canExportGedcom}
           canImport={canImport}
           exportBusy={exportBusy}
           importBusy={importBusy}
@@ -559,6 +563,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         parentId={addPersonRelData.parentId}
         parent2Id={addPersonRelData.parent2Id}
         relationType={addPersonRelData.relType}
+        treeType={currentTree.treeType}
       />
 
       <ShareDialog
@@ -583,6 +588,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           person={people.find((p: NormalizedPerson) => p.id === relationPersonData.id)!}
           people={people}
           onSubmit={handleAddRelationSubmit}
+          treeType={currentTree.treeType}
         />
       )}
 

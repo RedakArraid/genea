@@ -454,6 +454,51 @@ GEDEOF
   fi
 fi
 
+# Arbres Organisation (organigramme Manager / Équipe)
+if [ -n "$FAM40_TOKEN" ]; then
+  org_create=$(curl -s -w '\n%{http_code}' -X POST "$API/family-trees" \
+    -H "Authorization: Bearer $FAM40_TOKEN" -H 'Content-Type: application/json' \
+    -d '{"name":"Organigramme Test","treeType":"ORGANIZATION"}')
+  org_body=$(echo "$org_create" | sed '$d')
+  org_code=$(echo "$org_create" | tail -1)
+  assert_status "Création arbre ORGANIZATION" "201" "$org_code" "$org_body"
+  ORG_TREE_ID=$(echo "$org_body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('tree',{}).get('id',''))" 2>/dev/null || echo "")
+  if [ -n "$ORG_TREE_ID" ]; then
+    assert_json "treeType ORGANIZATION" "d.get('tree',{}).get('treeType')=='ORGANIZATION'" "$org_body"
+
+    org_tree=$(curl -s "$API/family-trees/$ORG_TREE_ID" -H "Authorization: Bearer $FAM40_TOKEN")
+    assert_json "Racine org avec occupation" \
+      "any(p.get('occupation') for p in d.get('tree',{}).get('Person',[]))" "$org_tree"
+
+    code=$(curl -s -o /tmp/genea_org_gedcom.json -w '%{http_code}' \
+      "$API/family-trees/$ORG_TREE_ID/export/gedcom" -H "Authorization: Bearer $FAM40_TOKEN")
+    assert_status "Export GEDCOM org bloqué" "403" "$code" "$(cat /tmp/genea_org_gedcom.json 2>/dev/null)"
+
+    cat > /tmp/genea_import_org.ged <<'GEDEOF'
+0 HEAD
+0 @I1@ INDI
+1 NAME Org /Test/
+0 TRLR
+GEDEOF
+    code=$(curl -s -o /tmp/genea_import_org.json -w '%{http_code}' -X POST "$API/family-trees/$ORG_TREE_ID/import/gedcom" \
+      -H "Authorization: Bearer $FAM40_TOKEN" -F "gedcom=@/tmp/genea_import_org.ged")
+    assert_status "Import GEDCOM org bloqué" "403" "$code" "$(cat /tmp/genea_import_org.json 2>/dev/null)"
+
+    code=$(curl -s -o /tmp/genea_org_optin.json -w '%{http_code}' -X PUT "$API/family-trees/$ORG_TREE_ID/matching-opt-in" \
+      -H "Authorization: Bearer $FAM40_TOKEN" -H 'Content-Type: application/json' \
+      -d '{"matchingOptIn":true}')
+    assert_status "Matching opt-in org bloqué" "403" "$code" "$(cat /tmp/genea_org_optin.json 2>/dev/null)"
+
+    code=$(curl -s -o /tmp/genea_org.pdf -w '%{http_code}' "$API/family-trees/$ORG_TREE_ID/export/pdf" \
+      -H "Authorization: Bearer $FAM40_TOKEN")
+    assert_status "Export PDF org autorisé" "200" "$code"
+
+    code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$API/family-trees/$ORG_TREE_ID" \
+      -H "Authorization: Bearer $FAM40_TOKEN")
+    assert_status "DELETE arbre org test" "200" "$code"
+  fi
+fi
+
 # Import / matching / revisions bloqués forfait Solo
 if [ -n "$TOKEN" ] && [ -n "$PERSONAL_TREE_ID" ]; then
   solo_tree=$(curl -s "$API/family-trees/$PERSONAL_TREE_ID" -H "$AUTH")

@@ -1,4 +1,5 @@
 const prisma = require('./prisma');
+const { assertGenealogyTree } = require('./treeType');
 const { getEffectivePlanLimits } = require('./planAccess');
 
 async function loadTreeExportData(treeId) {
@@ -62,12 +63,19 @@ function slugifyFilename(name) {
 }
 
 async function assertCanImportExportTree(tree) {
-  return assertCanExportTree(tree);
+  await assertCanExportTree(tree);
+  assertGenealogyTree(tree);
+}
+
+async function assertCanExportGedcom(tree) {
+  await assertCanExportTree(tree);
+  assertGenealogyTree(tree);
 }
 
 module.exports = {
   loadTreeExportData,
   assertCanExportTree,
   assertCanImportExportTree,
+  assertCanExportGedcom,
   slugifyFilename,
 };

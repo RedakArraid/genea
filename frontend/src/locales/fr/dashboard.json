@@ -30,9 +30,18 @@
   "treeCreated": "Arbre créé",
   "treeDeleted": "Arbre supprimé",
   "nameRequired": "Le nom est requis",
+  "treeTypeBadge": {
+    "genealogy": "Famille",
+    "organization": "Entreprise"
+  },
   "createDialog": {
-    "title": "Nouvel arbre généalogique",
-    "subtitle": "Donnez un nom à votre nouvelle lignée familiale",
+    "title": "Nouvel arbre",
+    "subtitle": "Famille ou organigramme d'entreprise",
+    "typeLabel": "Type d'arbre",
+    "typeGenealogy": "Famille",
+    "typeGenealogyHint": "Lignée familiale, ancêtres, GEDCOM",
+    "typeOrganization": "Entreprise",
+    "typeOrganizationHint": "Organigramme — Manager / Équipe",
     "nameLabel": "Nom *",
     "namePlaceholder": "Famille Dupont",
     "descLabel": "Description",

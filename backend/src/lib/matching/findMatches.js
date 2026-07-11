@@ -14,7 +14,7 @@ async function findTreeMatches(treeId) {
     },
   });
 
-  if (!sourceTree || sourceTree.isDemo) {
+  if (!sourceTree || sourceTree.isDemo || sourceTree.treeType === 'ORGANIZATION') {
     return { matches: [], matchingOptIn: false };
   }
 

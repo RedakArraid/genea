@@ -3,7 +3,7 @@
 > Source de vérité partagée entre toutes les IA et développeurs.
 > À lire en début de session, à mettre à jour en fin de tâche (voir [AGENTS.md](../AGENTS.md)).
 
-Dernière mise à jour : **2026-07-11**
+Dernière mise à jour : **2026-07-11** (arbres Organisation)
 
 ---
 
@@ -46,6 +46,10 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 
 ### Arbre généalogique
 - Canvas interactif : drag des cartes, zoom, layouts vertical/horizontal/radial, densité, styles de connexions.
+- **Deux types d'arbres** (`treeType` sur `FamilyTree`, fixe à la création) :
+  - **GENEALOGY** (défaut) : vocabulaire familial, conjoint, frères/sœurs, genre, GEDCOM, correspondances.
+  - **ORGANIZATION** (Entreprise) : vocabulaire **Manager / Équipe**, champ **Poste / Fonction** (`occupation`), dates → entrée/départ, site/bureau ; pas de conjoint, frères/sœurs, genre, import/export GEDCOM ni correspondances ; export **PDF** conservé si forfait le permet.
+- Choix du type à la création depuis le tableau de bord (badge « Entreprise » sur la carte).
 - **Édition inline dans le panneau latéral** (plus de dialogue modal) : prénom, nom, dates, lieu, genre, biographie ; bouton Enregistrer.
 - Dates de naissance futures bloquées (frontend `max` + validation backend express-validator).
 - Photos et documents par personne (upload via proxy API authentifié `/api/uploads/file/...` ; composant `AuthenticatedImage` pour le JWT).

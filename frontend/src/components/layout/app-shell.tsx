@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { LanguageSwitcher } from "@/components/language-switcher"
-import { cn } from "@/lib/utils"
+import { isOrganizationTree } from "@/lib/tree-type"
 
 const navItems: Array<{
   key: string
@@ -54,6 +54,8 @@ export function AppShell() {
   const { trees, sharedTrees, currentTree, fetchTrees } = useFamilyTreeStore()
   const activeTreeId = treeId ?? trees[0]?.id ?? sharedTrees[0]?.id
   const allTrees = [...trees, ...sharedTrees]
+  const activeTree = allTrees.find((t) => t.id === activeTreeId) ?? currentTree
+  const hideMatches = isOrganizationTree(activeTree)
 
   useEffect(() => {
     fetchTrees()
@@ -91,6 +93,7 @@ export function AppShell() {
                     : location.pathname === item.href
 
                   if (item.treeScoped && !activeTreeId) return null
+                  if (item.key === "matches" && hideMatches) return null
 
                   return (
                     <SidebarMenuItem key={item.key}>

@@ -34,6 +34,7 @@
     "genderFemale": "Female",
     "genderOther": "Other",
     "biography": "Biography",
+    "occupation": "Occupation",
     "photo": "Photo",
     "photoPreview": "Preview",
     "photoHint": "JPEG, PNG, WebP — max {{max}} MB",
@@ -214,6 +215,33 @@
     "addRelationError": "Error adding relationship",
     "deleteRelationError": "Error removing relationship",
     "inviteError": "Error sending invitation"
+  },
+  "org": {
+    "person": {
+      "firstName": "First name",
+      "firstNameRequired": "First name *",
+      "lastName": "Last name",
+      "role": "Role / Job title",
+      "joined": "Start date",
+      "left": "End date",
+      "site": "Site / Office",
+      "notes": "Notes"
+    },
+    "relations": {
+      "managers": "Manager(s)",
+      "team": "Team ({{count}})",
+      "addManager": "+ Add",
+      "addTeamMember": "+ Add",
+      "newTeamMember": "New member",
+      "linkExistingMember": "Link existing member",
+      "asManager": "manager",
+      "asTeamMember": "team member"
+    },
+    "dialogs": {
+      "addTitle": "Add a member",
+      "managerOf": "Manager of {{name}}",
+      "teamMemberOf": "Team member of {{name}}"
+    }
   },
   "documents": {
     "title": "Documents ({{count}})",

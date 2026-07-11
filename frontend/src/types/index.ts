@@ -1,4 +1,5 @@
 export type PlanId = "SOLO" | "FAMILY" | "PATRIMONY"
+export type TreeType = "GENEALOGY" | "ORGANIZATION"
 export type TreeVisibility = "PRIVATE" | "SHARED" | "PUBLIC"
 export type CollaboratorRole = "VIEWER" | "EDITOR"
 
@@ -91,6 +92,7 @@ export interface FamilyTree {
   isPublic: boolean
   visibility?: TreeVisibility
   isDemo?: boolean
+  treeType?: TreeType
   ownerId: string
   createdAt?: string
   updatedAt?: string

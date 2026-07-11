@@ -17,9 +17,11 @@ interface ChildAddMenuProps {
   onNewChild: () => void
   onLinkExisting: () => void
   compact?: boolean
+  newChildLabel?: string
+  linkExistingLabel?: string
 }
 
-export function ChildAddMenu({ onNewChild, onLinkExisting, compact = false }: ChildAddMenuProps) {
+export function ChildAddMenu({ onNewChild, onLinkExisting, compact = false, newChildLabel, linkExistingLabel }: ChildAddMenuProps) {
   const { t } = useTranslation("tree")
   const [open, setOpen] = useState(false)
 
@@ -81,14 +83,14 @@ export function ChildAddMenu({ onNewChild, onLinkExisting, compact = false }: Ch
           onClick={() => handleAction(onNewChild)}
         >
           <UserPlus className="size-4" />
-          {t("relations.newChild")}
+          {newChildLabel ?? t("relations.newChild")}
         </DropdownMenuItem>
         <DropdownMenuItem
           data-testid="child-add-link-existing"
           onClick={() => handleAction(onLinkExisting)}
         >
           <Link2 className="size-4" />
-          {t("relations.linkExistingChild")}
+          {linkExistingLabel ?? t("relations.linkExistingChild")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

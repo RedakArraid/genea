@@ -54,7 +54,8 @@ router.post(
   [
     body('name').trim().notEmpty().withMessage('Le nom de l\'arbre est requis'),
     body('description').optional(),
-    body('isPublic').optional().isBoolean()
+    body('isPublic').optional().isBoolean(),
+    body('treeType').optional().isIn(['GENEALOGY', 'ORGANIZATION']),
   ],
   familyTreeController.createTree
 );

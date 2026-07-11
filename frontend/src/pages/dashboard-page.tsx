@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Plus, Trash2, Users, GitBranch, Share2, CreditCard, Link2 } from "lucide-react"
+import { Plus, Trash2, Users, GitBranch, Share2, CreditCard, Link2, Building2, TreePine } from "lucide-react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
@@ -22,6 +22,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
+import { cn } from "@/lib/utils"
+import type { TreeType } from "@/types"
 
 export default function DashboardPage() {
   const { t } = useTranslation("dashboard")
@@ -30,7 +32,12 @@ export default function DashboardPage() {
   const planActive = user?.planActive ?? false
   const { trees, sharedTrees, isLoading, fetchTrees, createTree, deleteTree } = useFamilyTreeStore()
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ name: "", description: "", isPublic: false })
+  const [form, setForm] = useState<{ name: string; description: string; isPublic: boolean; treeType: TreeType }>({
+    name: "",
+    description: "",
+    isPublic: false,
+    treeType: "GENEALOGY",
+  })
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
@@ -48,7 +55,7 @@ export default function DashboardPage() {
     if (result.success && result.tree) {
       toast.success(t("treeCreated"))
       setOpen(false)
-      setForm({ name: "", description: "", isPublic: false })
+      setForm({ name: "", description: "", isPublic: false, treeType: "GENEALOGY" })
       navigate(`/family-tree/${result.tree.id}`)
     } else {
       toast.error(result.message)
@@ -192,9 +199,14 @@ export default function DashboardPage() {
                       <CardDescription className="mt-1">{tree.description}</CardDescription>
                     )}
                   </div>
-                  <Badge variant={tree.visibility === "PUBLIC" || tree.isPublic ? "default" : tree.visibility === "SHARED" ? "outline" : "secondary"}>
-                    {tree.visibility === "PUBLIC" || tree.isPublic ? t("visibility.public") : tree.visibility === "SHARED" ? t("visibility.shared") : t("visibility.private")}
-                  </Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={tree.visibility === "PUBLIC" || tree.isPublic ? "default" : tree.visibility === "SHARED" ? "outline" : "secondary"}>
+                      {tree.visibility === "PUBLIC" || tree.isPublic ? t("visibility.public") : tree.visibility === "SHARED" ? t("visibility.shared") : t("visibility.private")}
+                    </Badge>
+                    {tree.treeType === "ORGANIZATION" && (
+                      <Badge variant="outline">{t("treeTypeBadge.organization")}</Badge>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -246,12 +258,45 @@ export default function DashboardPage() {
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
+              <Label>{t("createDialog.typeLabel")}</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  className={cn(
+                    "flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors",
+                    form.treeType === "GENEALOGY" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                  )}
+                  onClick={() => setForm({ ...form, treeType: "GENEALOGY" })}
+                >
+                  <span className="flex items-center gap-2 font-medium">
+                    <TreePine className="size-4" />
+                    {t("createDialog.typeGenealogy")}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{t("createDialog.typeGenealogyHint")}</span>
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors",
+                    form.treeType === "ORGANIZATION" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                  )}
+                  onClick={() => setForm({ ...form, treeType: "ORGANIZATION" })}
+                >
+                  <span className="flex items-center gap-2 font-medium">
+                    <Building2 className="size-4" />
+                    {t("createDialog.typeOrganization")}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{t("createDialog.typeOrganizationHint")}</span>
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
               <Label htmlFor="tree-name">{t("createDialog.nameLabel")}</Label>
               <Input
                 id="tree-name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder={t("createDialog.namePlaceholder")}
+                placeholder={form.treeType === "ORGANIZATION" ? "Acme Corp" : t("createDialog.namePlaceholder")}
               />
             </div>
             <div className="flex flex-col gap-2">
