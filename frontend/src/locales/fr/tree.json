@@ -10,6 +10,9 @@
     "centerTitle": "Centrer l'arbre dans la vue",
     "centerTree": "Centrer l'arbre",
     "share": "Partager",
+    "export": "Exporter",
+    "exportGedcom": "GEDCOM (.ged)",
+    "exportPdf": "PDF (.pdf)",
     "add": "Ajouter",
     "addChild": "Ajouter un enfant",
     "emptyTree": "Arbre vide",
@@ -179,7 +182,10 @@
     "guestReadOnly": "Mode lecture seule — créez un compte pour modifier cet arbre.",
     "login": "Se connecter",
     "createAccount": "Créer un compte",
-    "createMyTree": "Créer mon arbre"
+    "createMyTree": "Créer mon arbre",
+    "exportGedcomSuccess": "Export GEDCOM téléchargé",
+    "exportPdfSuccess": "Export PDF téléchargé",
+    "exportFailed": "Export impossible"
   },
   "store": {
     "fetchTreesError": "Erreur lors du chargement des arbres",

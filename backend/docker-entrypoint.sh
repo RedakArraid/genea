@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 cd /app
-if [ ! -d node_modules/libphonenumber-js ]; then
+if [ ! -d node_modules/libphonenumber-js ] || [ ! -d node_modules/pdfkit ]; then
   echo "→ npm install (dépendances manquantes)…"
   npm install
 fi

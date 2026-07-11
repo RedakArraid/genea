@@ -19,6 +19,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
 import { uploadPersonPhoto, setPersonPhoto } from "@/lib/upload"
+import { exportTreeGedcom, exportTreePdf } from "@/lib/export-api"
+import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
 
 interface FamilyTreePageProps {
   treeIdOverride?: string
@@ -72,7 +74,10 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   const readOnly = !canWrite
   const canChangePhoto = canWrite
   const canShare = !isDemo && treeAccess?.role === "owner"
+  const canExport = !!isAuthenticated && !!treeAccess?.canExport && !isDemo
   const pageHeight = publicDemo || isPublicRoute ? "flex min-h-0 flex-1 flex-col" : "h-full min-h-0"
+
+  const [exportBusy, setExportBusy] = useState(false)
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hoverId, setHoverId] = useState<string | null>(null)
@@ -388,6 +393,20 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     } else toast.error(result.message)
   }
 
+  const runExport = async (kind: "gedcom" | "pdf") => {
+    if (!treeId || !currentTree?.name) return
+    setExportBusy(true)
+    try {
+      if (kind === "gedcom") await exportTreeGedcom(treeId, currentTree.name)
+      else await exportTreePdf(treeId, currentTree.name)
+      toast.success(kind === "gedcom" ? t("page.exportGedcomSuccess") : t("page.exportPdfSuccess"))
+    } catch (err) {
+      toast.error(translateApiError(getApiErrorPayload(err), "page.exportFailed"))
+    } finally {
+      setExportBusy(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className={`flex ${pageHeight} items-center justify-center`}>
@@ -462,6 +481,10 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           canDrag={canDrag}
           isDemo={isDemo}
           canShare={canShare}
+          canExport={canExport}
+          exportBusy={exportBusy}
+          onExportGedcom={() => void runExport("gedcom")}
+          onExportPdf={() => void runExport("pdf")}
           onCardDragStateChange={(dragging, pending) => {
             isDraggingCardRef.current = dragging
             if (dragging) {

@@ -22,6 +22,9 @@ router.delete('/:id/collaborators/:userId', isAuth, collaborationController.remo
 router.delete('/:id/invites/:inviteId', isAuth, collaborationController.revokeInvite);
 router.put('/:id/visibility', isAuth, collaborationController.updateVisibility);
 
+router.get('/:id/export/gedcom', isAuth, canReadTree, familyTreeController.exportGedcom);
+router.get('/:id/export/pdf', isAuth, canReadTree, familyTreeController.exportPdf);
+
 router.get('/:id', optionalAuth, canReadTree, familyTreeController.getTreeById);
 
 /**

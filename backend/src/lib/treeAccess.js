@@ -1,8 +1,16 @@
 const prisma = require('./prisma');
+const { getEffectivePlanLimits } = require('./planAccess');
+
+async function ownerCanExport(ownerId, isDemo) {
+  if (isDemo) return false;
+  const owner = await prisma.user.findUnique({ where: { id: ownerId } });
+  if (!owner) return false;
+  return !!getEffectivePlanLimits(owner).canExport;
+}
 
 /**
  * Résout les droits d'un utilisateur sur un arbre.
- * @returns {{ canRead: boolean, canWrite: boolean, canEditPerson: boolean, role: string, isDemo: boolean }}
+ * @returns {{ canRead: boolean, canWrite: boolean, canEditPerson: boolean, canExport: boolean, role: string, isDemo: boolean }}
  */
 async function resolveTreeAccess(userId, treeId) {
   const tree = await prisma.familyTree.findUnique({
@@ -16,12 +24,14 @@ async function resolveTreeAccess(userId, treeId) {
   });
 
   if (!tree) {
-    return { canRead: false, canWrite: false, canEditPerson: false, role: 'none', isDemo: false };
+    return { canRead: false, canWrite: false, canEditPerson: false, canExport: false, role: 'none', isDemo: false };
   }
+
+  const exportAllowed = userId ? await ownerCanExport(tree.ownerId, tree.isDemo) : false;
 
   // Propriétaire : accès total (y compris si compte ADMIN)
   if (userId && tree.ownerId === userId) {
-    return { canRead: true, canWrite: true, canEditPerson: true, role: 'owner', isDemo: false };
+    return { canRead: true, canWrite: true, canEditPerson: true, canExport: exportAllowed, role: 'owner', isDemo: false };
   }
 
   // Admin plateforme : lecture seule sur les arbres des autres utilisateurs
@@ -35,6 +45,7 @@ async function resolveTreeAccess(userId, treeId) {
         canRead: true,
         canWrite: false,
         canEditPerson: false,
+        canExport: exportAllowed,
         role: 'admin',
         isDemo: false,
       };
@@ -46,6 +57,7 @@ async function resolveTreeAccess(userId, treeId) {
       canRead: true,
       canWrite: !!userId,
       canEditPerson: false,
+      canExport: false,
       role: userId ? 'demo' : 'viewer',
       isDemo: true,
     };
@@ -58,20 +70,21 @@ async function resolveTreeAccess(userId, treeId) {
       canRead: true,
       canWrite,
       canEditPerson: canWrite,
+      canExport: exportAllowed,
       role: collab.role.toLowerCase(),
       isDemo: false,
     };
   }
 
   if (tree.visibility === 'PUBLIC' || tree.isPublic) {
-    return { canRead: true, canWrite: false, canEditPerson: false, role: 'viewer', isDemo: false };
+    return { canRead: true, canWrite: false, canEditPerson: false, canExport: exportAllowed, role: 'viewer', isDemo: false };
   }
 
   if (tree.visibility === 'SHARED') {
-    return { canRead: false, canWrite: false, canEditPerson: false, role: 'none', isDemo: false };
+    return { canRead: false, canWrite: false, canEditPerson: false, canExport: false, role: 'none', isDemo: false };
   }
 
-  return { canRead: false, canWrite: false, canEditPerson: false, role: 'none', isDemo: false };
+  return { canRead: false, canWrite: false, canEditPerson: false, canExport: false, role: 'none', isDemo: false };
 }
 
 async function requireTreeRead(userId, treeId) {

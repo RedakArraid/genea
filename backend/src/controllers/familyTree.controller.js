@@ -6,6 +6,9 @@ const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { assertPlanEntitlement, getEffectivePlanLimits } = require('../lib/planAccess');
 const { requireTreeRead } = require('../lib/treeAccess');
+const { loadTreeExportData, assertCanExportTree, slugifyFilename } = require('../lib/exportAccess');
+const { generateGedcom } = require('../lib/gedcom');
+const { generateTreePdf } = require('../lib/treePdf');
 
 exports.getAllTrees = async (req, res, next) => {
   try {
@@ -228,6 +231,45 @@ exports.updateTree = async (req, res, next) => {
     next(error);
   }
 };
+
+async function handleTreeExport(req, res, next, format) {
+  try {
+    const { id } = req.params;
+    const { tree, relationships } = await loadTreeExportData(id);
+    await assertCanExportTree(tree);
+
+    const access = req.treeAccess || await requireTreeRead(req.user.id, id);
+    if (!access.canRead) {
+      return res.status(403).json({ message: 'Accès refusé à cet arbre' });
+    }
+
+    const baseName = slugifyFilename(tree.name);
+
+    if (format === 'gedcom') {
+      const body = generateGedcom(tree, tree.Person, relationships);
+      res.setHeader('Content-Type', 'text/x-gedcom; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${baseName}.ged"`);
+      return res.send(body);
+    }
+
+    const pdf = await generateTreePdf(tree, tree.Person);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${baseName}.pdf"`);
+    return res.send(pdf);
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        message: error.message,
+        code: error.code || undefined,
+      });
+    }
+    return next(error);
+  }
+}
+
+exports.exportGedcom = (req, res, next) => handleTreeExport(req, res, next, 'gedcom');
+
+exports.exportPdf = (req, res, next) => handleTreeExport(req, res, next, 'pdf');
 
 /**
  * Supprimer un arbre généalogique

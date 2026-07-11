@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo, useCallback } from "react"
-import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2, MoreVertical, UserPlus, Link2 } from "lucide-react"
+import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2, MoreVertical, UserPlus, Link2, FileDown } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { PersonCard } from "./person-card"
 import { buildConnections, computeLineage, getCardDimensions } from "@/utils/tree-layout"
@@ -129,6 +129,10 @@ interface TreeCanvasProps {
   canDrag?: boolean
   isDemo?: boolean
   canShare?: boolean
+  canExport?: boolean
+  exportBusy?: boolean
+  onExportGedcom?: () => void
+  onExportPdf?: () => void
   onCardDragStateChange?: (dragging: boolean, pending?: { id: string; x: number; y: number }) => void
 }
 
@@ -154,6 +158,10 @@ export function TreeCanvas({
   canDrag = true,
   isDemo = false,
   canShare = true,
+  canExport = false,
+  exportBusy = false,
+  onExportGedcom,
+  onExportPdf,
   onCardDragStateChange,
 }: TreeCanvasProps) {
   const { t } = useTranslation("tree")
@@ -496,6 +504,18 @@ export function TreeCanvas({
                 <Settings className="mr-2 size-4" />
                 {t("canvas.settings", { defaultValue: "Paramètres" })}
               </DropdownMenuItem>
+              {canExport && onExportGedcom && onExportPdf && (
+                <>
+                  <DropdownMenuItem disabled={exportBusy} onClick={onExportGedcom}>
+                    <FileDown className="mr-2 size-4" />
+                    {t("canvas.exportGedcom")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled={exportBusy} onClick={onExportPdf}>
+                    <FileDown className="mr-2 size-4" />
+                    {t("canvas.exportPdf")}
+                  </DropdownMenuItem>
+                </>
+              )}
               {!readOnly && canShare && (
                 <DropdownMenuItem onClick={onOpenShare}>
                   <Share2 className="mr-2 size-4" />
@@ -565,6 +585,24 @@ export function TreeCanvas({
         <Button size="sm" variant="ghost" onClick={onOpenTweaks}>
           <Settings className="size-4" />
         </Button>
+        {canExport && onExportGedcom && onExportPdf && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button size="sm" variant="outline" disabled={exportBusy} />}
+            >
+              <FileDown className="mr-1 size-4" />
+              {t("canvas.export")}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem disabled={exportBusy} onClick={onExportGedcom}>
+                {t("canvas.exportGedcom")}
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={exportBusy} onClick={onExportPdf}>
+                {t("canvas.exportPdf")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         {!readOnly && canShare && (
           <>
             <Button size="sm" variant="outline" onClick={onOpenShare}>

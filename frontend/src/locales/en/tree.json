@@ -10,6 +10,9 @@
     "centerTitle": "Center the tree in the view",
     "centerTree": "Center the tree",
     "share": "Share",
+    "export": "Export",
+    "exportGedcom": "GEDCOM (.ged)",
+    "exportPdf": "PDF (.pdf)",
     "add": "Add",
     "addChild": "Add a child",
     "emptyTree": "Empty tree",
@@ -179,7 +182,10 @@
     "guestReadOnly": "Read-only mode — create an account to edit this tree.",
     "login": "Log in",
     "createAccount": "Create an account",
-    "createMyTree": "Create my tree"
+    "createMyTree": "Create my tree",
+    "exportGedcomSuccess": "GEDCOM export downloaded",
+    "exportPdfSuccess": "PDF export downloaded",
+    "exportFailed": "Export failed"
   },
   "store": {
     "fetchTreesError": "Error loading trees",

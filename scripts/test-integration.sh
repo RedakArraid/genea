@@ -266,7 +266,7 @@ for i in d.get('invites',[]):
     INVITE_ID=$(echo "$pending_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('invite',{}).get('id',''))" 2>/dev/null || echo "")
 
     if [ -n "$INVITE_TOKEN" ]; then
-      COLLAB_PHONE="07$(printf '%08d' $(($(date +%s) % 100000000)))"
+      COLLAB_PHONE="07$(printf '%08d' $(( ($(date +%s) + RANDOM) % 100000000 )))"
       reg_json=$(curl -s -X POST "$API/auth/register" \
         -H 'Content-Type: application/json' \
         -d "{\"name\":\"Collab Test\",\"phone\":\"$COLLAB_PHONE\",\"email\":\"$COLLAB_EMAIL\",\"password\":\"password123\"}")
@@ -322,7 +322,7 @@ billing_json=$(curl -s -X POST "$API/billing/preview" -H 'Content-Type: applicat
 assert_json "Billing preview FAMILY 30 USD" "d.get('finalAmount') == 30 and d.get('limits',{}).get('maxTrees') == 5" "$billing_json"
 
 reg_email="billing-test-$(date +%s)@example.com"
-reg_phone="07$(printf '%08d' $(($(date +%s) % 100000000)))"
+reg_phone="07$(printf '%08d' $(( ($(date +%s) + RANDOM + 1) % 100000000 )))"
 reg_json=$(curl -s -X POST "$API/auth/register" \
   -H 'Content-Type: application/json' \
   -d "{\"name\":\"Billing Test\",\"phone\":\"$reg_phone\",\"email\":\"$reg_email\",\"password\":\"password123\"}")
@@ -375,6 +375,41 @@ print(non_demo[0]['id'] if non_demo else '')
 
     code=$(curl -s -o /dev/null -w '%{http_code}' "$API/admin/promo-codes" -H "$ADMIN_AUTH")
     assert_status "GET /admin/promo-codes" "200" "$code"
+  fi
+fi
+
+# Export GEDCOM / PDF
+if [ -n "$TOKEN" ] && [ -n "$TREE_ID" ]; then
+  code=$(curl -s -o /tmp/genea_export_demo.json -w '%{http_code}' "$API/family-trees/$TREE_ID/export/gedcom" -H "$AUTH")
+  assert_status "Export GEDCOM arbre démo bloqué" "403" "$code" "$(cat /tmp/genea_export_demo.json 2>/dev/null)"
+fi
+
+if [ -n "$TOKEN" ] && [ -n "$PERSONAL_TREE_ID" ]; then
+  code=$(curl -s -o /tmp/genea_export_solo.json -w '%{http_code}' "$API/family-trees/$PERSONAL_TREE_ID/export/gedcom" -H "$AUTH")
+  assert_status "Export GEDCOM forfait Solo bloqué" "403" "$code" "$(cat /tmp/genea_export_solo.json 2>/dev/null)"
+fi
+
+fam40_login=$(curl -s -X POST "$API/auth/login" \
+  -H 'Content-Type: application/json' \
+  -d '{"phone":"0700000003","password":"password123"}')
+FAM40_TOKEN=$(echo "$fam40_login" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
+if [ -n "$FAM40_TOKEN" ]; then
+  fam40_trees=$(curl -s "$API/family-trees" -H "Authorization: Bearer $FAM40_TOKEN")
+  FAM40_TREE_ID=$(echo "$fam40_trees" | python3 -c "import sys,json; ts=json.load(sys.stdin).get('trees',[]); print(ts[0]['id'] if ts else '')" 2>/dev/null || echo "")
+  if [ -n "$FAM40_TREE_ID" ]; then
+    code=$(curl -s -o /tmp/genea_export.ged -w '%{http_code}' "$API/family-trees/$FAM40_TREE_ID/export/gedcom" \
+      -H "Authorization: Bearer $FAM40_TOKEN")
+    assert_status "Export GEDCOM Patrimoine" "200" "$code"
+    if grep -q "0 HEAD" /tmp/genea_export.ged 2>/dev/null; then
+      echo "  ✓ GEDCOM contient HEAD"
+      PASS=$((PASS + 1))
+    else
+      echo "  ✗ GEDCOM contient HEAD"
+      FAIL=$((FAIL + 1))
+    fi
+    code=$(curl -s -o /tmp/genea_export.pdf -w '%{http_code}' "$API/family-trees/$FAM40_TREE_ID/export/pdf" \
+      -H "Authorization: Bearer $FAM40_TOKEN")
+    assert_status "Export PDF Patrimoine" "200" "$code"
   fi
 fi
 
