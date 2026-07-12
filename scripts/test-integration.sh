@@ -493,6 +493,25 @@ GEDEOF
       -H "Authorization: Bearer $FAM40_TOKEN")
     assert_status "Export PDF org autorisé" "200" "$code"
 
+    if [ -n "$TOKEN" ] && [ -n "$PERSONAL_TREE_ID" ]; then
+      code=$(curl -s -o /tmp/genea_org_bg_gene.json -w '%{http_code}' -X PATCH "$API/family-trees/$PERSONAL_TREE_ID/background" \
+        -H "$AUTH" -H 'Content-Type: application/json' \
+        -d '{"backgroundMode":"COVER","backgroundImageUrl":"https://example.com/logo.png"}')
+      assert_status "PATCH background arbre généalogique bloqué" "403" "$code" "$(cat /tmp/genea_org_bg_gene.json 2>/dev/null)"
+    fi
+
+    code=$(curl -s -o /tmp/genea_org_bg.json -w '%{http_code}' -X PATCH "$API/family-trees/$ORG_TREE_ID/background" \
+      -H "Authorization: Bearer $FAM40_TOKEN" -H 'Content-Type: application/json' \
+      -d '{"backgroundMode":"REPEAT","backgroundImageUrl":"https://example.com/logo.png","backgroundOpacity":0.2,"backgroundTileSize":140}')
+    assert_status "PATCH background org" "200" "$code" "$(cat /tmp/genea_org_bg.json 2>/dev/null)"
+    assert_json "backgroundMode REPEAT" "d.get('tree',{}).get('backgroundMode')=='REPEAT'" "$(cat /tmp/genea_org_bg.json 2>/dev/null)"
+
+    code=$(curl -s -o /tmp/genea_org_bg_clear.json -w '%{http_code}' -X PATCH "$API/family-trees/$ORG_TREE_ID/background" \
+      -H "Authorization: Bearer $FAM40_TOKEN" -H 'Content-Type: application/json' \
+      -d '{"backgroundMode":"NONE"}')
+    assert_status "PATCH background NONE" "200" "$code"
+    assert_json "background effacé" "d.get('tree',{}).get('backgroundMode')=='NONE'" "$(cat /tmp/genea_org_bg_clear.json 2>/dev/null)"
+
     code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$API/family-trees/$ORG_TREE_ID" \
       -H "Authorization: Bearer $FAM40_TOKEN")
     assert_status "DELETE arbre org test" "200" "$code"

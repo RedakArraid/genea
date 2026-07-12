@@ -1,0 +1,9 @@
+-- CreateEnum
+CREATE TYPE "TreeBackgroundMode" AS ENUM ('NONE', 'COVER', 'REPEAT');
+
+-- AlterTable
+ALTER TABLE "FamilyTree" ADD COLUMN IF NOT EXISTS "backgroundImageUrl" TEXT;
+ALTER TABLE "FamilyTree" ADD COLUMN IF NOT EXISTS "backgroundMode" "TreeBackgroundMode" NOT NULL DEFAULT 'NONE';
+ALTER TABLE "FamilyTree" ADD COLUMN IF NOT EXISTS "backgroundOpacity" DOUBLE PRECISION NOT NULL DEFAULT 0.35;
+ALTER TABLE "FamilyTree" ADD COLUMN IF NOT EXISTS "backgroundOverlay" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "FamilyTree" ADD COLUMN IF NOT EXISTS "backgroundTileSize" INTEGER NOT NULL DEFAULT 160;

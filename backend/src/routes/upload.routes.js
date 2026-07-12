@@ -47,4 +47,12 @@ router.post(
   uploadController.uploadPhoto
 );
 
+router.post(
+  '/tree-background',
+  isAuth,
+  photoUpload.single('background'),
+  canWriteTreeFromBody,
+  uploadController.uploadTreeBackground
+);
+
 module.exports = router;

@@ -71,6 +71,13 @@ router.put(
   familyTreeController.updateTree
 );
 
+router.patch(
+  '/:id/background',
+  isAuth,
+  canWriteTree,
+  familyTreeController.updateTreeBackground
+);
+
 /**
  * @route DELETE /api/family-trees/:id
  * @desc Supprimer un arbre généalogique

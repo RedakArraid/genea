@@ -1,5 +1,6 @@
 export type PlanId = "SOLO" | "FAMILY" | "PATRIMONY"
 export type TreeType = "GENEALOGY" | "ORGANIZATION"
+export type TreeBackgroundMode = "NONE" | "COVER" | "REPEAT"
 export type TreeVisibility = "PRIVATE" | "SHARED" | "PUBLIC"
 export type CollaboratorRole = "VIEWER" | "EDITOR"
 
@@ -93,6 +94,11 @@ export interface FamilyTree {
   visibility?: TreeVisibility
   isDemo?: boolean
   treeType?: TreeType
+  backgroundImageUrl?: string | null
+  backgroundMode?: TreeBackgroundMode
+  backgroundOpacity?: number
+  backgroundOverlay?: boolean
+  backgroundTileSize?: number
   ownerId: string
   createdAt?: string
   updatedAt?: string

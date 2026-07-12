@@ -41,6 +41,17 @@ export async function uploadPersonPhoto(
   return data
 }
 
+export async function uploadTreeBackground(file: File, treeId: string): Promise<UploadPhotoResult> {
+  const form = new FormData()
+  form.append("background", file)
+  form.append("treeId", treeId)
+
+  const { data } = await api.post<UploadPhotoResult>("/uploads/tree-background", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })
+  return data
+}
+
 export async function setPersonPhoto(personId: string, photoUrl: string): Promise<void> {
   await api.patch(`/persons/${personId}/photo`, { photoUrl })
 }

@@ -95,6 +95,11 @@ function buildDocumentKey(treeId, personId, originalName = '') {
   return `${storageConfig.prefixes.documents}/${treeId}/${personId}/${randomUUID()}.${ext}`;
 }
 
+function buildBackgroundKey(treeId, originalName = '') {
+  const ext = sanitizeExt(originalName, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'], 'jpg');
+  return `${storageConfig.prefixes.backgrounds}/${treeId}/${randomUUID()}.${ext}`;
+}
+
 function validateFile(type, mimetype, sizeBytes) {
   const allowed = storageConfig.allowedMime[type];
   const maxBytes = storageConfig.limits[`${type}MaxBytes`];
@@ -214,6 +219,7 @@ module.exports = {
   extractKeyFromUrl,
   buildPhotoKey,
   buildDocumentKey,
+  buildBackgroundKey,
   validateFile,
   getPublicConfig,
 };

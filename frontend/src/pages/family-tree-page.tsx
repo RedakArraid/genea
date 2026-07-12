@@ -7,6 +7,7 @@ import { useFamilyTreeStore } from "@/stores/family-tree-store"
 import { normalizePersons, computeLayout, layoutNeedsRecompute, layoutNeedsOrgRecompute } from "@/utils/tree-layout"
 import type { NormalizedPerson, Person, Position, TreeTweaks } from "@/types"
 import { isOrganizationTree } from "@/lib/tree-type"
+import type { TreeBackgroundConfig } from "@/lib/tree-background"
 import { TreeCanvas } from "@/components/family-tree/tree-canvas"
 import { SidePanel } from "@/components/family-tree/side-panel"
 import {
@@ -231,6 +232,17 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     () => (selectedId ? people.find((p: NormalizedPerson) => p.id === selectedId) ?? null : null),
     [selectedId, people]
   )
+
+  const treeBackground = useMemo<TreeBackgroundConfig | null>(() => {
+    if (!currentTree || !isOrg) return null
+    return {
+      imageUrl: currentTree.backgroundImageUrl ?? null,
+      mode: currentTree.backgroundMode ?? "NONE",
+      opacity: currentTree.backgroundOpacity ?? 0.35,
+      overlay: currentTree.backgroundOverlay ?? true,
+      tileSize: currentTree.backgroundTileSize ?? 160,
+    }
+  }, [currentTree, isOrg])
 
   const handleSetTweak = (key: keyof TreeTweaks, val: string | boolean) => {
     const layoutOpts = isOrg ? { organization: true as const } : undefined
@@ -505,6 +517,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           people={people}
           tweaks={tweaks}
           treeType={currentTree.treeType}
+          background={treeBackground}
           positions={positions}
           setPositions={setPositions}
           selectedId={selectedId}
@@ -601,6 +614,8 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         onClose={() => setIsTweaksOpen(false)}
         tweaks={tweaks}
         onSetTweak={handleSetTweak}
+        tree={currentTree}
+        canEditBackground={canWrite && !isDemo}
       />
 
       {isRelationOpen && relationPersonData && (

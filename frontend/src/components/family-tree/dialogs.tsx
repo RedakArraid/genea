@@ -3,7 +3,9 @@ import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { todayIsoDate, validateBirthDate } from "@/lib/person-dates"
 import { Trash2, UserPlus, Link2 } from "lucide-react"
-import type { NormalizedPerson, TreeTweaks, TreeType, TreeVisibility, TreeCollaborator, TreeInvite } from "@/types"
+import type { NormalizedPerson, TreeTweaks, TreeType, TreeVisibility, TreeCollaborator, TreeInvite, FamilyTree } from "@/types"
+import { OrgBackgroundSettings } from "@/components/family-tree/org-background-settings"
+import { isOrganizationTree } from "@/lib/tree-type"
 import { useTreeLexicon } from "@/hooks/use-tree-lexicon"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
 import { buildInviteUrl } from "@/lib/invite-url"
@@ -564,6 +566,8 @@ interface TreeSettingsSheetProps {
   onClose: () => void
   tweaks: TreeTweaks
   onSetTweak: (key: keyof TreeTweaks, val: string | boolean) => void
+  tree?: FamilyTree | null
+  canEditBackground?: boolean
 }
 
 const DENSITY_KEYS: Record<TreeTweaks["density"], string> = {
@@ -577,11 +581,12 @@ const CONN_STYLE_KEYS: Record<TreeTweaks["connStyle"], string> = {
   straight: "dialogs.connStraight",
 }
 
-export function TreeSettingsSheet({ open, onClose, tweaks, onSetTweak }: TreeSettingsSheetProps) {
+export function TreeSettingsSheet({ open, onClose, tweaks, onSetTweak, tree, canEditBackground = false }: TreeSettingsSheetProps) {
   const { t } = useTranslation("tree")
+  const showOrgBackground = Boolean(tree && isOrganizationTree(tree))
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="sm:max-w-md">
+      <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{t("dialogs.settingsTitle")}</SheetTitle>
         </SheetHeader>
@@ -627,6 +632,9 @@ export function TreeSettingsSheet({ open, onClose, tweaks, onSetTweak }: TreeSet
               </SelectContent>
             </Select>
           </div>
+          {showOrgBackground && tree && (
+            <OrgBackgroundSettings tree={tree} canEdit={canEditBackground} />
+          )}
         </div>
       </SheetContent>
     </Sheet>

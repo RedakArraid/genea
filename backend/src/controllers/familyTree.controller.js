@@ -239,6 +239,76 @@ exports.updateTree = async (req, res, next) => {
   }
 };
 
+/**
+ * Arrière-plan canvas (organigrammes uniquement)
+ */
+exports.updateTreeBackground = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const tree = await prisma.familyTree.findUnique({ where: { id } });
+    if (!tree || tree.isDemo) {
+      return res.status(403).json({ message: 'Cet arbre ne peut pas être modifié' });
+    }
+    if (!isOrganizationTree(tree)) {
+      return res.status(403).json({ message: 'Arrière-plan réservé aux arbres organisation' });
+    }
+
+    const {
+      backgroundImageUrl,
+      backgroundMode,
+      backgroundOpacity,
+      backgroundOverlay,
+      backgroundTileSize,
+    } = req.body;
+
+    const data = {};
+    if (backgroundImageUrl !== undefined) {
+      data.backgroundImageUrl = backgroundImageUrl || null;
+    }
+    if (backgroundMode !== undefined) {
+      if (!['NONE', 'COVER', 'REPEAT'].includes(backgroundMode)) {
+        return res.status(400).json({ message: 'Mode arrière-plan invalide' });
+      }
+      data.backgroundMode = backgroundMode;
+      if (backgroundMode === 'NONE') {
+        data.backgroundImageUrl = null;
+      }
+    }
+    if (backgroundOpacity !== undefined) {
+      const opacity = Number(backgroundOpacity);
+      if (!Number.isFinite(opacity) || opacity < 0.05 || opacity > 1) {
+        return res.status(400).json({ message: 'Opacité invalide (0.05 à 1)' });
+      }
+      data.backgroundOpacity = opacity;
+    }
+    if (backgroundOverlay !== undefined) {
+      data.backgroundOverlay = Boolean(backgroundOverlay);
+    }
+    if (backgroundTileSize !== undefined) {
+      const tileSize = Number(backgroundTileSize);
+      if (!Number.isInteger(tileSize) || tileSize < 80 || tileSize > 400) {
+        return res.status(400).json({ message: 'Taille du motif invalide (80 à 400)' });
+      }
+      data.backgroundTileSize = tileSize;
+    }
+
+    const updatedTree = await prisma.familyTree.update({
+      where: { id },
+      data,
+    });
+
+    res.status(200).json({
+      message: 'Arrière-plan mis à jour',
+      tree: updatedTree,
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'Arbre généalogique non trouvé' });
+    }
+    next(error);
+  }
+};
+
 async function handleTreeExport(req, res, next, format) {
   try {
     const { id } = req.params;

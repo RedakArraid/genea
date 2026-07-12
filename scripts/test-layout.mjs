@@ -3,6 +3,7 @@
  */
 import { computeLayout, buildConnections, normalizePersons, layoutNeedsRecompute, layoutNeedsOrgRecompute, getCardDimensions } from '../frontend/src/utils/tree-layout.ts'
 import { formatGenerationBadge, getMaxGeneration, toOrgLevel } from '../frontend/src/lib/generation-level.ts'
+import { isTreeBackgroundActive, getDefaultBackgroundOpacity, buildViewportBackgroundStyle } from '../frontend/src/lib/tree-background.ts'
 
 const people = [
   { id: 'a', generation: 1, parentIds: [], spouseIds: ['b'], given: 'Jean', sur: 'Dupont' },
@@ -128,6 +129,16 @@ ok(
 ok('org — CEO au sommet = niveau max', formatGenerationBadge(1, { isOrg: true, maxGeneration: 4 }) === 'N4')
 ok('org — base = N1', formatGenerationBadge(4, { isOrg: true, maxGeneration: 4 }) === 'N1')
 ok('org — toOrgLevel cohérent', toOrgLevel(2, getMaxGeneration(orgPeople)) === 2)
+
+console.log('\n--- Arrière-plan organigramme ---')
+const bgConfig = { imageUrl: 'https://example.com/logo.png', mode: 'REPEAT', opacity: 0.2, overlay: true, tileSize: 120 }
+ok('background actif', isTreeBackgroundActive(bgConfig))
+ok('background inactif sans image', !isTreeBackgroundActive({ ...bgConfig, imageUrl: null }))
+ok('opacité repeat par défaut', getDefaultBackgroundOpacity('REPEAT') === 0.15)
+const bgStyle = buildViewportBackgroundStyle(bgConfig, 'https://example.com/logo.png')
+ok('style repeat plein écran', bgStyle.backgroundRepeat === 'repeat' && bgStyle.backgroundSize === '120px')
+const coverStyle = buildViewportBackgroundStyle({ ...bgConfig, mode: 'COVER' }, 'https://example.com/cover.jpg')
+ok('style cover plein écran', coverStyle.backgroundSize === 'cover' && coverStyle.backgroundRepeat === 'no-repeat')
 
 console.log(`\n=== Résultat layout : ${pass} passés, ${fail} échoués ===`)
 process.exit(fail > 0 ? 1 : 0)

@@ -4,6 +4,9 @@ import { useTranslation } from "react-i18next"
 import { PersonCard } from "./person-card"
 import { buildConnections, computeLineage, getCardDimensions } from "@/utils/tree-layout"
 import type { NormalizedPerson, TreeTweaks, TreeType } from "@/types"
+import type { TreeBackgroundConfig } from "@/lib/tree-background"
+import { isTreeBackgroundActive, buildViewportBackgroundStyle } from "@/lib/tree-background"
+import { useProtectedMediaUrl } from "@/hooks/use-protected-media-url"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -154,6 +157,7 @@ interface TreeCanvasProps {
   people: NormalizedPerson[]
   tweaks: TreeTweaks
   treeType?: TreeType
+  background?: TreeBackgroundConfig | null
   positions: Record<string, { x: number; y: number }>
   setPositions: React.Dispatch<React.SetStateAction<Record<string, { x: number; y: number }>>>
   selectedId: string | null
@@ -190,6 +194,7 @@ export function TreeCanvas({
   people = [],
   tweaks,
   treeType,
+  background,
   positions,
   setPositions,
   selectedId,
@@ -592,12 +597,17 @@ export function TreeCanvas({
   )
 
   const generationPlaceholder = isOrg ? t("org.canvas.levelPlaceholder") : t("canvas.generationPlaceholder")
+  const backgroundUrl = useProtectedMediaUrl(
+    isTreeBackgroundActive(background) ? background?.imageUrl : null
+  )
+  const showBackground = isTreeBackgroundActive(background) && Boolean(backgroundUrl)
 
   return (
     <div
       ref={wrapRef}
       className={cn(
-        "relative size-full touch-none overscroll-none overflow-hidden bg-muted/20",
+        "relative size-full touch-none overscroll-none overflow-hidden",
+        !showBackground && "bg-muted/20",
         panning && "cursor-grabbing"
       )}
       onPointerDown={onPointerDownBg}
@@ -792,9 +802,21 @@ export function TreeCanvas({
         </div>
       </div>
 
+      {showBackground && background && backgroundUrl && (
+        <>
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 top-12 z-0"
+            style={buildViewportBackgroundStyle(background, backgroundUrl)}
+          />
+          {background.overlay && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 top-12 z-0 bg-background opacity-50" />
+          )}
+        </>
+      )}
+
       <div
         ref={innerRef}
-        className="absolute left-0 right-0 bottom-0 top-12"
+        className="absolute left-0 right-0 bottom-0 top-12 z-[1]"
         style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transformOrigin: "0 0" }}
       >
         <svg

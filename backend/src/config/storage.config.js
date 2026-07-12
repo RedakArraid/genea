@@ -43,6 +43,7 @@ const storageConfig = {
   prefixes: {
     photos: process.env.STORAGE_PHOTO_PREFIX || 'photos',
     documents: process.env.STORAGE_DOCUMENT_PREFIX || 'documents',
+    backgrounds: process.env.STORAGE_BACKGROUND_PREFIX || 'backgrounds',
   },
 
   limits: {

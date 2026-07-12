@@ -18,7 +18,7 @@ exports.canReadUploadedFile = async (req, res, next) => {
     const parts = key.split('/');
     const prefix = parts[0];
     const treeId = parts[1];
-    const allowedPrefixes = [storageConfig.prefixes.photos, storageConfig.prefixes.documents];
+    const allowedPrefixes = [storageConfig.prefixes.photos, storageConfig.prefixes.documents, storageConfig.prefixes.backgrounds];
     if (!treeId || !allowedPrefixes.includes(prefix)) {
       return res.status(400).json({ message: 'Clé fichier invalide' });
     }
@@ -74,6 +74,51 @@ exports.uploadPhoto = async (req, res, next) => {
     await assertMediaAssetLimit(tree.ownerId, { replacingExistingPhoto });
 
     const key = storage.buildPhotoKey(treeId, personId, req.file.originalname);
+    const { url, key: objectKey } = await storage.uploadBuffer(key, req.file.buffer, req.file.mimetype);
+
+    res.status(201).json({ url, key: objectKey });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+    next(error);
+  }
+};
+
+exports.uploadTreeBackground = async (req, res, next) => {
+  try {
+    if (!storage.isReady()) {
+      return res.status(503).json({ message: 'Stockage MinIO indisponible' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: 'Fichier image requis' });
+    }
+
+    const { treeId } = req.body;
+    if (!treeId) {
+      return res.status(400).json({ message: 'treeId requis' });
+    }
+
+    const validation = storage.validateFile('photo', req.file.mimetype, req.file.size);
+    if (!validation.ok) {
+      return res.status(400).json({ message: validation.message });
+    }
+
+    const tree = await prisma.familyTree.findUnique({
+      where: { id: treeId },
+      select: { ownerId: true, treeType: true, backgroundImageUrl: true },
+    });
+    if (!tree) {
+      return res.status(404).json({ message: 'Arbre non trouvé' });
+    }
+    if (tree.treeType !== 'ORGANIZATION') {
+      return res.status(403).json({ message: 'Arrière-plan réservé aux arbres organisation' });
+    }
+
+    const replacingExisting = Boolean(tree.backgroundImageUrl);
+    await assertMediaAssetLimit(tree.ownerId, { replacingExistingPhoto: replacingExisting });
+
+    const key = storage.buildBackgroundKey(treeId, req.file.originalname);
     const { url, key: objectKey } = await storage.uploadBuffer(key, req.file.buffer, req.file.mimetype);
 
     res.status(201).json({ url, key: objectKey });
