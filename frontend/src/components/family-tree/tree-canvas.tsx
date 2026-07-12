@@ -3,7 +3,7 @@ import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2, MoreVertical, Us
 import { useTranslation } from "react-i18next"
 import { PersonCard } from "./person-card"
 import { buildConnections, computeLineage, getCardDimensions } from "@/utils/tree-layout"
-import type { NormalizedPerson, TreeTweaks } from "@/types"
+import type { NormalizedPerson, TreeTweaks, TreeType } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -22,9 +22,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { isOrganizationTree } from "@/lib/tree-type"
 
 const TOOLBAR_H = 48
 const VIEW_PADDING = 40
+const VIEW_PADDING_LEFT = 56
+const SIDE_PANEL_W = 320
 const CANVAS_PADDING = 80
 const MOBILE_BREAKPOINT = 768
 
@@ -149,6 +152,7 @@ function computeContentBounds(
 interface TreeCanvasProps {
   people: NormalizedPerson[]
   tweaks: TreeTweaks
+  treeType?: TreeType
   positions: Record<string, { x: number; y: number }>
   setPositions: React.Dispatch<React.SetStateAction<Record<string, { x: number; y: number }>>>
   selectedId: string | null
@@ -184,6 +188,7 @@ interface TreeCanvasProps {
 export function TreeCanvas({
   people = [],
   tweaks,
+  treeType,
   positions,
   setPositions,
   selectedId,
@@ -237,7 +242,12 @@ export function TreeCanvas({
   const connStyle = tweaks.connStyle || "elbow"
   const genFilter = tweaks.generation || "all"
   const cardStyle = tweaks.cardStyle || "square"
-  const { w: cardW, h: cardH } = useMemo(() => getCardDimensions(cardStyle), [cardStyle])
+  const isOrg = isOrganizationTree({ treeType })
+  const sidePanelOpen = Boolean(selectedId)
+  const { w: cardW, h: cardH } = useMemo(
+    () => getCardDimensions(cardStyle, { organization: isOrg }),
+    [cardStyle, isOrg]
+  )
 
   const filteredIds = useMemo(() => {
     if (genFilter === "all") return new Set(people.map((p) => p.id))
@@ -492,7 +502,7 @@ export function TreeCanvas({
 
     const isMobile = r.width < MOBILE_BREAKPOINT
     const aspect = bounds.width / Math.max(bounds.height, 1)
-    if (people.length > 10 && aspect > 2) {
+    if (people.length > 10 && aspect > 2 && !isOrg) {
       const focusBounds = computeContentBounds(
         positionsRef.current,
         computeFocusPersonIds(people),
@@ -502,19 +512,25 @@ export function TreeCanvas({
       if (focusBounds) bounds = focusBounds
     }
 
-    const availW = r.width - VIEW_PADDING * 2
+    const sidePanelW = sidePanelOpen ? SIDE_PANEL_W : 0
+    const availW = r.width - VIEW_PADDING - VIEW_PADDING_LEFT - sidePanelW
     const availH = r.height - TOOLBAR_H - VIEW_PADDING * 2
     const newScale = computeSmartFitScale(bounds, availW, availH, people.length, isMobile)
 
-    const visibleCenterX = r.width / 2
+    const visibleCenterX = VIEW_PADDING_LEFT + availW / 2
     const visibleCenterY = TOOLBAR_H + (r.height - TOOLBAR_H) / 2
 
+    let panX = visibleCenterX - bounds.centerX * newScale
+    const panY = visibleCenterY - bounds.centerY * newScale
+
+    const contentLeft = panX + bounds.minX * newScale
+    if (contentLeft < VIEW_PADDING_LEFT) {
+      panX += VIEW_PADDING_LEFT - contentLeft
+    }
+
     setScale(newScale)
-    setPan({
-      x: visibleCenterX - bounds.centerX * newScale,
-      y: visibleCenterY - bounds.centerY * newScale,
-    })
-  }, [people, cardW, cardH])
+    setPan({ x: panX, y: panY })
+  }, [people, cardW, cardH, sidePanelOpen, isOrg])
 
   useEffect(() => {
     if (fitRequestId === 0) return
@@ -828,6 +844,7 @@ export function TreeCanvas({
               pos={pos}
               scale={scale}
               cardStyle={tweaks.cardStyle}
+              isOrg={isOrg}
               hidePhotos={tweaks.hidePhotos}
               hideDates={tweaks.hideDates}
               hidePlaces={tweaks.hidePlaces}

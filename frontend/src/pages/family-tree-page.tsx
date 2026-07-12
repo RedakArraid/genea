@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { useAuthStore } from "@/stores/auth-store"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
-import { normalizePersons, computeLayout, layoutNeedsRecompute } from "@/utils/tree-layout"
+import { normalizePersons, computeLayout, layoutNeedsRecompute, layoutNeedsOrgRecompute } from "@/utils/tree-layout"
 import type { NormalizedPerson, Person, Position, TreeTweaks } from "@/types"
 import { isOrganizationTree } from "@/lib/tree-type"
 import { TreeCanvas } from "@/components/family-tree/tree-canvas"
@@ -167,14 +167,20 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
       return
     }
 
+    const orgTree = isOrganizationTree(currentTree)
+    const layoutOpts = orgTree ? { organization: true as const } : undefined
     const hasAllPositions = normalizedPeople.every((p: NormalizedPerson) => dbPositions[p.id])
-    const staleLayout = hasAllPositions && layoutNeedsRecompute(normalizedPeople, dbPositions)
+    const staleLayout =
+      hasAllPositions &&
+      (orgTree
+        ? layoutNeedsOrgRecompute(normalizedPeople, dbPositions)
+        : layoutNeedsRecompute(normalizedPeople, dbPositions))
     const needsLayout = relsChanged || !hasAllPositions || Object.keys(dbPositions).length === 0 || staleLayout
 
     if (!needsLayout) {
       setPositions(dbPositions)
     } else {
-      const { positions: computed } = computeLayout(normalizedPeople, tweaks.layout, tweaks.density)
+      const { positions: computed } = computeLayout(normalizedPeople, tweaks.layout, tweaks.density, layoutOpts)
       setPositions(computed)
       if (canWrite) {
         updateNodePositions(Object.entries(computed).map(([id, pos]) => ({ id, position: pos as Position })))
@@ -227,15 +233,16 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   )
 
   const handleSetTweak = (key: keyof TreeTweaks, val: string | boolean) => {
+    const layoutOpts = isOrg ? { organization: true as const } : undefined
     setTweaks((prev) => {
       const next = { ...prev, [key]: val }
       if ((key === "layout" || key === "density") && !readOnly) {
-        const { positions: computed } = computeLayout(people, next.layout, next.density)
+        const { positions: computed } = computeLayout(people, next.layout, next.density, layoutOpts)
         setPositions(computed)
         updateNodePositions(Object.entries(computed).map(([id, pos]) => ({ id, position: pos as import("@/types").Position })))
         setFitRequestId((id) => id + 1)
       } else if (key === "layout" || key === "density") {
-        const { positions: computed } = computeLayout(people, next.layout, next.density)
+        const { positions: computed } = computeLayout(people, next.layout, next.density, layoutOpts)
         setPositions(computed)
         setFitRequestId((id) => id + 1)
       }
@@ -244,7 +251,8 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   }
 
   const applyReorganize = () => {
-    const { positions: computed } = computeLayout(people, tweaks.layout, tweaks.density)
+    const layoutOpts = isOrg ? { organization: true as const } : undefined
+    const { positions: computed } = computeLayout(people, tweaks.layout, tweaks.density, layoutOpts)
     setPositions(computed)
     positionsDirtyRef.current = false
     if (!readOnly) {
@@ -496,6 +504,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         <TreeCanvas
           people={people}
           tweaks={tweaks}
+          treeType={currentTree.treeType}
           positions={positions}
           setPositions={setPositions}
           selectedId={selectedId}

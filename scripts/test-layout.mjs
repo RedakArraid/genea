@@ -1,7 +1,7 @@
 /**
  * Tests unitaires du moteur de layout (frontend)
  */
-import { computeLayout, buildConnections, normalizePersons, layoutNeedsRecompute } from '../frontend/src/utils/tree-layout.ts'
+import { computeLayout, buildConnections, normalizePersons, layoutNeedsRecompute, layoutNeedsOrgRecompute, getCardDimensions } from '../frontend/src/utils/tree-layout.ts'
 
 const people = [
   { id: 'a', generation: 1, parentIds: [], spouseIds: ['b'], given: 'Jean', sur: 'Dupont' },
@@ -101,6 +101,28 @@ ok(
   'générations cohérentes (parents G1, enfant G2)',
   rootWithParents.find((p) => p.id === 'p1')?.generation === 1 &&
     rootWithParents.find((p) => p.id === 'root')?.generation === 2
+)
+
+console.log('\n--- Organigramme entreprise ---')
+const orgPeople = [
+  { id: 'ceo', generation: 1, parentIds: [], spouseIds: [], given: 'Alice', sur: 'Martin', occupation: 'CEO' },
+  { id: 'dir1', generation: 2, parentIds: ['ceo'], spouseIds: [], given: 'Bob', sur: 'Lee', occupation: 'CTO' },
+  { id: 'dir2', generation: 2, parentIds: ['ceo'], spouseIds: [], given: 'Carol', sur: 'Kim', occupation: 'CFO' },
+  { id: 'emp1', generation: 3, parentIds: ['dir1'], spouseIds: [], given: 'Dan', sur: 'Ng', occupation: 'Dev' },
+  { id: 'emp2', generation: 3, parentIds: ['dir2'], spouseIds: [], given: 'Eve', sur: 'Wu', occupation: 'Analyst' },
+]
+const orgOpts = { organization: true }
+const { positions: orgPos } = computeLayout(orgPeople, 'vertical', 'spacious', orgOpts)
+const orgCard = getCardDimensions('square', orgOpts)
+ok('org — toutes les personnes placées', orgPeople.every((p) => orgPos[p.id]))
+ok('org — directeurs espacés (gap >= carte + marge)', orgPos.dir2.x - orgPos.dir1.x >= orgCard.w + 40)
+ok(
+  'layoutNeedsOrgRecompute — détecte grille serrée',
+  layoutNeedsOrgRecompute(orgPeople, { dir1: { x: 0, y: 200 }, dir2: { x: 120, y: 200 } })
+)
+ok(
+  'layoutNeedsOrgRecompute — ignore layout org sain',
+  !layoutNeedsOrgRecompute(orgPeople, orgPos)
 )
 
 console.log(`\n=== Résultat layout : ${pass} passés, ${fail} échoués ===`)

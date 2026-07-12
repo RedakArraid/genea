@@ -29,6 +29,7 @@ interface PersonCardProps {
   pos: { x: number; y: number }
   scale: number
   cardStyle?: string
+  isOrg?: boolean
   hidePhotos?: boolean
   hideDates?: boolean
   hidePlaces?: boolean
@@ -48,6 +49,7 @@ export function PersonCard({
   pos,
   scale,
   cardStyle = "square",
+  isOrg = false,
   hidePhotos = false,
   hideDates = false,
   hidePlaces = false,
@@ -62,9 +64,11 @@ export function PersonCard({
   onHover,
 }: PersonCardProps) {
   const tone = TONE_STYLES[person.tone] || TONE_STYLES.stone
-  const { w: cardW, h: cardH } = getCardDimensions(cardStyle)
+  const { w: cardW, h: cardH } = getCardDimensions(cardStyle, { organization: isOrg })
   const initials = getInitials(person.given, person.sur)
   const lifespan = getLifespan(person.born, person.died)
+  const role = person.occupation?.trim() || ""
+  const fullName = `${person.given}${person.sur && person.sur !== "—" ? ` ${person.sur}` : ""}`
   const [photoFailed, setPhotoFailed] = useState(false)
   const showPhoto = !hidePhotos && person.photoUrl && !photoFailed
 
@@ -159,7 +163,8 @@ export function PersonCard({
       className={cn(
         "tree-person-card absolute z-[2] flex flex-col cursor-grab select-none rounded-lg border bg-card shadow-sm transition-opacity active:cursor-grabbing",
         dragging && "z-[30]",
-        cardStyle !== "round" && cardStyle !== "minimal" && "w-[120px]",
+        cardStyle !== "round" && cardStyle !== "minimal" && !isOrg && "w-[120px]",
+        isOrg && cardStyle !== "round" && cardStyle !== "minimal" && "w-[140px]",
         selected && "ring-2 ring-primary",
         highlight && "ring-2 ring-primary/50",
         dim && "opacity-30",
@@ -197,11 +202,23 @@ export function PersonCard({
         </div>
       )}
       <div className="mt-auto p-2">
-        <p className="truncate text-xs font-semibold">
-          {person.given}{person.sur && person.sur !== "—" ? ` ${person.sur}` : ""}
+        <p className="truncate text-xs font-semibold" title={fullName}>
+          {fullName}
         </p>
-        {!hideDates && <p className="text-[10px] text-muted-foreground">{lifespan}</p>}
-        {!hidePlaces && person.place && <p className="truncate text-[10px] text-muted-foreground">{person.place}</p>}
+        {isOrg ? (
+          role ? (
+            <p className="truncate text-[10px] text-muted-foreground" title={role}>
+              {role}
+            </p>
+          ) : (
+            <p className="text-[10px] text-muted-foreground">—</p>
+          )
+        ) : (
+          <>
+            {!hideDates && <p className="text-[10px] text-muted-foreground">{lifespan}</p>}
+            {!hidePlaces && person.place && <p className="truncate text-[10px] text-muted-foreground">{person.place}</p>}
+          </>
+        )}
       </div>
     </div>
   )

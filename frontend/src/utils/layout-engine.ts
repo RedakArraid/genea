@@ -8,28 +8,36 @@
 // Dimensions de carte par défaut (style square)
 export const CARD_W = 120;
 export const CARD_H = 150; // photo + meta
+export const ORG_CARD_W = 140;
+export const ORG_CARD_H = 168;
 export const CARD_W_H = 180; // style horizontal
 export const LINE_INSET = 0;
 
 const ROW_ALIGN_RATIO = 0.45;
 const MAX_SPOUSE_LINE_DIST = CARD_W * 4;
 
-export function getCardDimensions(cardStyle = 'square') {
+export function getCardDimensions(cardStyle = 'square', options = {}) {
+  const organization = options.organization === true;
   switch (cardStyle) {
     case 'round':
       return { w: 90, h: 90 };
     case 'minimal':
-      return { w: 120, h: 72 };
+      return organization ? { w: ORG_CARD_W, h: 88 } : { w: 120, h: 72 };
     default:
-      return { w: CARD_W, h: CARD_H };
+      return organization ? { w: ORG_CARD_W, h: ORG_CARD_H } : { w: CARD_W, h: CARD_H };
   }
 }
 
 const H_GAP_SPACIOUS = 40;
 const H_GAP_COMPACT = 20;
+const H_GAP_ORG_SPACIOUS = 56;
+const H_GAP_ORG_COMPACT = 36;
 const V_GAP_SPACIOUS = 100;
 const V_GAP_COMPACT = 50;
+const V_GAP_ORG_SPACIOUS = 110;
+const V_GAP_ORG_COMPACT = 70;
 const BRANCH_GAP_RATIO = 2;
+const BRANCH_GAP_ORG_RATIO = 3;
 
 /**
  * Groupe les personnes par génération.
@@ -133,12 +141,16 @@ function orderSpouseCluster(ids, byId) {
 /**
  * Disposition pour arbres sans liens parent-enfant : clusters conjuguaux par génération.
  */
-function computeSpouseOnlyLayout(people, density = 'spacious') {
-  const hGap = density === 'compact' ? H_GAP_COMPACT : H_GAP_SPACIOUS;
-  const vGap = density === 'compact' ? V_GAP_COMPACT : V_GAP_SPACIOUS;
-  const branchGap = hGap * BRANCH_GAP_RATIO;
-  const cardW = CARD_W;
-  const cardH = CARD_H;
+function computeSpouseOnlyLayout(people, density = 'spacious', organization = false) {
+  const hGap = density === 'compact'
+    ? (organization ? H_GAP_ORG_COMPACT : H_GAP_COMPACT)
+    : (organization ? H_GAP_ORG_SPACIOUS : H_GAP_SPACIOUS);
+  const vGap = density === 'compact'
+    ? (organization ? V_GAP_ORG_COMPACT : V_GAP_COMPACT)
+    : (organization ? V_GAP_ORG_SPACIOUS : V_GAP_SPACIOUS);
+  const branchGap = hGap * (organization ? BRANCH_GAP_ORG_RATIO : BRANCH_GAP_RATIO);
+  const cardW = organization ? ORG_CARD_W : CARD_W;
+  const cardH = organization ? ORG_CARD_H : CARD_H;
   const byId = Object.fromEntries(people.map((p) => [p.id, p]));
   const positions = {};
   const byGen = groupByGeneration(people);
@@ -175,15 +187,19 @@ function computeSpouseOnlyLayout(people, density = 'spacious') {
 /**
  * Disposition verticale par unités familiales — chaque branche sous ses parents.
  */
-function computeVerticalPedigree(people, density = 'spacious') {
+function computeVerticalPedigree(people, density = 'spacious', organization = false) {
   if (!hasParentChildLinks(people)) {
-    return computeSpouseOnlyLayout(people, density);
+    return computeSpouseOnlyLayout(people, density, organization);
   }
-  const hGap = density === 'compact' ? H_GAP_COMPACT : H_GAP_SPACIOUS;
-  const vGap = density === 'compact' ? V_GAP_COMPACT : V_GAP_SPACIOUS;
-  const branchGap = hGap * BRANCH_GAP_RATIO;
-  const cardW = CARD_W;
-  const cardH = CARD_H;
+  const hGap = density === 'compact'
+    ? (organization ? H_GAP_ORG_COMPACT : H_GAP_COMPACT)
+    : (organization ? H_GAP_ORG_SPACIOUS : H_GAP_SPACIOUS);
+  const vGap = density === 'compact'
+    ? (organization ? V_GAP_ORG_COMPACT : V_GAP_COMPACT)
+    : (organization ? V_GAP_ORG_SPACIOUS : V_GAP_SPACIOUS);
+  const branchGap = hGap * (organization ? BRANCH_GAP_ORG_RATIO : BRANCH_GAP_RATIO);
+  const cardW = organization ? ORG_CARD_W : CARD_W;
+  const cardH = organization ? ORG_CARD_H : CARD_H;
   const byId = Object.fromEntries(people.map((p) => [p.id, p]));
   const positions = {};
   const placed = new Set();
@@ -453,16 +469,16 @@ function computeVerticalPedigree(people, density = 'spacious') {
 /**
  * Disposition verticale (haut → bas) — délègue au moteur pedigree.
  */
-function computeVertical(people, density = 'spacious') {
-  return computeVerticalPedigree(people, density);
+function computeVertical(people, density = 'spacious', organization = false) {
+  return computeVerticalPedigree(people, density, organization);
 }
 
 /**
  * Disposition horizontale (gauche → droite) — transpose le pedigree vertical.
  * Conjoint·es empilé·es verticalement, descendants vers la droite.
  */
-function computeHorizontal(people, density = 'spacious') {
-  const { positions, canvasW, canvasH } = computeVerticalPedigree(people, density);
+function computeHorizontal(people, density = 'spacious', organization = false) {
+  const { positions, canvasW, canvasH } = computeVerticalPedigree(people, density, organization);
   const swapped = {};
   for (const [id, pos] of Object.entries(positions)) {
     swapped[id] = { x: pos.y, y: pos.x };
@@ -515,19 +531,21 @@ function computeRadial(people, density = 'spacious') {
   return { positions, canvasW: canvasSize, canvasH: canvasSize };
 }
 
-export function computeLayout(people, layout = 'vertical', density = 'spacious') {
+export function computeLayout(people, layout = 'vertical', density = 'spacious', options = {}) {
   if (!people || people.length === 0) {
     return { positions: {}, canvasW: 800, canvasH: 600 };
   }
 
+  const organization = options.organization === true;
+
   switch (layout) {
     case 'horizontal':
-      return computeHorizontal(people, density);
+      return computeHorizontal(people, density, organization);
     case 'radial':
       return computeRadial(people, density);
     case 'vertical':
     default:
-      return computeVertical(people, density);
+      return computeVertical(people, density, organization);
   }
 }
 
@@ -547,6 +565,23 @@ export function layoutNeedsRecompute(people, positions, cardW = CARD_W) {
       const b = positions[sId];
       if (!a || !b) continue;
       if (Math.hypot(a.x - b.x, a.y - b.y) > MAX_SPOUSE_LINE_DIST) return true;
+    }
+  }
+  return false;
+}
+
+/** Détecte un organigramme trop serré (positions manuelles ou anciennes). */
+export function layoutNeedsOrgRecompute(people, positions) {
+  if (!people?.length || !positions) return false;
+  const byGen = groupByGeneration(people);
+  const minGap = ORG_CARD_W + 48;
+  for (const row of byGen.values()) {
+    const xs = row
+      .map((p) => positions[p.id]?.x)
+      .filter((x) => typeof x === 'number')
+      .sort((a, b) => a - b);
+    for (let i = 1; i < xs.length; i++) {
+      if (xs[i] - xs[i - 1] < minGap) return true;
     }
   }
   return false;
@@ -918,6 +953,7 @@ export function normalizePersons(apiPersons, apiRelationships = []) {
       spouseIds: Array.from(new Set(spouseIds)),
       photoUrl: p.photoUrl || null,
       isAlive: !p.deathDate,
+      occupation: p.occupation || '',
     };
   });
 

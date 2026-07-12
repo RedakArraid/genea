@@ -122,6 +122,7 @@ export interface NormalizedPerson {
   spouseIds: string[]
   photoUrl: string | null
   isAlive: boolean
+  occupation?: string
 }
 
 export interface TreeTweaks {

@@ -7,6 +7,7 @@ import {
   buildConnections as rawBuildConnections,
   computeLineage as rawComputeLineage,
   layoutNeedsRecompute as rawLayoutNeedsRecompute,
+  layoutNeedsOrgRecompute as rawLayoutNeedsOrgRecompute,
   CARD_W,
   CARD_H,
   getCardDimensions as rawGetCardDimensions,
@@ -14,8 +15,8 @@ import {
 
 export { CARD_W, CARD_H }
 
-export function getCardDimensions(cardStyle = "square") {
-  return rawGetCardDimensions(cardStyle) as { w: number; h: number }
+export function getCardDimensions(cardStyle = "square", options?: { organization?: boolean }) {
+  return rawGetCardDimensions(cardStyle, options) as { w: number; h: number }
 }
 
 export function normalizePersons(
@@ -28,9 +29,10 @@ export function normalizePersons(
 export function computeLayout(
   people: NormalizedPerson[],
   layout = "vertical",
-  density = "spacious"
+  density = "spacious",
+  options?: { organization?: boolean }
 ) {
-  return rawComputeLayout(people, layout, density) as {
+  return rawComputeLayout(people, layout, density, options) as {
     positions: Record<string, { x: number; y: number }>
     canvasW: number
     canvasH: number
@@ -58,4 +60,11 @@ export function layoutNeedsRecompute(
   cardW = CARD_W
 ) {
   return rawLayoutNeedsRecompute(people, positions, cardW)
+}
+
+export function layoutNeedsOrgRecompute(
+  people: NormalizedPerson[],
+  positions: Record<string, { x: number; y: number }>
+) {
+  return rawLayoutNeedsOrgRecompute(people, positions)
 }
