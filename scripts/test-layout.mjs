@@ -5,6 +5,7 @@ import { computeLayout, buildConnections, normalizePersons, layoutNeedsRecompute
 import { formatGenerationBadge, getMaxGeneration, toDisplayLevel, formatLevelFilterLabel } from '../frontend/src/lib/generation-level.ts'
 import { getPresetLexicon } from '../frontend/src/lib/org-lexicon.ts'
 import { isTreeBackgroundActive, getDefaultBackgroundOpacity, buildViewportBackgroundStyle } from '../frontend/src/lib/tree-background.ts'
+import orgLayout from '../shared/org-layout.js'
 
 const people = [
   { id: 'a', generation: 1, parentIds: [], spouseIds: ['b'], given: 'Jean', sur: 'Dupont' },
@@ -133,6 +134,79 @@ ok('org — toDisplayLevel cohérent', toDisplayLevel(2, getMaxGeneration(orgPeo
 const promoLex = getPresetLexicon('promo')
 ok('promo — badge V', formatGenerationBadge(1, { isOrg: true, maxGeneration: 3, lexicon: promoLex }) === 'V3')
 ok('promo — filtre niveau', formatLevelFilterLabel(2, 3, promoLex) === 'Vague 2 (V2)')
+
+console.log('\n--- Challenge Family (source + 7 par promo) ---')
+const promoRows = []
+let pid = 0
+const promoIds = []
+const rootId = 'cf-root'
+promoRows.push({ id: rootId, generation: 1, parentIds: [], spouseIds: [], given: 'Challenge', sur: 'Family' })
+for (let g = 0; g < 5; g++) {
+  const row = []
+  for (let m = 0; m < 7; m++) {
+    const id = `cf${pid++}`
+    row.push(id)
+    promoRows.push({ id, generation: 1, parentIds: [], spouseIds: [], given: `M${m + 1}`, sur: `P${2020 + g}` })
+  }
+  promoIds.push(row)
+}
+const cfRels = promoIds[0].map((childId) => ({ type: 'parent', sourceId: rootId, targetId: childId }))
+for (let g = 1; g < 5; g++) {
+  for (const childId of promoIds[g]) {
+    cfRels.push({ type: 'parent', sourceId: promoIds[g - 1][0], targetId: childId })
+  }
+}
+const cfNorm = normalizePersons(
+  promoRows.map((p) => ({ id: p.id, firstName: p.given, lastName: p.sur, treeId: 't' })),
+  cfRels
+)
+ok('challenge — racine seule en G1', cfNorm.filter((p) => p.generation === 1).length === 1)
+ok('challenge — 7 par promo (G2)', cfNorm.filter((p) => p.generation === 2).length === 7)
+ok('challenge — 7 par promo (G3)', cfNorm.filter((p) => p.generation === 3).length === 7)
+const cfLayout = computeLayout(cfNorm, 'vertical', 'spacious', orgOpts)
+const cfByGen = new Map()
+for (const p of cfNorm) {
+  if (!cfByGen.has(p.generation)) cfByGen.set(p.generation, [])
+  cfByGen.get(p.generation).push(p)
+}
+const rowsAligned = [...cfByGen.values()].every((row) => new Set(row.map((p) => cfLayout.positions[p.id]?.y)).size === 1)
+ok('challenge — chaque niveau sur une ligne', rowsAligned)
+const root = cfNorm.find((p) => p.id === rootId)
+const rootPos = cfLayout.positions[rootId]
+const g2Children = cfNorm.filter((p) => p.generation === 2)
+const minX = Math.min(...g2Children.map((p) => cfLayout.positions[p.id].x))
+const maxX = Math.max(...g2Children.map((p) => cfLayout.positions[p.id].x)) + orgCard.w
+const rootCenter = rootPos.x + orgCard.w / 2
+const rowCenter = (minX + maxX) / 2
+ok('challenge — source centrée sur la promo', Math.abs(rootCenter - rowCenter) < 2)
+const pres2020 = cfNorm.find((p) => p.id === promoIds[0][0])
+const g3Children = cfNorm.filter((p) => p.generation === 3)
+const minX3 = Math.min(...g3Children.map((p) => cfLayout.positions[p.id].x))
+const maxX3 = Math.max(...g3Children.map((p) => cfLayout.positions[p.id].x)) + orgCard.w
+const presCenter = cfLayout.positions[pres2020.id].x + orgCard.w / 2
+ok('challenge — président centré sur promo suivante', Math.abs(presCenter - (minX3 + maxX3) / 2) < 2)
+const g2Row = cfNorm.filter((p) => p.generation === 2)
+const g2Center = (Math.min(...g2Row.map((p) => cfLayout.positions[p.id].x)) + Math.max(...g2Row.map((p) => cfLayout.positions[p.id].x)) + orgCard.w) / 2
+ok('challenge — président au centre de sa promo', Math.abs(presCenter - g2Center) < 2)
+const rowCenters = [...cfByGen.keys()].map((gen) => {
+  const row = cfByGen.get(gen)
+  const xs = row.map((p) => cfLayout.positions[p.id].x)
+  return (Math.min(...xs) + Math.max(...xs) + orgCard.w) / 2
+})
+ok('challenge — pas de dérive latérale', rowCenters.every((c) => Math.abs(c - rowCenters[0]) < 2))
+const sharedLayout = orgLayout.computeVerticalOrg(cfNorm, 'spacious')
+ok(
+  'challenge — parité shared/org-layout',
+  cfNorm.every((p) => {
+    const a = cfLayout.positions[p.id]
+    const b = sharedLayout.positions[p.id]
+    return a && b && Math.abs(a.x - b.x) < 2 && Math.abs(a.y - b.y) < 2
+  })
+)
+const staleY = Object.fromEntries(
+  cfNorm.map((p) => [p.id, { x: cfLayout.positions[p.id].x, y: cfLayout.positions[p.id].y + 40 }])
+)
+ok('challenge — détecte layout Y obsolète', layoutNeedsOrgRecompute(cfNorm, staleY, 'spacious'))
 
 console.log('\n--- Arrière-plan organigramme ---')
 const bgConfig = { imageUrl: 'https://example.com/logo.png', mode: 'REPEAT', opacity: 0.2, overlay: true, tileSize: 120 }

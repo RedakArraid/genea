@@ -5,11 +5,13 @@
  * Supporte 3 dispositions : vertical, horizontal, radial.
  */
 
+import orgLayout from '../../../shared/org-layout.js';
+
 // Dimensions de carte par défaut (style square)
 export const CARD_W = 120;
 export const CARD_H = 150; // photo + meta
-export const ORG_CARD_W = 140;
-export const ORG_CARD_H = 168;
+export const ORG_CARD_W = orgLayout.ORG_CARD_W;
+export const ORG_CARD_H = orgLayout.ORG_CARD_H;
 export const CARD_W_H = 180; // style horizontal
 export const LINE_INSET = 0;
 
@@ -30,12 +32,12 @@ export function getCardDimensions(cardStyle = 'square', options = {}) {
 
 const H_GAP_SPACIOUS = 40;
 const H_GAP_COMPACT = 20;
-const H_GAP_ORG_SPACIOUS = 56;
-const H_GAP_ORG_COMPACT = 36;
+const H_GAP_ORG_SPACIOUS = orgLayout.H_GAP_ORG_SPACIOUS;
+const H_GAP_ORG_COMPACT = orgLayout.H_GAP_ORG_COMPACT;
 const V_GAP_SPACIOUS = 100;
 const V_GAP_COMPACT = 50;
-const V_GAP_ORG_SPACIOUS = 110;
-const V_GAP_ORG_COMPACT = 70;
+const V_GAP_ORG_SPACIOUS = orgLayout.V_GAP_ORG_SPACIOUS;
+const V_GAP_ORG_COMPACT = orgLayout.V_GAP_ORG_COMPACT;
 const BRANCH_GAP_RATIO = 2;
 const BRANCH_GAP_ORG_RATIO = 3;
 
@@ -467,9 +469,17 @@ function computeVerticalPedigree(people, density = 'spacious', organization = fa
 }
 
 /**
+ * Organigramme — délègue au module partagé `shared/org-layout.js`.
+ */
+function computeVerticalOrg(people, density = 'spacious') {
+  return orgLayout.computeVerticalOrg(people, density);
+}
+
+/**
  * Disposition verticale (haut → bas) — délègue au moteur pedigree.
  */
 function computeVertical(people, density = 'spacious', organization = false) {
+  if (organization) return computeVerticalOrg(people, density);
   return computeVerticalPedigree(people, density, organization);
 }
 
@@ -478,7 +488,7 @@ function computeVertical(people, density = 'spacious', organization = false) {
  * Conjoint·es empilé·es verticalement, descendants vers la droite.
  */
 function computeHorizontal(people, density = 'spacious', organization = false) {
-  const { positions, canvasW, canvasH } = computeVerticalPedigree(people, density, organization);
+  const { positions, canvasW, canvasH } = computeVertical(people, density, organization);
   const swapped = {};
   for (const [id, pos] of Object.entries(positions)) {
     swapped[id] = { x: pos.y, y: pos.x };
@@ -570,21 +580,9 @@ export function layoutNeedsRecompute(people, positions, cardW = CARD_W) {
   return false;
 }
 
-/** Détecte un organigramme trop serré (positions manuelles ou anciennes). */
-export function layoutNeedsOrgRecompute(people, positions) {
-  if (!people?.length || !positions) return false;
-  const byGen = groupByGeneration(people);
-  const minGap = ORG_CARD_W + 48;
-  for (const row of byGen.values()) {
-    const xs = row
-      .map((p) => positions[p.id]?.x)
-      .filter((x) => typeof x === 'number')
-      .sort((a, b) => a - b);
-    for (let i = 1; i < xs.length; i++) {
-      if (xs[i] - xs[i - 1] < minGap) return true;
-    }
-  }
-  return false;
+/** Détecte un organigramme obsolète (grille serrée ou décalée vs moteur partagé). */
+export function layoutNeedsOrgRecompute(people, positions, density = 'spacious') {
+  return orgLayout.layoutNeedsOrgRecompute(people, positions, density);
 }
 
 /**
@@ -969,7 +967,7 @@ function assignGenerations(people) {
   const gens = {};
 
   const roots = people.filter((p) => !(p.parentIds || []).some((pid) => byId[pid]));
-  const queue = [...roots];
+  const queue = roots.map((p) => p.id);
   roots.forEach((p) => {
     gens[p.id] = 1;
   });
