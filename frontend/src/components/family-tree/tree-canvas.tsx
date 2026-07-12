@@ -26,6 +26,47 @@ import { cn } from "@/lib/utils"
 const TOOLBAR_H = 48
 const VIEW_PADDING = 40
 const CANVAS_PADDING = 80
+const MOBILE_BREAKPOINT = 768
+
+function computeFocusPersonIds(people: NormalizedPerson[]): Set<string> {
+  if (people.length <= 10) return new Set(people.map((p) => p.id))
+
+  const maxGen = Math.max(...people.map((p) => p.generation ?? 1))
+  const focusGens = new Set([maxGen, maxGen - 1, maxGen - 2].filter((g) => g >= 1))
+  const ids = new Set<string>()
+
+  for (const p of people) {
+    if (!focusGens.has(p.generation ?? 1)) continue
+    ids.add(p.id)
+    for (const pid of p.parentIds ?? []) ids.add(pid)
+    for (const sid of p.spouseIds ?? []) ids.add(sid)
+  }
+
+  return ids.size > 0 ? ids : new Set(people.map((p) => p.id))
+}
+
+function computeSmartFitScale(
+  bounds: { width: number; height: number },
+  availW: number,
+  availH: number,
+  personCount: number,
+  isMobile: boolean
+): number {
+  const fitScale = Math.min(availW / bounds.width, availH / bounds.height)
+  const minScale =
+    personCount <= 8
+      ? isMobile
+        ? 0.55
+        : 0.45
+      : personCount <= 16
+        ? isMobile
+          ? 0.42
+          : 0.34
+        : isMobile
+          ? 0.36
+          : 0.28
+  return Math.max(0.2, Math.min(2.5, Math.max(fitScale, minScale)))
+}
 
 function computeConnectionBounds(
   people: NormalizedPerson[],
@@ -446,15 +487,24 @@ export function TreeCanvas({
     if (!r || people.length === 0) return
 
     const personIds = new Set(people.map((p) => p.id))
-    const bounds = computeContentBounds(positionsRef.current, personIds, cardW, cardH)
+    let bounds = computeContentBounds(positionsRef.current, personIds, cardW, cardH)
     if (!bounds || bounds.width === 0 || bounds.height === 0) return
+
+    const isMobile = r.width < MOBILE_BREAKPOINT
+    const aspect = bounds.width / Math.max(bounds.height, 1)
+    if (people.length > 10 && aspect > 2) {
+      const focusBounds = computeContentBounds(
+        positionsRef.current,
+        computeFocusPersonIds(people),
+        cardW,
+        cardH
+      )
+      if (focusBounds) bounds = focusBounds
+    }
 
     const availW = r.width - VIEW_PADDING * 2
     const availH = r.height - TOOLBAR_H - VIEW_PADDING * 2
-    const newScale = Math.max(
-      0.2,
-      Math.min(2.5, Math.min(availW / bounds.width, availH / bounds.height))
-    )
+    const newScale = computeSmartFitScale(bounds, availW, availH, people.length, isMobile)
 
     const visibleCenterX = r.width / 2
     const visibleCenterY = TOOLBAR_H + (r.height - TOOLBAR_H) / 2
