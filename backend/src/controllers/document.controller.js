@@ -31,17 +31,21 @@ exports.uploadDocument = async (req, res, next) => {
       return res.status(400).json({ message: 'Fichier document requis' });
     }
 
-    const { personId } = req.params;
     const { title, category = 'other' } = req.body;
 
-    const person = await prisma.person.findUnique({
-      where: { id: personId },
-      include: { FamilyTree: { select: { ownerId: true } } },
-    });
+    let person = req.personData;
+    if (!person?.FamilyTree?.ownerId) {
+      const personId = req.params.personId || req.params.id;
+      person = await prisma.person.findUnique({
+        where: { id: personId },
+        include: { FamilyTree: { select: { ownerId: true } } },
+      });
+    }
     if (!person) {
       return res.status(404).json({ message: 'Personne non trouvée' });
     }
 
+    const personId = person.id;
     await assertFicheLimit(person.FamilyTree.ownerId);
 
     const validation = storage.validateFile('document', req.file.mimetype, req.file.size);

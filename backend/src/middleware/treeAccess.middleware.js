@@ -140,8 +140,12 @@ const canWritePerson = async (req, res, next) => {
       if (!forkedPersonId) {
         return res.status(404).json({ message: 'Personne non trouvée dans votre copie de la démo' });
       }
-      const forkedPerson = await prisma.person.findUnique({ where: { id: forkedPersonId } });
+      const forkedPerson = await prisma.person.findUnique({
+        where: { id: forkedPersonId },
+        include: { FamilyTree: { select: { ownerId: true, isDemo: true } } },
+      });
       req.params.id = forkedPersonId;
+      req.params.personId = forkedPersonId;
       req.personData = forkedPerson;
       res.locals.demoForkTreeId = fork.id;
       req.treeAccess = OWNER_ACCESS;

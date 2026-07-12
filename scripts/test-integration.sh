@@ -80,14 +80,14 @@ code=$(curl -s -o /tmp/genea_put_person.json -w '%{http_code}' -X PUT "$API/pers
   -d '{"firstName":"Hack"}')
 assert_status "PUT personne bloqué en démo" "403" "$code" "$(cat /tmp/genea_put_person.json)"
 
-# Add person allowed in demo
+# Fork démo plein (10 personnes) : quota Découverte atteint
 add_json=$(curl -s -w '\n%{http_code}' -X POST "$API/persons/tree/$TREE_ID" \
   -H "$AUTH" -H 'Content-Type: application/json' \
   -d '{"firstName":"Test","lastName":"Demo","position":{"x":100,"y":100}}')
 add_body=$(echo "$add_json" | sed '$d')
 add_code=$(echo "$add_json" | tail -1)
-assert_status "POST personne autorisé en démo" "201" "$add_code" "$add_body"
-NEW_PERSON_ID=$(echo "$add_body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('person',{}).get('id',''))" 2>/dev/null || echo "")
+assert_status "POST personne bloqué (quota Découverte 10/arbre)" "403" "$add_code" "$add_body"
+assert_json "POST personne code PLAN_LIMIT_REACHED" "d.get('code')=='PLAN_LIMIT_REACHED'" "$add_body"
 
 # Node positions
 pos_json=$(curl -s "$API/node-positions/tree/$TREE_ID" -H "$AUTH")
@@ -111,38 +111,20 @@ storage_json=$(curl -s "$API/uploads/status")
 assert_json "Stockage MinIO ready" "d.get('ready') is True" "$storage_json"
 assert_json "Limites photo définies" "d.get('limits',{}).get('photoMaxMb',0) > 0" "$storage_json"
 
-STORAGE_PERSON_ID="${NEW_PERSON_ID:-$PERSON_ID}"
-if [ -n "$TOKEN" ] && [ -n "$TREE_ID" ] && [ -n "$STORAGE_PERSON_ID" ]; then
+if [ -n "$TOKEN" ] && [ -n "$TREE_ID" ] && [ -n "$PERSON_ID" ]; then
   printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82' > /tmp/genea-test.png
   photo_code=$(curl -s -o /tmp/genea-photo.json -w '%{http_code}' -X POST -H "$AUTH" \
-    -F "photo=@/tmp/genea-test.png;type=image/png" -F "treeId=$TREE_ID" -F "personId=$STORAGE_PERSON_ID" \
+    -F "photo=@/tmp/genea-test.png;type=image/png" -F "treeId=$TREE_ID" -F "personId=$PERSON_ID" \
     "$API/uploads/photo")
-  assert_status "POST upload photo" "201" "$photo_code" "$(cat /tmp/genea-photo.json 2>/dev/null)"
+  assert_status "POST upload photo bloqué forfait Découverte" "403" "$photo_code" "$(cat /tmp/genea-photo.json 2>/dev/null)"
 
   printf '%%PDF-1.4 test' > /tmp/genea-test.pdf
   doc_json=$(curl -s -w '\n%{http_code}' -X POST -H "$AUTH" \
     -F "file=@/tmp/genea-test.pdf;type=application/pdf" -F "title=Acte test" -F "category=birth" \
-    "$API/persons/$STORAGE_PERSON_ID/documents")
+    "$API/persons/$PERSON_ID/documents")
   doc_body=$(echo "$doc_json" | sed '$d')
   doc_code=$(echo "$doc_json" | tail -1)
-  assert_status "POST upload document" "201" "$doc_code" "$doc_body"
-  DOC_ID=$(echo "$doc_body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('document',{}).get('id',''))" 2>/dev/null || echo "")
-
-  # Authentifié : cette personne vit désormais dans la copie privée forkée de
-  # l'utilisateur (voir lib/demoFork.js), plus dans la démo publique.
-  list_json=$(curl -s "$API/persons/$STORAGE_PERSON_ID/documents" -H "$AUTH")
-  assert_json "GET documents liste" "len(d.get('documents',[])) >= 1" "$list_json"
-
-  if [ -n "$DOC_ID" ]; then
-    code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "$AUTH" "$API/persons/$STORAGE_PERSON_ID/documents/$DOC_ID")
-    assert_status "DELETE document" "200" "$code"
-  fi
-fi
-
-# Cleanup: delete test person
-if [ -n "$NEW_PERSON_ID" ]; then
-  code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$API/persons/$NEW_PERSON_ID" -H "$AUTH")
-  assert_status "DELETE personne test en démo" "200" "$code"
+  assert_status "POST upload document bloqué forfait Découverte" "403" "$doc_code" "$doc_body"
 fi
 
 # Pricing / plans endpoint if exists
@@ -461,6 +443,30 @@ GEDEOF
         -H "Authorization: Bearer $FAM40_TOKEN")
       assert_status "GET revisions Patrimoine" "200" "$code"
       assert_json "Au moins une révision" "len(d.get('revisions',[])) >= 1" "$(cat /tmp/genea_revisions.json 2>/dev/null)"
+
+      printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82' > /tmp/genea-test-fam40.png
+      photo_code=$(curl -s -o /tmp/genea-photo-fam40.json -w '%{http_code}' -X POST \
+        -H "Authorization: Bearer $FAM40_TOKEN" \
+        -F "photo=@/tmp/genea-test-fam40.png;type=image/png" \
+        -F "treeId=$FAM40_TREE_ID" -F "personId=$FAM40_PERSON" \
+        "$API/uploads/photo")
+      assert_status "POST upload photo Patrimoine" "201" "$photo_code" "$(cat /tmp/genea-photo-fam40.json 2>/dev/null)"
+
+      printf '%%PDF-1.4 test' > /tmp/genea-test-fam40.pdf
+      doc_json=$(curl -s -w '\n%{http_code}' -X POST -H "Authorization: Bearer $FAM40_TOKEN" \
+        -F "file=@/tmp/genea-test-fam40.pdf;type=application/pdf" -F "title=Acte test" -F "category=birth" \
+        "$API/persons/$FAM40_PERSON/documents")
+      doc_body=$(echo "$doc_json" | sed '$d')
+      doc_code=$(echo "$doc_json" | tail -1)
+      assert_status "POST upload document Patrimoine" "201" "$doc_code" "$doc_body"
+      DOC_ID=$(echo "$doc_body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('document',{}).get('id',''))" 2>/dev/null || echo "")
+      list_json=$(curl -s "$API/persons/$FAM40_PERSON/documents" -H "Authorization: Bearer $FAM40_TOKEN")
+      assert_json "GET documents liste Patrimoine" "len(d.get('documents',[])) >= 1" "$list_json"
+      if [ -n "$DOC_ID" ]; then
+        code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE \
+          -H "Authorization: Bearer $FAM40_TOKEN" "$API/persons/$FAM40_PERSON/documents/$DOC_ID")
+        assert_status "DELETE document Patrimoine" "200" "$code"
+      fi
     fi
   fi
 fi
