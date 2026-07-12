@@ -4,11 +4,16 @@
     "sectionBadge": "Tarifs",
     "title": "Des tarifs simples, partout dans le monde",
     "sectionTitle": "Tarifs accessibles à l'international",
-    "subtitle": "Compte gratuit pour démarrer, puis forfaits Famille et Patrimoine pour aller plus loin. Paiement par carte sécurisé (Paystack).",
-    "sectionSubtitle": "Gratuit pour commencer, puis Famille et Patrimoine selon vos besoins. Paiement carte via Paystack.",
+    "subtitle": "Découverte gratuite (essai 30 jours), Famille 15 600 FCFA ($24)/an ou 1 625 FCFA ($2,50)/mois, Patrimoine 27 300 FCFA ($42)/an ou 2 925 FCFA ($4,50)/mois. Paiement carte sécurisé (Paystack).",
+    "sectionSubtitle": "Prix affichés en FCFA et USD. Découverte : gratuit, essai 30 jours. Famille : 15 600 FCFA ($24) par an ou 1 625 FCFA ($2,50) par mois. Patrimoine : 27 300 FCFA ($42) par an ou 2 925 FCFA ($4,50) par mois.",
+    "tariffSummaryTitle": "Récapitulatif des tarifs",
+    "tariffDiscovery": "Gratuit · Essai 30 jours",
+    "tariffFamily": "{{yearlyPrice}} par an ou {{monthlyPrice}} par mois",
+    "tariffPatrimony": "{{yearlyPrice}} par an ou {{monthlyPrice}} par mois",
+    "tariffPaymentNote": "Montants indicatifs en FCFA (taux 1 $ = 650 FCFA). Le paiement est effectué en USD via Paystack.",
     "promoCode": "Code promo",
-    "promoHint": "Codes par pays ou campagne — saisissez le vôtre si vous en avez un.",
-    "securePayment": "Paiement par carte bancaire — sécurisé",
+    "promoHint": "Codes par pays ou campagne : saisissez le vôtre si vous en avez un.",
+    "securePayment": "Paiement par carte bancaire sécurisé",
     "current": "Actuel",
     "currentPlan": "Forfait actuel",
     "redirecting": "Redirection…",
@@ -21,7 +26,7 @@
     "perYear": "Par an",
     "perMonth": "Par mois",
     "free": "Gratuit",
-    "freeForever": "Gratuit à vie"
+    "trialDays": "Essai 30 jours"
   },
   "callback": {
     "verifying": "Vérification du paiement…",
@@ -41,34 +46,39 @@
       "priceLabel": "Gratuit",
       "cta": "Commencer gratuitement",
       "features": [
-        "1 arbre (généalogie ou organisation)",
-        "Jusqu'à 60 fiches",
-        "15 photos & documents",
-        "Partage privé (2 collaborateurs)"
+        "1 arbre, jusqu'à 10 personnes",
+        "Pas de photos ni fiches (documents)",
+        "Partage privé (2 collaborateurs)",
+        "Pas de correspondances avec les arbres publics"
       ]
     },
     "FAMILY": {
       "name": "Famille",
-      "priceLabel": "$24 / an",
-      "cta": "Choisir Famille",
+      "priceLabel": "15 600 FCFA ($24) / an",
+      "priceLabelMonthly": "1 625 FCFA ($2,50) / mois",
+      "priceNote": "Annuel ou mensuel au choix",
+      "cta": "Choisir annuel",
+      "ctaMonthly": "Choisir mensuel",
       "features": [
-        "4 arbres, 350 fiches par arbre",
+        "3 arbres, 50 personnes max par arbre",
+        "100 fiches (documents) au total",
         "Organigrammes & lexique personnalisé",
-        "80 photos & documents inclus",
-        "Collaborateurs illimités",
+        "10 collaborateurs par arbre",
         "Export GEDCOM & PDF"
       ]
     },
     "PATRIMONY": {
       "name": "Patrimoine",
-      "priceLabel": "$42 / an",
-      "priceLabelMonthly": "$4,50 / mois",
+      "priceLabel": "27 300 FCFA ($42) / an",
+      "priceLabelMonthly": "2 925 FCFA ($4,50) / mois",
+      "priceNote": "Annuel ou mensuel au choix",
       "cta": "Choisir annuel",
       "ctaMonthly": "Choisir mensuel",
       "features": [
-        "Personnes et arbres illimités",
+        "5 arbres, 200 personnes max par arbre",
+        "30 collaborateurs par arbre",
         "Grands organigrammes & arrière-plans",
-        "Photos & documents illimités",
+        "Photos & fiches (documents) illimités",
         "Export & import GEDCOM, PDF",
         "Historique des modifications",
         "Support prioritaire"

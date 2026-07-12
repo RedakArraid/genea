@@ -44,10 +44,13 @@ export interface TreeAccess {
   canRead: boolean
   canWrite: boolean
   canEditPerson?: boolean
+  canManageCollaborators?: boolean
   canExport?: boolean
+  canImport?: boolean
   canVersioning?: boolean
-  role: "owner" | "editor" | "viewer" | "demo" | "none" | string
+  role: "owner" | "editor" | "viewer" | "demo" | "admin" | "none" | string
   isDemo: boolean
+  planExpired?: boolean
 }
 
 export interface TreeCollaborator {
@@ -55,6 +58,7 @@ export interface TreeCollaborator {
   treeId: string
   userId: string
   role: CollaboratorRole
+  canManageCollaborators?: boolean
   User: { id: string; phone: string; email?: string | null; name?: string | null }
 }
 
@@ -62,6 +66,7 @@ export interface TreeInvite {
   id: string
   email: string
   role: CollaboratorRole
+  canManageCollaborators?: boolean
   status: string
   token: string
 }

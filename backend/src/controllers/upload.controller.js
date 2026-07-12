@@ -5,7 +5,7 @@
 const prisma = require('../lib/prisma');
 const storage = require('../lib/storage');
 const { resolveTreeAccess } = require('../lib/treeAccess');
-const { assertMediaAssetLimit } = require('../lib/planAccess');
+const { assertPhotoLimit } = require('../lib/planAccess');
 const { storageConfig } = require('../config/storage.config');
 
 exports.canReadUploadedFile = async (req, res, next) => {
@@ -71,7 +71,7 @@ exports.uploadPhoto = async (req, res, next) => {
       }
     }
 
-    await assertMediaAssetLimit(tree.ownerId, { replacingExistingPhoto });
+    await assertPhotoLimit(tree.ownerId, { replacingExistingPhoto });
 
     const key = storage.buildPhotoKey(treeId, personId, req.file.originalname);
     const { url, key: objectKey } = await storage.uploadBuffer(key, req.file.buffer, req.file.mimetype);
@@ -115,8 +115,7 @@ exports.uploadTreeBackground = async (req, res, next) => {
       return res.status(403).json({ message: 'Arrière-plan réservé aux arbres organisation' });
     }
 
-    const replacingExisting = Boolean(tree.backgroundImageUrl);
-    await assertMediaAssetLimit(tree.ownerId, { replacingExistingPhoto: replacingExisting });
+    // Arrière-plans d'organigramme : hors quota photos/fiches
 
     const key = storage.buildBackgroundKey(treeId, req.file.originalname);
     const { url, key: objectKey } = await storage.uploadBuffer(key, req.file.buffer, req.file.mimetype);

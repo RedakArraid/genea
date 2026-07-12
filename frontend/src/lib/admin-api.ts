@@ -127,6 +127,57 @@ export async function deleteAdminTree(id: string): Promise<void> {
   await api.delete(`/admin/trees/${id}`)
 }
 
+export interface AdminTreeCollaborator {
+  id: string
+  userId: string
+  role: "VIEWER" | "EDITOR"
+  canManageCollaborators?: boolean
+  User: { id: string; email: string; name?: string | null }
+}
+
+export interface AdminTreeInvite {
+  id: string
+  email: string
+  role: "VIEWER" | "EDITOR"
+  canManageCollaborators?: boolean
+  status: string
+}
+
+export async function fetchAdminTreeCollaborators(treeId: string) {
+  const { data } = await api.get<{
+    collaborators: AdminTreeCollaborator[]
+    invites: AdminTreeInvite[]
+  }>(`/admin/trees/${treeId}/collaborators`)
+  return data
+}
+
+export async function inviteAdminTreeCollaborator(
+  treeId: string,
+  payload: { email: string; role: "VIEWER" | "EDITOR"; canManageCollaborators?: boolean },
+) {
+  const { data } = await api.post(`/admin/trees/${treeId}/collaborators`, payload)
+  return data
+}
+
+export async function updateAdminTreeCollaborator(
+  treeId: string,
+  userId: string,
+  payload: { role?: "VIEWER" | "EDITOR"; canManageCollaborators?: boolean },
+) {
+  const { data } = await api.patch(`/admin/trees/${treeId}/collaborators/${userId}`, payload)
+  return data
+}
+
+export async function removeAdminTreeCollaborator(treeId: string, userId: string) {
+  const { data } = await api.delete(`/admin/trees/${treeId}/collaborators/${userId}`)
+  return data
+}
+
+export async function revokeAdminTreeInvite(treeId: string, inviteId: string) {
+  const { data } = await api.delete(`/admin/trees/${treeId}/invites/${inviteId}`)
+  return data
+}
+
 export async function fetchDemoInfo(): Promise<{ tree: AdminTree | null }> {
   const { data } = await api.get("/admin/demo")
   return data

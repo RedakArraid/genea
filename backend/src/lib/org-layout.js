@@ -1,5 +1,5 @@
 /**
- * Moteur de layout organigramme (CJS) — miroir de shared/org-layout.js pour Node/Docker.
+ * Moteur de layout organigramme (CJS) - miroir de shared/org-layout.js pour Node/Docker.
  */
 
 const ORG_CARD_W = 140;

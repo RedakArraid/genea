@@ -6,7 +6,7 @@ API="${API_URL:-http://localhost:3002/api}"
 PHONE="${TEST_PHONE:-0700000001}"
 PASSWORD="${TEST_PASSWORD:-password123}"
 
-echo "=== geneamap — Test stockage MinIO ==="
+echo "=== geneamap, Test stockage MinIO ==="
 echo "API: $API"
 echo
 
@@ -15,21 +15,21 @@ ready=$(echo "$status_json" | python3 -c "import sys,json; print(json.load(sys.s
 enabled=$(echo "$status_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('enabled', False))")
 
 if [ "$enabled" != "True" ]; then
-  echo "✗ Stockage désactivé — vérifiez S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY"
+  echo "✗ Stockage désactivé, vérifiez S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY"
   exit 1
 fi
 if [ "$ready" != "True" ]; then
-  echo "✗ MinIO non prêt — vérifiez que le conteneur minio est healthy"
+  echo "✗ MinIO non prêt, vérifiez que le conteneur minio est healthy"
   exit 1
 fi
-echo "✓ /uploads/status — enabled=true, ready=true"
+echo "✓ /uploads/status, enabled=true, ready=true"
 
 login_json=$(curl -sf -X POST "$API/auth/login" \
   -H "Content-Type: application/json" \
   -d "{\"phone\":\"$PHONE\",\"password\":\"$PASSWORD\"}")
 TOKEN=$(echo "$login_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))")
 if [ -z "$TOKEN" ]; then
-  echo "✗ Connexion échouée — vérifiez TEST_PHONE / TEST_PASSWORD ou lancez le seed"
+  echo "✗ Connexion échouée, vérifiez TEST_PHONE / TEST_PASSWORD ou lancez le seed"
   exit 1
 fi
 echo "✓ Connexion OK"
@@ -58,13 +58,13 @@ if [ -z "$PHOTO_URL" ]; then
   echo "$upload_json"
   exit 1
 fi
-echo "✓ Upload photo — $PHOTO_URL"
+echo "✓ Upload photo, $PHOTO_URL"
 
 http_code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$PHOTO_URL")
 if [ "$http_code" != "200" ]; then
-  echo "✗ Lecture fichier via proxy — HTTP $http_code"
+  echo "✗ Lecture fichier via proxy, HTTP $http_code"
   exit 1
 fi
-echo "✓ Lecture fichier via proxy — HTTP 200"
+echo "✓ Lecture fichier via proxy, HTTP 200"
 echo
 echo "Stockage MinIO opérationnel."

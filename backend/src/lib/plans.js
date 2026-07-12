@@ -1,9 +1,9 @@
 /**
- * Forfaits geneamap — tarification internationale (USD)
+ * Forfaits geneamap - tarification internationale (USD)
  *
  * Découverte : gratuit à l'inscription
- * Famille : $24/an — généalogie & petits organigrammes
- * Patrimoine : $42/an ou $4,50/mois — illimité + versioning
+ * Famille : 15 600 FCFA/an ($24) ou 1 625 FCFA/mois
+ * Patrimoine : $42/an ou $4,50/mois - 5 arbres, 200 personnes/arbre + versioning
  */
 
 const CURRENCY = 'USD';
@@ -13,9 +13,19 @@ const FX_USD_XOF = Number(process.env.FX_USD_XOF) || 650;
 const PRICE_XOF = {
   SOLO: 0,
   FAMILY: 15600,
+  FAMILY_MONTHLY: 1625,
   PATRIMONY: 27300,
   PATRIMONY_MONTHLY: 2925,
 };
+
+const MONTHLY_BILLING_PLANS = ['FAMILY', 'PATRIMONY'];
+
+/** Essai gratuit Découverte (jours) */
+const SOLO_TRIAL_DAYS = 30;
+
+function normalizeBillingInterval(planId, billingInterval = 'yearly') {
+  return billingInterval;
+}
 
 const PLANS = {
   SOLO: {
@@ -25,18 +35,21 @@ const PLANS = {
     priceUsd: 0,
     priceLabel: 'Gratuit',
     durationDays: null,
+    trialDays: SOLO_TRIAL_DAYS,
     maxTrees: 1,
-    maxPersonsPerTree: 60,
+    maxPersonsPerTree: 10,
     maxCollaborators: 2,
-    maxMediaAssets: 15,
+    maxFichesTotal: 0,
+    maxPhotosTotal: 0,
     canPublicMatching: false,
     canExport: false,
+    canImport: false,
     canVersioning: false,
     features: [
-      '1 arbre (généalogie ou organisation)',
-      'Jusqu\'à 60 fiches',
-      '15 photos & documents',
+      '1 arbre, jusqu\'à 10 personnes',
+      'Pas de photos ni fiches (documents)',
       'Partage privé (2 collaborateurs)',
+      'Pas de correspondances avec les arbres publics',
     ],
   },
   FAMILY: {
@@ -44,20 +57,25 @@ const PLANS = {
     name: 'Famille',
     billingPeriod: 'yearly',
     priceUsd: 24,
-    priceLabel: '$24 / year',
+    priceMonthlyUsd: 2.5,
+    priceLabel: '15 600 FCFA ($24) / an',
+    priceLabelMonthly: '1 625 FCFA ($2,50) / mois',
     durationDays: 365,
-    maxTrees: 4,
-    maxPersonsPerTree: 350,
-    maxCollaborators: Infinity,
-    maxMediaAssets: 80,
-    canPublicMatching: true,
+    durationDaysMonthly: 30,
+    maxTrees: 3,
+    maxPersonsPerTree: 50,
+    maxFichesTotal: 100,
+    maxPhotosTotal: Infinity,
+    maxCollaborators: 10,
+    canPublicMatching: false,
     canExport: true,
+    canImport: false,
     canVersioning: false,
     features: [
-      '4 arbres, 350 fiches par arbre',
+      '3 arbres, 50 personnes max par arbre',
+      '100 fiches (documents) au total',
       'Organigrammes & lexique personnalisé',
-      '80 photos & documents inclus',
-      'Collaborateurs illimités',
+      '10 collaborateurs par arbre',
       'Export GEDCOM & PDF',
     ],
   },
@@ -67,21 +85,24 @@ const PLANS = {
     billingPeriod: 'yearly',
     priceUsd: 42,
     priceMonthlyUsd: 4.5,
-    priceLabel: '$42 / year',
-    priceLabelMonthly: '$4.50 / month',
+    priceLabel: '27 300 FCFA ($42) / an',
+    priceLabelMonthly: '2 925 FCFA ($4,50) / mois',
     durationDays: 365,
     durationDaysMonthly: 30,
-    maxTrees: Infinity,
-    maxPersonsPerTree: Infinity,
-    maxCollaborators: Infinity,
-    maxMediaAssets: Infinity,
+    maxTrees: 5,
+    maxPersonsPerTree: 200,
+    maxCollaborators: 30,
+    maxFichesTotal: Infinity,
+    maxPhotosTotal: Infinity,
     canPublicMatching: true,
     canExport: true,
+    canImport: true,
     canVersioning: true,
     features: [
-      'Personnes et arbres illimités',
+      '5 arbres, 200 personnes max par arbre',
+      '30 collaborateurs par arbre',
       'Grands organigrammes & arrière-plans',
-      'Photos & documents illimités',
+      'Photos & fiches (documents) illimités',
       'Export & import GEDCOM, PDF',
       'Historique des modifications',
       'Support prioritaire',
@@ -94,8 +115,9 @@ function getPlanLimits(plan) {
 }
 
 function getPlanPrice(planId, billingInterval = 'yearly') {
+  const interval = normalizeBillingInterval(planId, billingInterval);
   const plan = PLANS[planId] || PLANS.SOLO;
-  if (planId === 'PATRIMONY' && billingInterval === 'monthly' && plan.priceMonthlyUsd != null) {
+  if (MONTHLY_BILLING_PLANS.includes(planId) && interval === 'monthly' && plan.priceMonthlyUsd != null) {
     return plan.priceMonthlyUsd;
   }
   return plan.priceUsd;
@@ -103,10 +125,14 @@ function getPlanPrice(planId, billingInterval = 'yearly') {
 
 /** Prix FCFA affichage (forfait + intervalle) */
 function getPlanPriceXof(planId, billingInterval = 'yearly') {
-  if (planId === 'PATRIMONY' && billingInterval === 'monthly') {
+  const interval = normalizeBillingInterval(planId, billingInterval);
+  if (planId === 'FAMILY' && interval === 'monthly') {
+    return PRICE_XOF.FAMILY_MONTHLY;
+  }
+  if (planId === 'PATRIMONY' && interval === 'monthly') {
     return PRICE_XOF.PATRIMONY_MONTHLY;
   }
-  return PRICE_XOF[planId] ?? Math.round(getPlanPrice(planId, billingInterval) * FX_USD_XOF);
+  return PRICE_XOF[planId] ?? Math.round(getPlanPrice(planId, interval) * FX_USD_XOF);
 }
 
 function getPlanDisplayAmounts(planId, billingInterval = 'yearly') {
@@ -119,8 +145,9 @@ function getPlanDisplayAmounts(planId, billingInterval = 'yearly') {
 }
 
 function getPlanDurationDays(planId, billingInterval = 'yearly') {
+  const interval = normalizeBillingInterval(planId, billingInterval);
   const plan = PLANS[planId] || PLANS.SOLO;
-  if (planId === 'PATRIMONY' && billingInterval === 'monthly') {
+  if (MONTHLY_BILLING_PLANS.includes(planId) && interval === 'monthly') {
     return plan.durationDaysMonthly ?? 30;
   }
   return plan.durationDays ?? null;
@@ -171,6 +198,9 @@ module.exports = {
   FX_USD_XOF,
   PRICE_XOF,
   getPlanDurationDays,
+  normalizeBillingInterval,
+  MONTHLY_BILLING_PLANS,
+  SOLO_TRIAL_DAYS,
   isFreePlan,
   isPaidPlan,
   computeDiscountedAmount,

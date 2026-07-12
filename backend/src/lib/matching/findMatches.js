@@ -56,12 +56,12 @@ async function findTreeMatches(treeId) {
     if (confidence < MIN_TREE_CONFIDENCE) continue;
 
     const best = pairs.sort((a, b) => b.score - a.score)[0];
-    const region = best.remote.birthPlace?.split(',')[0]?.trim() || '—';
+    const region = best.remote.birthPlace?.split(',')[0]?.trim() || '-';
 
     matches.push({
       treeId: remote.id,
       treeName: remote.name,
-      ownerName: remote.User?.name || '—',
+      ownerName: remote.User?.name || '-',
       region,
       sharedCount: pairs.length,
       confidence,

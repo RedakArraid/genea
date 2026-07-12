@@ -97,11 +97,11 @@ function MiniPersonCard({
     >
       <div className={cn("flex h-10 items-center justify-center text-xs font-bold", tone.bg, tone.fg)}>
         {(person.given[0] || "?").toUpperCase()}
-        {(person.sur && person.sur !== "—" ? person.sur[0] : "").toUpperCase()}
+        {(person.sur && person.sur !== "-" ? person.sur[0] : "").toUpperCase()}
       </div>
       <div className="px-2 py-1.5">
         <p className="truncate text-[11px] font-semibold leading-tight">
-          {person.given} {person.sur !== "—" ? person.sur : ""}
+          {person.given} {person.sur !== "-" ? person.sur : ""}
         </p>
         <p className="text-[10px] text-muted-foreground">{lifespan}</p>
       </div>

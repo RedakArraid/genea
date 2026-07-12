@@ -1,5 +1,5 @@
 /**
- * Contrôleur admin — back-office plateforme
+ * Contrôleur admin - back-office plateforme
  */
 
 const prisma = require('../lib/prisma');
@@ -18,6 +18,8 @@ const userPublicSelect = {
   email: true,
   name: true,
   plan: true,
+  planActive: true,
+  planExpiresAt: true,
   role: true,
   createdAt: true,
   updatedAt: true,
@@ -151,7 +153,7 @@ exports.getUser = async (req, res, next) => {
 exports.updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, plan, role } = req.body;
+    const { name, plan, role, planActive, planExpiresAt } = req.body;
 
     if (id === req.user.id && role === 'USER') {
       return res.status(400).json({ message: 'Vous ne pouvez pas retirer votre propre rôle admin' });
@@ -170,6 +172,10 @@ exports.updateUser = async (req, res, next) => {
         return res.status(400).json({ message: 'Rôle invalide' });
       }
       data.role = role;
+    }
+    if (planActive !== undefined) data.planActive = !!planActive;
+    if (planExpiresAt !== undefined) {
+      data.planExpiresAt = planExpiresAt ? new Date(planExpiresAt) : null;
     }
 
     const user = await prisma.user.update({
@@ -453,7 +459,7 @@ exports.testSmtpSettings = async (req, res, next) => {
     await verifySmtpConnection();
     await sendMail({
       to,
-      subject: 'geneamap — test SMTP',
+      subject: 'geneamap, test SMTP',
       text: 'Cet email confirme que la configuration SMTP geneamap fonctionne correctement.',
       html: '<p>Cet email confirme que la configuration SMTP <strong>geneamap</strong> fonctionne correctement.</p>',
     });

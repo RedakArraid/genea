@@ -41,7 +41,7 @@
     "typeGenealogy": "Family",
     "typeGenealogyHint": "Family lineage, ancestors, GEDCOM",
     "typeOrganization": "Organization",
-    "typeOrganizationHint": "Org chart — customizable levels and subordination",
+    "typeOrganizationHint": "Org chart, customizable levels and subordination",
     "orgPresetLabel": "Terminology template",
     "orgPresets": {
       "enterprise": "Enterprise",
@@ -59,7 +59,12 @@
   },
   "activatePlan": {
     "title": "Activate your plan to create a tree",
-    "subtitle": "Create a free account (60 profiles) or upgrade to Family / Heritage for export and more capacity.",
+    "subtitle": "Create a free account (10 people) or upgrade to Family / Heritage for export and more capacity.",
+    "seePricing": "See pricing"
+  },
+  "trialExpired": {
+    "title": "Trial period ended",
+    "subtitle": "Your 30-day trial has expired. View your trees in read-only mode or upgrade to keep editing.",
     "seePricing": "See pricing"
   },
   "sidebar": {

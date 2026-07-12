@@ -7,7 +7,7 @@ function storeError(error: unknown, fallbackKey: string) {
   return translateApiError(getApiErrorPayload(error), fallbackKey)
 }
 
-/** L'API renvoie souvent l'arbre sans Person/Relationship — on fusionne pour ne pas vider le canvas. */
+/** L'API renvoie souvent l'arbre sans Person/Relationship - on fusionne pour ne pas vider le canvas. */
 function mergeTreePatch(existing: FamilyTree | null, patch: FamilyTree): FamilyTree {
   if (!existing || existing.id !== patch.id) return patch
   return { ...existing, ...patch }
@@ -26,7 +26,8 @@ interface FamilyTreeState {
   inviteCollaborator: (
     treeId: string,
     email: string,
-    role: "VIEWER" | "EDITOR"
+    role: "VIEWER" | "EDITOR",
+    canManageCollaborators?: boolean
   ) => Promise<{
     success: boolean
     message?: string
@@ -37,6 +38,11 @@ interface FamilyTreeState {
   revokeInvite: (treeId: string, inviteId: string) => Promise<{ success: boolean; message?: string }>
   acceptInvite: (token: string) => Promise<{ success: boolean; message?: string; treeId?: string }>
   removeCollaborator: (treeId: string, userId: string) => Promise<{ success: boolean; message?: string }>
+  updateCollaborator: (
+    treeId: string,
+    userId: string,
+    data: { role?: "VIEWER" | "EDITOR"; canManageCollaborators?: boolean }
+  ) => Promise<{ success: boolean; message?: string }>
   updateVisibility: (treeId: string, visibility: TreeVisibility) => Promise<{ success: boolean; message?: string }>
   createTree: (data: {
     name: string
@@ -321,9 +327,13 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
     }
   },
 
-  inviteCollaborator: async (treeId, email, role) => {
+  inviteCollaborator: async (treeId, email, role, canManageCollaborators = false) => {
     try {
-      const { data } = await api.post(`/family-trees/${treeId}/collaborators`, { email, role })
+      const { data } = await api.post(`/family-trees/${treeId}/collaborators`, {
+        email,
+        role,
+        canManageCollaborators,
+      })
       return {
         success: true,
         message: data.message,
@@ -362,6 +372,16 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
     try {
       await api.delete(`/family-trees/${treeId}/collaborators/${userId}`)
       return { success: true }
+    } catch (error: unknown) {
+      const message = storeError(error, "errors:GENERIC")
+      return { success: false, message }
+    }
+  },
+
+  updateCollaborator: async (treeId, userId, payload) => {
+    try {
+      const { data } = await api.patch(`/family-trees/${treeId}/collaborators/${userId}`, payload)
+      return { success: true, message: data.message }
     } catch (error: unknown) {
       const message = storeError(error, "errors:GENERIC")
       return { success: false, message }

@@ -75,7 +75,7 @@ export default function TimelinePage() {
               <CardContent className="flex items-center gap-4 p-4">
                 <div className="text-lg font-bold text-primary">{p.born}</div>
                 <div>
-                  <p className="font-medium">{p.given} {p.sur !== "—" ? p.sur : ""}</p>
+                  <p className="font-medium">{p.given} {p.sur !== "-" ? p.sur : ""}</p>
                   <p className="text-sm text-muted-foreground">
                     {formatGenerationBadge(p.generation, { isOrg, maxGeneration, lexicon: orgLexicon })}
                     {p.died ? ` · ${p.born}–${p.died}` : ""}

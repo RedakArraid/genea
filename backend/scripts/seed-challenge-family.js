@@ -25,14 +25,14 @@ async function main() {
 
   const result = await createChallengeFamilyTree(owner.id, { replace });
 
-  console.log('Challenge Family — arbre créé');
+  console.log('Challenge Family, arbre créé');
   console.log(`  Propriétaire : ${owner.name} (${owner.phone})`);
   console.log(`  Arbre        : ${TREE_NAME}`);
   console.log(`  ID           : ${result.tree.id}`);
   console.log(`  Membres      : ${result.personCount}`);
   console.log(`  Promos       : ${result.promos?.length ?? 5}`);
   if (result.skipped) {
-    console.log('  (arbre existant — utilisez --replace pour recréer)');
+    console.log('  (arbre existant, utilisez --replace pour recréer)');
   }
   console.log(`\nOuvrir : /family-tree/${result.tree.id}`);
 }

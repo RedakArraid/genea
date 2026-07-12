@@ -15,7 +15,7 @@ async function main() {
   });
 
   if (result.count === 0) {
-    console.log(`ADMIN_EMAIL=${email} — aucun compte trouvé, promotion ignorée`);
+    console.log(`ADMIN_EMAIL=${email}, aucun compte trouvé, promotion ignorée`);
   } else {
     console.log(`Compte ${email} promu ADMIN (${result.count})`);
   }

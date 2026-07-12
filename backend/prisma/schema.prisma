@@ -242,28 +242,30 @@ model PromoCode {
 }
 
 model TreeCollaborator {
-  id         String           @id @default(uuid())
-  treeId     String
-  userId     String
-  role       CollaboratorRole @default(VIEWER)
-  createdAt  DateTime         @default(now())
-  FamilyTree FamilyTree       @relation(fields: [treeId], references: [id], onDelete: Cascade)
-  User       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                      String           @id @default(uuid())
+  treeId                  String
+  userId                  String
+  role                    CollaboratorRole @default(VIEWER)
+  canManageCollaborators  Boolean          @default(false)
+  createdAt               DateTime         @default(now())
+  FamilyTree              FamilyTree       @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  User                    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([treeId, userId])
 }
 
 model TreeInvite {
-  id          String           @id @default(uuid())
-  treeId      String
-  email       String
-  role        CollaboratorRole @default(VIEWER)
-  token       String           @unique @default(uuid())
-  status      String           @default("pending")
-  invitedById String
-  createdAt   DateTime         @default(now())
-  FamilyTree  FamilyTree       @relation(fields: [treeId], references: [id], onDelete: Cascade)
-  InvitedBy   User             @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  id                      String           @id @default(uuid())
+  treeId                  String
+  email                   String
+  role                    CollaboratorRole @default(VIEWER)
+  canManageCollaborators  Boolean          @default(false)
+  token                   String           @unique @default(uuid())
+  status                  String           @default("pending")
+  invitedById             String
+  createdAt               DateTime         @default(now())
+  FamilyTree              FamilyTree       @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  InvitedBy               User             @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
 
   @@index([email])
 }

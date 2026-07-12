@@ -236,7 +236,7 @@ jobs:
           cd ${{ secrets.STAGING_PATH }}
 
           if [ ! -f .env ]; then
-            echo "ERREUR: .env manquant dans ${{ secrets.STAGING_PATH }} — créer le fichier (voir .env.production.example, variables STAGING_* + R2_*)"
+            echo "ERREUR: .env manquant dans ${{ secrets.STAGING_PATH }}, créer le fichier (voir .env.production.example, variables STAGING_* + R2_*)"
             exit 1
           fi
 
@@ -263,7 +263,7 @@ jobs:
             && echo "Backend: OK" || { echo "Backend: FAILED"; exit 1; }
 
           docker image prune -f || true
-          echo "Déploiement staging terminé — https://staging.geneamap.com"
+          echo "Déploiement staging terminé, https://staging.geneamap.com"
         DEPLOY
 
     - name: Health check via Traefik
@@ -304,7 +304,7 @@ jobs:
           TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
 
           if [ ! -f .env ]; then
-            echo "ERREUR: .env manquant dans ${{ secrets.PROD_PATH }} — créer le fichier (voir .env.production.example)"
+            echo "ERREUR: .env manquant dans ${{ secrets.PROD_PATH }}, créer le fichier (voir .env.production.example)"
             exit 1
           fi
 
@@ -338,7 +338,7 @@ jobs:
             && echo "Backend: OK" || { echo "Backend: FAILED"; exit 1; }
 
           docker image prune -f || true
-          echo "Déploiement production terminé — https://geneamap.com"
+          echo "Déploiement production terminé, https://geneamap.com"
           echo "Backup: backups/backup_${TIMESTAMP}.sql"
         DEPLOY
 

@@ -16,7 +16,7 @@ const TONE_STYLES: Record<PersonTone, { bg: string; fg: string; ring: string }> 
 
 function getInitials(given: string, sur: string) {
   const g = (given || "?")[0]?.toUpperCase() || "?"
-  const s = sur && sur !== "—" ? sur[0]?.toUpperCase() : ""
+  const s = sur && sur !== "-" ? sur[0]?.toUpperCase() : ""
   return g + s
 }
 
@@ -73,7 +73,7 @@ export function PersonCard({
   const initials = getInitials(person.given, person.sur)
   const lifespan = getLifespan(person.born, person.died)
   const role = person.occupation?.trim() || ""
-  const fullName = `${person.given}${person.sur && person.sur !== "—" ? ` ${person.sur}` : ""}`
+  const fullName = `${person.given}${person.sur && person.sur !== "-" ? ` ${person.sur}` : ""}`
   const [photoFailed, setPhotoFailed] = useState(false)
   const showPhoto = !hidePhotos && person.photoUrl && !photoFailed
 
@@ -216,7 +216,7 @@ export function PersonCard({
               {role}
             </p>
           ) : (
-            <p className="text-[10px] text-muted-foreground">—</p>
+            <p className="text-[10px] text-muted-foreground">-</p>
           )
         ) : (
           <>

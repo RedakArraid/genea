@@ -2,7 +2,7 @@
   "hero": {
     "badge": "Modern genealogy",
     "title": "Your family story, alive and shareable",
-    "subtitle": "Build interactive trees, enrich every member and invite your family — all on a canvas designed for genealogy.",
+    "subtitle": "Build interactive trees, enrich every member and invite your family, all on a canvas designed for genealogy.",
     "ctaAuth": "My trees",
     "ctaGuest": "Create a free account",
     "ctaDemo": "View the demo",
@@ -29,7 +29,7 @@
     },
     "share": {
       "title": "Secure sharing",
-      "description": "Invite relatives as viewers or co-editors — no account required to explore the demo."
+      "description": "Invite relatives as viewers or co-editors, no account required to explore the demo."
     },
     "privacy": {
       "title": "Protected data",
@@ -45,7 +45,7 @@
       },
       "2": {
         "title": "Enrich profiles",
-        "description": "Dates, places, photos and relationships — everything in one canvas."
+        "description": "Dates, places, photos and relationships, everything in one canvas."
       },
       "3": {
         "title": "Share with family",

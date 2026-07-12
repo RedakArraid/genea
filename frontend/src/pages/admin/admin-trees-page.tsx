@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { ExternalLink, Trash2 } from "lucide-react"
+import { ExternalLink, Trash2, Users } from "lucide-react"
 import { formatMediumDate } from "@/lib/format"
 import { toast } from "sonner"
 import { fetchAdminTrees, deleteAdminTree, type AdminTree } from "@/lib/admin-api"
+import { AdminTreeCollaboratorsDialog } from "@/components/admin/admin-tree-collaborators-dialog"
 import { AdminDataTable } from "@/components/admin/admin-data-table"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -25,6 +26,7 @@ export default function AdminTreesPage() {
   const [visibilityFilter, setVisibilityFilter] = useState("all")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [collabTree, setCollabTree] = useState<AdminTree | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -127,6 +129,15 @@ export default function AdminTreesPage() {
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">{formatMediumDate(tree.updatedAt)}</TableCell>
                   <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={tree.isDemo}
+                      title={t("trees.collaborators.manage")}
+                      onClick={() => setCollabTree(tree)}
+                    >
+                      <Users className="size-4" />
+                    </Button>
                     <Link
                       to={tree.isDemo ? "/demo" : `/tree/${tree.id}`}
                       target="_blank"
@@ -150,6 +161,13 @@ export default function AdminTreesPage() {
         </div>
         </div>
       </AdminDataTable>
+
+      <AdminTreeCollaboratorsDialog
+        open={!!collabTree}
+        treeId={collabTree?.id ?? null}
+        treeName={collabTree?.name}
+        onClose={() => setCollabTree(null)}
+      />
     </div>
   )
 }

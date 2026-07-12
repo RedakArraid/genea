@@ -75,7 +75,7 @@ services:
       retries: 3
     restart: unless-stopped
 
-  # MinIO — stockage objet (photos, fichiers)
+  # MinIO, stockage objet (photos, fichiers)
   minio:
     image: minio/minio:latest
     container_name: geneamap-minio-local-v2
@@ -95,7 +95,7 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # Mailpit — SMTP de dev (capture les emails OTP)
+  # Mailpit, SMTP de dev (capture les emails OTP)
   mailpit:
     image: axllent/mailpit:latest
     container_name: geneamap-mailpit-local

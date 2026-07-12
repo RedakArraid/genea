@@ -44,7 +44,7 @@ export function PersonHistory({ personId, refreshKey = 0, onRestored }: PersonHi
     <ul className="space-y-2">
       {revisions.map((rev) => {
         const snap = rev.snapshot as { firstName?: string; lastName?: string }
-        const label = [snap.firstName, snap.lastName].filter(Boolean).join(" ") || "—"
+        const label = [snap.firstName, snap.lastName].filter(Boolean).join(" ") || "-"
         return (
           <li key={rev.id} className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
             <div>

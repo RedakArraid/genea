@@ -14,7 +14,7 @@ test.describe("Fonctionnalités Patrimoine & landing", () => {
     page.on("dialog", (d) => d.dismiss())
   })
 
-  test("landing — tarifs affichés en FCFA et USD", async ({ page }) => {
+  test("landing, tarifs affichés en FCFA et USD", async ({ page }) => {
     await page.goto("/")
     await page.locator("#prix").scrollIntoViewIfNeeded()
     await expect(page.locator("#prix")).toBeVisible({ timeout: 15_000 })
@@ -28,7 +28,7 @@ test.describe("Fonctionnalités Patrimoine & landing", () => {
       await loginWithPassword(page, PATRIMONY_USER)
     })
 
-    test("page correspondances — opt-in et liste", async ({ page }) => {
+    test("page correspondances, opt-in et liste", async ({ page }) => {
       const treeId = await getPatrimonyTreeId(page)
       await page.goto(`/family-tree/${treeId}/matches`)
       await expect(page.getByRole("heading", { name: "Correspondances familiales" })).toBeVisible({
@@ -54,7 +54,7 @@ test.describe("Fonctionnalités Patrimoine & landing", () => {
       await expect(page.getByText(/Import GEDCOM réussi/i)).toBeVisible({ timeout: 15_000 })
     })
 
-    test("historique personne — révision après modification", async ({ page }) => {
+    test("historique personne, révision après modification", async ({ page }) => {
       const treeId = await getPatrimonyTreeId(page)
       await page.goto(`/family-tree/${treeId}`)
       await expect(page.locator(".tree-person-card").first()).toBeVisible({ timeout: 20_000 })

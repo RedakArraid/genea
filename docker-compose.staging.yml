@@ -1,6 +1,6 @@
-# Staging — VPS Contabo (Traefik + Let's Encrypt)
+# Staging, VPS Contabo (Traefik + Let's Encrypt)
 # Domaines : staging.geneamap.com (frontend) / api-staging.geneamap.com (backend)
-# Stockage : Cloudflare R2 (bucket geneamap-staging) — voir docs/CLOUDFLARE_R2.md
+# Stockage : Cloudflare R2 (bucket geneamap-staging), voir docs/CLOUDFLARE_R2.md
 # Déployé dans /root/geneamap-staging/ avec un fichier .env
 
 services:

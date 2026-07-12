@@ -22,10 +22,10 @@ import {
 } from "@/components/ui/dialog"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
 import {
   Select,
   SelectContent,
@@ -332,7 +332,8 @@ interface ShareDialogProps {
   onClose: () => void
   treeId: string
   visibility: TreeVisibility
-  canManage: boolean
+  canManageCollaborators: boolean
+  canManageVisibility: boolean
 }
 
 const VISIBILITY_KEYS: Record<TreeVisibility, { label: string; hint: string }> = {
@@ -341,31 +342,50 @@ const VISIBILITY_KEYS: Record<TreeVisibility, { label: string; hint: string }> =
   PUBLIC: { label: "share.visibilityPublic", hint: "share.hintPublic" },
 }
 
-export function ShareDialog({ open, onClose, treeId, visibility, canManage }: ShareDialogProps) {
+export function ShareDialog({
+  open,
+  onClose,
+  treeId,
+  visibility,
+  canManageCollaborators,
+  canManageVisibility,
+}: ShareDialogProps) {
   const { t } = useTranslation("tree")
-  const { fetchCollaborators, inviteCollaborator, removeCollaborator, revokeInvite, updateVisibility } = useFamilyTreeStore()
+  const {
+    fetchCollaborators,
+    inviteCollaborator,
+    removeCollaborator,
+    revokeInvite,
+    updateCollaborator,
+    updateVisibility,
+  } = useFamilyTreeStore()
   const [currentVisibility, setCurrentVisibility] = useState<TreeVisibility>(visibility)
   const [collaborators, setCollaborators] = useState<TreeCollaborator[]>([])
   const [invites, setInvites] = useState<TreeInvite[]>([])
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<"VIEWER" | "EDITOR">("VIEWER")
+  const [inviteCanManage, setInviteCanManage] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  const canManageAnything = canManageCollaborators || canManageVisibility
   const url = `${window.location.origin}/tree/${treeId}`
+
+  const reloadCollaborators = async () => {
+    const data = await fetchCollaborators(treeId)
+    if (data) {
+      setCollaborators(data.collaborators)
+      setInvites(data.invites)
+    }
+  }
 
   useEffect(() => {
     setCurrentVisibility(visibility)
   }, [visibility])
 
   useEffect(() => {
-    if (!open || !canManage) return
-    fetchCollaborators(treeId).then((data) => {
-      if (data) {
-        setCollaborators(data.collaborators)
-        setInvites(data.invites)
-      }
-    })
-  }, [open, treeId, canManage, fetchCollaborators])
+    if (!open || !canManageCollaborators) return
+    reloadCollaborators()
+  }, [open, treeId, canManageCollaborators, fetchCollaborators])
 
   const handleVisibility = async (v: TreeVisibility) => {
     const result = await updateVisibility(treeId, v)
@@ -380,7 +400,7 @@ export function ShareDialog({ open, onClose, treeId, visibility, canManage }: Sh
   const handleInvite = async () => {
     if (!email.trim()) return
     setLoading(true)
-    const result = await inviteCollaborator(treeId, email.trim(), role)
+    const result = await inviteCollaborator(treeId, email.trim(), role, inviteCanManage)
     setLoading(false)
     if (result.success) {
       if (result.invite?.token) {
@@ -395,11 +415,8 @@ export function ShareDialog({ open, onClose, treeId, visibility, canManage }: Sh
         )
       }
       setEmail("")
-      const data = await fetchCollaborators(treeId)
-      if (data) {
-        setCollaborators(data.collaborators)
-        setInvites(data.invites)
-      }
+      setInviteCanManage(false)
+      await reloadCollaborators()
     } else {
       toast.error(result.message)
     }
@@ -431,6 +448,19 @@ export function ShareDialog({ open, onClose, treeId, visibility, canManage }: Sh
     }
   }
 
+  const handleUpdateCollaborator = async (
+    userId: string,
+    data: { role?: "VIEWER" | "EDITOR"; canManageCollaborators?: boolean },
+  ) => {
+    const result = await updateCollaborator(treeId, userId, data)
+    if (result.success) {
+      await reloadCollaborators()
+      toast.success(t("share.collaboratorUpdated"))
+    } else {
+      toast.error(result.message)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
@@ -438,111 +468,138 @@ export function ShareDialog({ open, onClose, treeId, visibility, canManage }: Sh
           <DialogTitle>{t("dialogs.shareTitle")}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-4">
-          {canManage ? (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <Label>{t("share.visibility")}</Label>
-                <Select value={currentVisibility} onValueChange={(v) => v && handleVisibility(v as TreeVisibility)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+          {canManageVisibility ? (
+            <div className="flex flex-col gap-1.5">
+              <Label>{t("share.visibility")}</Label>
+              <Select value={currentVisibility} onValueChange={(v) => v && handleVisibility(v as TreeVisibility)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(VISIBILITY_KEYS) as TreeVisibility[]).map((v) => (
+                    <SelectItem key={v} value={v}>{t(VISIBILITY_KEYS[v].label)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">{t(VISIBILITY_KEYS[currentVisibility].hint)}</p>
+            </div>
+          ) : null}
+
+          {canManageCollaborators && currentVisibility === "SHARED" && (
+            <div className="flex flex-col gap-3 rounded-lg border p-3">
+              <Label className="flex items-center gap-2">
+                <UserPlus className="size-4" />
+                {t("share.inviteCollaborator")}
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder={t("share.inviteEmailPlaceholder")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <Select value={role} onValueChange={(v) => v && setRole(v as "VIEWER" | "EDITOR")}>
+                  <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {(Object.keys(VISIBILITY_KEYS) as TreeVisibility[]).map((v) => (
-                      <SelectItem key={v} value={v}>{t(VISIBILITY_KEYS[v].label)}</SelectItem>
-                    ))}
+                    <SelectItem value="VIEWER">{t("share.roleViewer")}</SelectItem>
+                    <SelectItem value="EDITOR">{t("share.roleEditor")}</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">{t(VISIBILITY_KEYS[currentVisibility].hint)}</p>
               </div>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="invite-can-manage" className="text-sm font-normal">
+                  {t("share.canManageCollaborators")}
+                </Label>
+                <Switch
+                  id="invite-can-manage"
+                  checked={inviteCanManage}
+                  onCheckedChange={setInviteCanManage}
+                />
+              </div>
+              <Button size="sm" onClick={handleInvite} disabled={loading || !email.trim()}>
+                {loading ? t("share.sending") : t("share.createInvite")}
+              </Button>
+              <p className="text-xs text-muted-foreground">{t("share.inviteHint")}</p>
 
-              {currentVisibility === "SHARED" && (
-                <div className="flex flex-col gap-3 rounded-lg border p-3">
-                  <Label className="flex items-center gap-2">
-                    <UserPlus className="size-4" />
-                    {t("share.inviteCollaborator")}
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder={t("share.inviteEmailPlaceholder")}
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                    <Select value={role} onValueChange={(v) => v && setRole(v as "VIEWER" | "EDITOR")}>
-                      <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="VIEWER">{t("share.roleViewer")}</SelectItem>
-                        <SelectItem value="EDITOR">{t("share.roleEditor")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button size="sm" onClick={handleInvite} disabled={loading || !email.trim()}>
-                    {loading ? t("share.sending") : t("share.createInvite")}
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    {t("share.inviteHint")}
-                  </p>
-
-                  {collaborators.length > 0 && (
-                    <ul className="flex flex-col gap-1 text-sm">
-                      {collaborators.map((c) => (
-                        <li key={c.id} className="flex items-center justify-between rounded bg-muted/50 px-2 py-1">
-                          <span>{c.User.email} · {c.role === "EDITOR" ? t("share.editor") : t("share.viewer")}</span>
-                          <Button variant="ghost" size="icon" className="size-7" onClick={() => handleRemove(c.userId)}>
-                            <Trash2 className="size-3.5 text-destructive" />
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {invites.length > 0 && (
-                    <ul className="flex flex-col gap-1 text-sm">
-                      <li className="text-xs font-medium text-muted-foreground">{t("share.pendingInvites")}</li>
-                      {invites.map((inv) => (
-                        <li key={inv.id} className="flex items-center justify-between gap-2 rounded border border-dashed px-2 py-1.5">
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate">{inv.email}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {inv.role === "EDITOR" ? t("share.roleEditor") : t("share.roleViewer")} · {t("share.pending")}
-                            </p>
-                          </div>
-                          <div className="flex shrink-0 gap-0.5">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-7"
-                              title={t("share.copyLink")}
-                              onClick={() => handleCopyInviteLink(inv.token)}
-                            >
-                              <Link2 className="size-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-7"
-                              title={t("share.revoke")}
-                              onClick={() => handleRevokeInvite(inv.id)}
-                            >
-                              <Trash2 className="size-3.5 text-destructive" />
-                            </Button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+              {collaborators.length > 0 && (
+                <ul className="flex flex-col gap-2 text-sm">
+                  {collaborators.map((c) => (
+                    <li key={c.id} className="flex flex-col gap-2 rounded bg-muted/50 px-2 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate">{c.User.email}</span>
+                        <Button variant="ghost" size="icon" className="size-7 shrink-0" onClick={() => handleRemove(c.userId)}>
+                          <Trash2 className="size-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Select
+                          value={c.role}
+                          onValueChange={(v) => v && handleUpdateCollaborator(c.userId, { role: v as "VIEWER" | "EDITOR" })}
+                        >
+                          <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="VIEWER">{t("share.roleViewer")}</SelectItem>
+                            <SelectItem value="EDITOR">{t("share.roleEditor")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={!!c.canManageCollaborators}
+                            onCheckedChange={(checked) => handleUpdateCollaborator(c.userId, { canManageCollaborators: checked })}
+                          />
+                          <span className="text-xs text-muted-foreground">{t("share.canManageCollaboratorsShort")}</span>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {t("share.readOnlyNotice")}
-            </p>
+              {invites.length > 0 && (
+                <ul className="flex flex-col gap-1 text-sm">
+                  <li className="text-xs font-medium text-muted-foreground">{t("share.pendingInvites")}</li>
+                  {invites.map((inv) => (
+                    <li key={inv.id} className="flex items-center justify-between gap-2 rounded border border-dashed px-2 py-1.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate">{inv.email}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {inv.role === "EDITOR" ? t("share.roleEditor") : t("share.roleViewer")}
+                          {inv.canManageCollaborators ? ` · ${t("share.canManageCollaboratorsShort")}` : ""}
+                          {" · "}{t("share.pending")}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7"
+                          title={t("share.copyLink")}
+                          onClick={() => handleCopyInviteLink(inv.token)}
+                        >
+                          <Link2 className="size-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7"
+                          title={t("share.revoke")}
+                          onClick={() => handleRevokeInvite(inv.id)}
+                        >
+                          <Trash2 className="size-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
+
+          {!canManageAnything ? (
+            <p className="text-sm text-muted-foreground">{t("share.readOnlyNotice")}</p>
+          ) : null}
 
           <div className="flex flex-col gap-1.5">
             <Label>{t("share.publicLink")}</Label>
             {currentVisibility === "PUBLIC" ? (
               <>
-                <p className="text-xs text-muted-foreground">
-                  {t("share.publicLinkHint")}
-                </p>
+                <p className="text-xs text-muted-foreground">{t("share.publicLinkHint")}</p>
                 <div className="flex gap-2">
                   <Input readOnly value={url} />
                   <Button variant="outline" onClick={() => { navigator.clipboard.writeText(url); toast.success(t("share.linkCopied")) }}>
@@ -551,9 +608,7 @@ export function ShareDialog({ open, onClose, treeId, visibility, canManage }: Sh
                 </div>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                {t("share.publicLinkDisabled")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("share.publicLinkDisabled")}</p>
             )}
           </div>
         </div>
@@ -654,7 +709,7 @@ interface PersonPickerProps {
 }
 
 function personLabel(p: NormalizedPerson) {
-  return `${p.given}${p.sur && p.sur !== "—" ? ` ${p.sur}` : ""}`
+  return `${p.given}${p.sur && p.sur !== "-" ? ` ${p.sur}` : ""}`
 }
 
 function PersonPicker({ people, excludeIds, value, onChange, id }: PersonPickerProps) {
@@ -818,7 +873,7 @@ export function LinkExistingChildDialog({
           <div className="flex flex-col gap-1.5">
             <Label>{t("dialogs.linkChildParents")}</Label>
             <p className="text-sm text-muted-foreground">
-              {parents.map((p) => personLabel(p)).join(" · ") || "—"}
+              {parents.map((p) => personLabel(p)).join(" · ") || "-"}
             </p>
           </div>
           <div className="flex flex-col gap-1.5">

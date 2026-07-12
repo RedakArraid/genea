@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test"
 test.describe("Responsive mobile", () => {
   test.use({ viewport: { width: 375, height: 812 } })
 
-  test("landing — menu mobile et sections empilées", async ({ page }) => {
+  test("landing, menu mobile et sections empilées", async ({ page }) => {
     await page.goto("/")
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
     await page.getByRole("button", { name: /menu/i }).click()
@@ -11,7 +11,7 @@ test.describe("Responsive mobile", () => {
     await expect(page.getByRole("link", { name: /tarifs|pricing/i })).toBeVisible()
   })
 
-  test("login — formulaire sans débordement horizontal", async ({ page }) => {
+  test("login, formulaire sans débordement horizontal", async ({ page }) => {
     await page.goto("/login")
     await expect(page.locator("#password")).toBeVisible()
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
@@ -19,7 +19,7 @@ test.describe("Responsive mobile", () => {
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1)
   })
 
-  test("demo — canvas visible sur mobile", async ({ page }) => {
+  test("demo, canvas visible sur mobile", async ({ page }) => {
     await page.goto("/demo")
     await expect(page.locator(".tree-person-card, [class*='skeleton']").first()).toBeVisible({ timeout: 15_000 })
   })

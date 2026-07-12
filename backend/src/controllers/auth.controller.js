@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
+const { SOLO_TRIAL_DAYS } = require('../lib/plans');
 const { findUserByLogin } = require('../lib/authLogin');
 const { normalizePhone, isValidPhone } = require('../lib/phone');
 const { requestLoginOtp, verifyLoginOtp, isOtpDeliveryAvailable } = require('../lib/otp');
@@ -72,6 +73,7 @@ exports.register = async (req, res, next) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
+    const trialExpiresAt = new Date(Date.now() + SOLO_TRIAL_DAYS * 24 * 60 * 60 * 1000);
     const newUser = await prisma.user.create({
       data: {
         name,
@@ -81,6 +83,7 @@ exports.register = async (req, res, next) => {
         locale: userLocale,
         plan: 'SOLO',
         planActive: true,
+        planExpiresAt: trialExpiresAt,
       },
     });
 

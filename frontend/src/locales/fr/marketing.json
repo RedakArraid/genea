@@ -2,7 +2,7 @@
   "hero": {
     "badge": "Généalogie moderne",
     "title": "Votre histoire familiale, vivante et partageable",
-    "subtitle": "Créez des arbres interactifs, enrichissez chaque membre et invitez votre famille — le tout sur un canvas pensé pour la généalogie.",
+    "subtitle": "Créez des arbres interactifs, enrichissez chaque membre et invitez votre famille, le tout sur un canvas pensé pour la généalogie.",
     "ctaAuth": "Mes arbres",
     "ctaGuest": "Créer un compte gratuit",
     "ctaDemo": "Voir la démo",
@@ -45,7 +45,7 @@
       },
       "2": {
         "title": "Enrichissez les fiches",
-        "description": "Dates, lieux, photos et relations — tout est centralisé sur le canvas."
+        "description": "Dates, lieux, photos et relations, tout est centralisé sur le canvas."
       },
       "3": {
         "title": "Partagez en famille",

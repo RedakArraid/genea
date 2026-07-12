@@ -20,7 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$SCRIPT_DIR/../backend"
 
 if [ ! -d "$BACKEND_DIR/node_modules/@aws-sdk/client-s3" ]; then
-  echo "✗ @aws-sdk/client-s3 introuvable — lancez 'npm install' dans backend/"
+  echo "✗ @aws-sdk/client-s3 introuvable, lancez 'npm install' dans backend/"
   exit 1
 fi
 
@@ -52,36 +52,36 @@ const body = 'geneamap r2 healthcheck';
 function ok(step) { console.log(`  ✓ ${step}`); }
 function fail(step, err) {
   const status = err.$metadata?.httpStatusCode;
-  console.error(`  ✗ ${step} — ${err.name || ''} ${err.message}${status ? ` (HTTP ${status})` : ''}`);
+  console.error(`  ✗ ${step}, ${err.name || ''} ${err.message}${status ? ` (HTTP ${status})` : ''}`);
   if (status === 401 || status === 403) {
     console.error('    → Credentials invalides ou token sans accès à ce bucket.');
   } else if (status === 404) {
-    console.error('    → Le bucket n\'existe pas — créez-le dans le dashboard Cloudflare R2.');
+    console.error('    → Le bucket n\'existe pas, créez-le dans le dashboard Cloudflare R2.');
   }
   process.exit(1);
 }
 
 async function main() {
-  console.log(`=== Vérification S3/R2 — bucket "${bucket}" ===`);
+  console.log(`=== Vérification S3/R2, bucket "${bucket}" ===`);
   console.log(`Endpoint : ${process.env.S3_ENDPOINT}`);
 
-  try { await client.send(new HeadBucketCommand({ Bucket: bucket })); ok('HeadBucket — bucket accessible'); }
+  try { await client.send(new HeadBucketCommand({ Bucket: bucket })); ok('HeadBucket, bucket accessible'); }
   catch (e) { fail('HeadBucket', e); }
 
-  try { await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: 'text/plain' })); ok('PutObject — écriture'); }
+  try { await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: 'text/plain' })); ok('PutObject, écriture'); }
   catch (e) { fail('PutObject', e); }
 
   try {
     const res = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
     const text = await res.Body.transformToString();
     if (text !== body) throw new Error('contenu inattendu');
-    ok('GetObject — lecture');
+    ok('GetObject, lecture');
   } catch (e) { fail('GetObject', e); }
 
-  try { await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key })); ok('DeleteObject — suppression'); }
+  try { await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key })); ok('DeleteObject, suppression'); }
   catch (e) { fail('DeleteObject', e); }
 
-  console.log('\n=== Tout est OK — credentials valides ===');
+  console.log('\n=== Tout est OK, credentials valides ===');
 }
 
 main();

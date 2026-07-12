@@ -1,5 +1,5 @@
 /**
- * Arbre démo Famille Dupont — création et réinitialisation
+ * Arbre démo Famille Dupont - création et réinitialisation
  */
 
 const crypto = require('crypto');
@@ -97,7 +97,7 @@ async function populateDemoTree(demoTreeId) {
 async function createDemoTree(ownerId) {
   const demoTree = await prisma.familyTree.create({
     data: {
-      name: 'Famille Dupont — Démo',
+      name: 'Famille Dupont (Démo)',
       description: 'Arbre de démonstration (10 personnes)',
       isPublic: true,
       visibility: 'PUBLIC',
@@ -167,7 +167,7 @@ async function resetDemoTree() {
   const existing = await prisma.familyTree.findFirst({ where: { isDemo: true } });
   if (existing) {
     // Les copies personnelles déjà forkées (voir lib/demoFork.js) sont des arbres
-    // indépendants et ne sont pas affectées par le reset — seuls les mappings vers
+    // indépendants et ne sont pas affectées par le reset - seuls les mappings vers
     // cet arbre canonique (bientôt supprimé) sont nettoyés, pour ne pas accumuler
     // des lignes orphelines dans DemoForkMapping.
     const [persons, positions, relationships] = await Promise.all([

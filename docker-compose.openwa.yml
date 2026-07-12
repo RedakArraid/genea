@@ -1,4 +1,4 @@
-# OpenWA — WhatsApp OTP (optionnel, profil séparé)
+# OpenWA, WhatsApp OTP (optionnel, profil séparé)
 # Usage : docker compose -f docker-compose.openwa.yml up -d
 # Voir docs/OPENWA.md
 

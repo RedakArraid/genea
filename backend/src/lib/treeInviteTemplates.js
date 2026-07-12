@@ -1,5 +1,5 @@
 /**
- * Templates email — invitation à collaborer sur un arbre (fr / en).
+ * Templates email - invitation à collaborer sur un arbre (fr / en).
  */
 
 const { resolveLocale } = require('./otpTemplates');
@@ -30,7 +30,7 @@ ${inviteUrl}
 
 If you do not have an account yet, create one with this email address, then open the link again.
 
-— The geneamap team`;
+The geneamap team`;
     const html = `
     <p>Hello,</p>
     <p><strong>${inviter}</strong> has invited you to <strong>${access}</strong> the family tree <strong>« ${treeName} »</strong> on geneamap.</p>
@@ -51,7 +51,7 @@ ${inviteUrl}
 
 Si vous n'avez pas encore de compte, créez-en un avec cette adresse email, puis rouvrez le lien.
 
-— L'équipe geneamap`;
+L'équipe geneamap`;
   const html = `
     <p>Bonjour,</p>
     <p><strong>${inviter}</strong> vous invite à <strong>${access}</strong> l'arbre généalogique <strong>« ${treeName} »</strong> sur geneamap.</p>
@@ -76,7 +76,7 @@ ${inviter} has given you access to ${access} the family tree « ${treeName} » o
 Open the tree:
 ${treeUrl}
 
-— The geneamap team`;
+The geneamap team`;
     const html = `
     <p>Hello,</p>
     <p><strong>${inviter}</strong> has given you access to <strong>${access}</strong> the family tree <strong>« ${treeName} »</strong> on geneamap.</p>
@@ -94,7 +94,7 @@ ${inviter} vous a donné accès pour ${access} l'arbre généalogique « ${treeN
 Ouvrir l'arbre :
 ${treeUrl}
 
-— L'équipe geneamap`;
+L'équipe geneamap`;
   const html = `
     <p>Bonjour,</p>
     <p><strong>${inviter}</strong> vous a donné accès pour <strong>${access}</strong> l'arbre généalogique <strong>« ${treeName} »</strong> sur geneamap.</p>

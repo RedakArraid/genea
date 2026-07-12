@@ -53,6 +53,24 @@ async function assertCanExportTree(tree) {
   }
 }
 
+async function assertCanImportTree(tree) {
+  const owner = await prisma.user.findUnique({ where: { id: tree.ownerId } });
+  if (!owner) {
+    const err = new Error('Propriétaire de l\'arbre introuvable');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const limits = getEffectivePlanLimits(owner);
+  if (!limits.canImport) {
+    const err = new Error('Import GEDCOM réservé au forfait Patrimoine');
+    err.statusCode = 403;
+    err.code = 'IMPORT_NOT_ALLOWED';
+    throw err;
+  }
+  assertGenealogyTree(tree);
+}
+
 function slugifyFilename(name) {
   return (name || 'arbre')
     .normalize('NFD')
@@ -63,8 +81,7 @@ function slugifyFilename(name) {
 }
 
 async function assertCanImportExportTree(tree) {
-  await assertCanExportTree(tree);
-  assertGenealogyTree(tree);
+  await assertCanImportTree(tree);
 }
 
 async function assertCanExportGedcom(tree) {
@@ -75,6 +92,7 @@ async function assertCanExportGedcom(tree) {
 module.exports = {
   loadTreeExportData,
   assertCanExportTree,
+  assertCanImportTree,
   assertCanImportExportTree,
   assertCanExportGedcom,
   slugifyFilename,

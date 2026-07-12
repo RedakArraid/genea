@@ -1,6 +1,6 @@
-# Production — VPS Contabo (Traefik + Let's Encrypt)
+# Production, VPS Contabo (Traefik + Let's Encrypt)
 # Domaines : geneamap.com (frontend) / api.geneamap.com (backend)
-# Stockage : Cloudflare R2 (bucket geneamap-prod) — voir docs/CLOUDFLARE_R2.md
+# Stockage : Cloudflare R2 (bucket geneamap-prod), voir docs/CLOUDFLARE_R2.md
 # Déployé dans /root/geneamap/ avec un fichier .env (voir .env.production.example)
 
 services:

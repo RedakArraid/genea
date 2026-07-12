@@ -38,7 +38,7 @@ function parseNameLine(value) {
     return { firstName: slashMatch[1].trim(), lastName: slashMatch[2].trim() };
   }
   const parts = raw.split(/\s+/);
-  if (parts.length === 1) return { firstName: parts[0], lastName: '—' };
+  if (parts.length === 1) return { firstName: parts[0], lastName: '-' };
   return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
 }
 
@@ -61,7 +61,7 @@ async function importGedcomIntoTree(treeId, gedcomText) {
         data: {
           treeId,
           firstName: firstName || 'Inconnu',
-          lastName: lastName || '—',
+          lastName: lastName || '-',
           gender: mapSexFromGedcom(indi.sex),
           birthDate: parseGedcomDate(indi.birthDate),
           birthPlace: indi.birthPlace || null,

@@ -4,13 +4,14 @@ import { Check, CreditCard } from "lucide-react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
-import { PLANS, formatDualPrice, formatDualPriceFromUsd, getPlanPrice, isFreePlan } from "@/lib/plans"
+import { PLANS, getPlanById, getPlanIntervals, getPlanPrice, isFreePlan, planPreviewKey } from "@/lib/plans"
+import { PlanPriceBlock } from "@/components/pricing-price-block"
 import type { BillingInterval } from "@/lib/billing-api"
 import type { PlanId } from "@/types"
 import { initializeCheckout, previewCheckout } from "@/lib/billing-api"
 import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,19 +25,23 @@ export default function PricingPage() {
   const [promoError, setPromoError] = useState<string | null>(null)
   const [previews, setPreviews] = useState<Record<string, number>>({})
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const [familyInterval, setFamilyInterval] = useState<BillingInterval>("yearly")
   const [patrimonyInterval, setPatrimonyInterval] = useState<BillingInterval>("yearly")
 
   const planActive = user?.planActive ?? false
 
-  const previewKey = (planId: PlanId, interval: BillingInterval = "yearly") =>
-    planId === "PATRIMONY" ? `${planId}:${interval}` : planId
+  const resolveInterval = (planId: PlanId): BillingInterval => {
+    if (planId === "FAMILY") return familyInterval
+    if (planId === "PATRIMONY") return patrimonyInterval
+    return "yearly"
+  }
+
+  const previewKey = planPreviewKey
 
   const basePreviews = useMemo(() => {
     const next: Record<string, number> = {}
     PLANS.forEach((plan) => {
-      const intervals: BillingInterval[] =
-        plan.id === "PATRIMONY" ? ["yearly", "monthly"] : ["yearly"]
-      intervals.forEach((interval) => {
+      getPlanIntervals(plan.id).forEach((interval) => {
         next[previewKey(plan.id, interval)] = getPlanPrice(plan, interval)
       })
     })
@@ -53,11 +58,9 @@ export default function PricingPage() {
 
     const timer = window.setTimeout(() => {
       void (async () => {
-        const requests = PLANS.flatMap((plan) => {
-          const intervals: BillingInterval[] =
-            plan.id === "PATRIMONY" ? ["yearly", "monthly"] : ["yearly"]
-          return intervals.map((interval) => ({ plan, interval }))
-        })
+        const requests = PLANS.flatMap((plan) =>
+          getPlanIntervals(plan.id).map((interval) => ({ plan, interval }))
+        )
 
         const results = await Promise.all(
           requests.map(async ({ plan, interval }) => {
@@ -126,13 +129,9 @@ export default function PricingPage() {
     <div className="py-16">
       <div className="mx-auto max-w-6xl px-6">
         <div className="mb-10 text-center">
-          <Badge variant="secondary" className="mb-3">{t("pricing.badge")}</Badge>
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
             {t("pricing.title")}
           </h1>
-          <p className="mt-2 text-muted-foreground">
-            {t("pricing.subtitle")}
-          </p>
           <div className="mx-auto mt-6 flex max-w-sm items-end gap-2">
             <div className="flex-1 text-left">
               <Label htmlFor="promo">{t("pricing.promoCode")}</Label>
@@ -156,8 +155,8 @@ export default function PricingPage() {
         <div className="grid gap-6 md:grid-cols-3">
           {PLANS.map((plan) => {
             const isFree = isFreePlan(plan.id)
-            const isPatrimony = plan.id === "PATRIMONY"
-            const interval = isPatrimony ? patrimonyInterval : "yearly"
+            const hasIntervals = getPlanIntervals(plan.id).length > 1
+            const interval = resolveInterval(plan.id)
             const isCurrent = isAuthenticated && user?.plan === plan.id && planActive
             const basePrice = getPlanPrice(plan, interval)
             const finalAmount = previews[previewKey(plan.id, interval)] ?? basePrice
@@ -178,33 +177,23 @@ export default function PricingPage() {
                     {t(`plans.${plan.id}.name`)}
                     {isCurrent && <Badge variant="secondary" className="ml-auto text-xs">{t("pricing.current")}</Badge>}
                   </CardTitle>
-                  <CardDescription className="text-2xl font-semibold text-foreground">
-                    {isFree && finalAmount === 0
-                      ? t("pricing.free")
-                      : formatDualPriceFromUsd(finalAmount)}
-                    {!isFree && finalAmount < basePrice && (
-                      <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
-                        {formatDualPrice(plan.id, interval)}
-                      </span>
-                    )}
-                  </CardDescription>
-                  <p className="text-xs text-muted-foreground">
-                    {isFree
-                      ? t("pricing.freeForever")
-                      : isPatrimony
-                        ? interval === "monthly"
-                          ? t("pricing.perMonth")
-                          : t("pricing.perYear")
-                        : t("pricing.perYear")}
-                  </p>
-                  {isPatrimony && (
+                  <PlanPriceBlock
+                    planId={plan.id}
+                    interval={interval}
+                    amountUsd={finalAmount}
+                    strikethroughUsd={!isFree && finalAmount < basePrice ? basePrice : undefined}
+                  />
+                  {hasIntervals && (
                     <div className="mt-2 flex gap-1 rounded-lg border p-1">
                       <Button
                         type="button"
                         size="sm"
                         variant={interval === "yearly" ? "default" : "ghost"}
                         className="h-7 flex-1 text-xs"
-                        onClick={() => setPatrimonyInterval("yearly")}
+                        onClick={() => {
+                          if (plan.id === "FAMILY") setFamilyInterval("yearly")
+                          if (plan.id === "PATRIMONY") setPatrimonyInterval("yearly")
+                        }}
                       >
                         {t("pricing.yearly")}
                       </Button>
@@ -213,7 +202,10 @@ export default function PricingPage() {
                         size="sm"
                         variant={interval === "monthly" ? "default" : "ghost"}
                         className="h-7 flex-1 text-xs"
-                        onClick={() => setPatrimonyInterval("monthly")}
+                        onClick={() => {
+                          if (plan.id === "FAMILY") setFamilyInterval("monthly")
+                          if (plan.id === "PATRIMONY") setPatrimonyInterval("monthly")
+                        }}
                       >
                         {t("pricing.monthly")}
                       </Button>
@@ -242,7 +234,7 @@ export default function PricingPage() {
                         ? t("pricing.redirecting")
                         : isCurrent
                           ? t("pricing.currentPlan")
-                          : isPatrimony && interval === "monthly"
+                          : interval === "monthly" && getPlanById(plan.id).ctaMonthly
                             ? t(`plans.${plan.id}.ctaMonthly`)
                             : t(`plans.${plan.id}.cta`)}
                     </Button>

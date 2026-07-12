@@ -55,7 +55,7 @@ function formatDate(dateStr: string | null) {
 function personToForm(person: NormalizedPerson, raw?: Person) {
   return {
     firstName: person.given || "",
-    lastName: person.sur && person.sur !== "—" ? person.sur : "",
+    lastName: person.sur && person.sur !== "-" ? person.sur : "",
     birthDate: person.birthDate?.split("T")[0] || "",
     birthPlace: person.place || "",
     deathDate: person.deathDate?.split("T")[0] || "",
@@ -124,7 +124,7 @@ function RelChip({
   return (
     <div className="inline-flex items-center gap-1">
       <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onSelect(relative.id)}>
-        {relative.given} {relative.sur !== "—" ? relative.sur : ""}
+        {relative.given} {relative.sur !== "-" ? relative.sur : ""}
       </Button>
       {!readOnly && relType === "spouse" && (
         <ChildAddMenu
@@ -337,7 +337,7 @@ function SidePanelContent({
               ) : (
                 <>
                   <h2 className="text-lg font-semibold">
-                    {person.given}{person.sur && person.sur !== "—" ? ` ${person.sur}` : ""}
+                    {person.given}{person.sur && person.sur !== "-" ? ` ${person.sur}` : ""}
                   </h2>
                   <p className="text-sm text-muted-foreground">
                     {person.born || "?"}–{person.died || ""}

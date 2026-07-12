@@ -7,6 +7,8 @@ const {
   toPaystackAmount,
   getPlanDisplayAmounts,
   isFreePlan,
+  normalizeBillingInterval,
+  MONTHLY_BILLING_PLANS,
 } = require('../lib/plans');
 const { validatePromoCode, applyDiscount } = require('../lib/promo');
 const { generateReference, fulfillPayment } = require('../lib/payments/fulfill');
@@ -19,12 +21,13 @@ function publicBaseUrl() {
 
 exports.previewCheckout = async (req, res, next) => {
   try {
-    const { plan, promoCode, billingInterval = 'yearly' } = req.body;
+    const { plan, promoCode, billingInterval: rawInterval = 'yearly' } = req.body;
     if (!['SOLO', 'FAMILY', 'PATRIMONY'].includes(plan)) {
       return sendError(res, 400, 'INVALID_PLAN', 'Forfait invalide');
     }
-    if (billingInterval === 'monthly' && plan !== 'PATRIMONY') {
-      return sendError(res, 400, 'INVALID_BILLING_INTERVAL', 'Facturation mensuelle disponible uniquement pour Patrimoine');
+    const billingInterval = normalizeBillingInterval(plan, rawInterval);
+    if (rawInterval === 'monthly' && !MONTHLY_BILLING_PLANS.includes(plan)) {
+      return sendError(res, 400, 'INVALID_BILLING_INTERVAL', 'Facturation mensuelle indisponible pour ce forfait');
     }
     const baseAmount = getPlanPrice(plan, billingInterval);
     let promo = null;
@@ -64,12 +67,13 @@ exports.previewCheckout = async (req, res, next) => {
 
 exports.initializeCheckout = async (req, res, next) => {
   try {
-    const { plan, promoCode, billingInterval = 'yearly' } = req.body;
+    const { plan, promoCode, billingInterval: rawInterval = 'yearly' } = req.body;
     if (!['SOLO', 'FAMILY', 'PATRIMONY'].includes(plan)) {
       return sendError(res, 400, 'INVALID_PLAN', 'Forfait invalide');
     }
-    if (billingInterval === 'monthly' && plan !== 'PATRIMONY') {
-      return sendError(res, 400, 'INVALID_BILLING_INTERVAL', 'Facturation mensuelle disponible uniquement pour Patrimoine');
+    const billingInterval = normalizeBillingInterval(plan, rawInterval);
+    if (rawInterval === 'monthly' && !MONTHLY_BILLING_PLANS.includes(plan)) {
+      return sendError(res, 400, 'INVALID_BILLING_INTERVAL', 'Facturation mensuelle indisponible pour ce forfait');
     }
 
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
@@ -87,7 +91,7 @@ exports.initializeCheckout = async (req, res, next) => {
         res,
         400,
         'FREE_PLAN',
-        'Ce forfait est gratuit — créez un compte pour l\'activer.',
+        'Ce forfait est gratuit. Créez un compte pour l\'activer.',
       );
     }
 

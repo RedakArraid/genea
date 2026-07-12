@@ -1,5 +1,5 @@
 /**
- * Arbre test Challenge Family — carte racine + 5 promos × 7 membres.
+ * Arbre test Challenge Family - carte racine + 5 promos × 7 membres.
  * La carte « Challenge Family » est la source ; chaque président parraine la promo suivante.
  */
 
@@ -51,7 +51,7 @@ const ROOT_ENTITY = {
   subjects: ['Source de toutes les promos'],
   birthMonth: 1,
   birthYear: 2018,
-  biography: 'Association Challenge Family — source de toutes les générations et promos',
+  biography: 'Association Challenge Family, source de toutes les générations et promos',
 };
 
 /** @type {Array<{ year: number, members: Array<{ firstName: string, lastName: string, role: string, subjects: string[], birthMonth: number }> }>} */
@@ -148,7 +148,7 @@ function memberPayload(member, treeId, promoYear) {
     firstName: member.firstName,
     lastName: member.lastName,
     occupation: subjects,
-    biography: `${member.role} — Promo ${promoYear}`,
+    biography: `${member.role}, promo ${promoYear}`,
     birthDate: new Date(2000 + (promoYear - 2020), member.birthMonth - 1, 15),
     birthPlace: `Promo ${promoYear}`,
     treeId,
@@ -180,7 +180,7 @@ async function createChallengeFamilyTree(ownerId, options = {}) {
     data: {
       name: TREE_NAME,
       description:
-        'Association Challenge Family — carte source + 5 promos de 7 membres. Le président de chaque génération parraine la promo suivante.',
+        'Association Challenge Family : carte source + 5 promos de 7 membres. Le président de chaque génération parraine la promo suivante.',
       isPublic: false,
       visibility: 'PRIVATE',
       treeType: 'ORGANIZATION',

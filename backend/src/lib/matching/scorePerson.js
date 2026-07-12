@@ -36,7 +36,7 @@ function scorePersonPair(a, b) {
 function formatVia(person) {
   const year = birthYear(person.birthDate);
   const name = [person.firstName, person.lastName].filter(Boolean).join(' ');
-  return year ? `${name} — ${year}` : name;
+  return year ? `${name}, ${year}` : name;
 }
 
 module.exports = { scorePersonPair, formatVia, birthYear };

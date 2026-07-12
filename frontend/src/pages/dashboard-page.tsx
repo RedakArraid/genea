@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import { WelcomePanel } from "@/components/dashboard/welcome-panel"
+import { isPlanWriteAllowed } from "@/lib/plans"
 import type { TreeType, OrgLexiconPreset } from "@/types"
 import {
   Select,
@@ -38,6 +39,8 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const planActive = user?.planActive ?? false
+  const canWrite = isPlanWriteAllowed(user)
+  const trialExpired = planActive && !canWrite
   const { trees, sharedTrees, isLoading, fetchTrees, createTree, deleteTree } = useFamilyTreeStore()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<{
@@ -113,11 +116,26 @@ export default function DashboardPage() {
         </Card>
       )}
 
+      {trialExpired && (
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <CreditCard className="size-5" />
+              {t("trialExpired.title")}
+            </CardTitle>
+            <CardDescription>{t("trialExpired.subtitle")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link to="/pricing" className={buttonVariants()}>{t("trialExpired.seePricing")}</Link>
+          </CardContent>
+        </Card>
+      )}
+
       <WelcomePanel
         userName={user?.name}
         trees={trees}
         sharedTrees={sharedTrees}
-        planActive={planActive}
+        planActive={canWrite}
         onCreateTree={() => setOpen(true)}
       />
 
@@ -126,7 +144,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
-        <Button onClick={() => setOpen(true)} disabled={!planActive} className="w-full sm:w-auto">
+        <Button onClick={() => setOpen(true)} disabled={!canWrite} className="w-full sm:w-auto">
           <Plus className="mr-2 size-4" />
           {t("newTree")}
         </Button>
@@ -206,7 +224,7 @@ export default function DashboardPage() {
               <p className="font-medium">{t("empty.title")}</p>
               <p className="text-sm text-muted-foreground">{t("empty.subtitle")}</p>
             </div>
-            <Button onClick={() => setOpen(true)} disabled={!planActive}>
+            <Button onClick={() => setOpen(true)} disabled={!canWrite}>
               <Plus className="mr-2 size-4" />
               {t("createTree")}
             </Button>

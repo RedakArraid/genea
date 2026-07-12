@@ -4,7 +4,7 @@
 
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
-const { assertMediaAssetLimit, getEffectivePlanLimits } = require('../lib/planAccess');
+const { assertPhotoLimit, assertPersonCapacity, getEffectivePlanLimits } = require('../lib/planAccess');
 const { recordPersonRevision, listPersonRevisions, ownerCanVersion } = require('../lib/versioning');
 const storage = require('../lib/storage');
 const { sendError, sendValidationErrors } = require('../lib/apiErrors');
@@ -65,15 +65,7 @@ exports.createPerson = async (req, res, next) => {
     }
 
     if (!tree.isDemo) {
-      const owner = await prisma.user.findUnique({ where: { id: tree.ownerId } });
-      const limits = getEffectivePlanLimits(owner);
-      const personCount = await prisma.person.count({ where: { treeId } });
-      if (personCount >= limits.maxPersonsPerTree) {
-        return sendError(res, 403, 'PLAN_LIMIT_REACHED', `Limite de ${limits.maxPersonsPerTree} personnes atteinte pour le forfait ${limits.name}`, {
-          maxPersons: limits.maxPersonsPerTree,
-          planName: limits.name,
-        });
-      }
+      await assertPersonCapacity(tree.ownerId, treeId);
     }
     const {
       firstName,
@@ -111,6 +103,12 @@ exports.createPerson = async (req, res, next) => {
       person: newPerson
     });
   } catch (error) {
+    if (error.statusCode && error.code) {
+      return sendError(res, error.statusCode, error.code, error.message, {
+        maxPersons: error.maxPersons,
+        planName: error.planName,
+      });
+    }
     next(error);
   }
 };
@@ -228,7 +226,7 @@ exports.deletePerson = async (req, res, next) => {
 };
 
 /**
- * Mettre à jour uniquement la photo (autorisé en démo — pas une fiche texte)
+ * Mettre à jour uniquement la photo (autorisé en démo - pas une fiche texte)
  */
 exports.updatePersonPhoto = async (req, res, next) => {
   try {
@@ -252,7 +250,7 @@ exports.updatePersonPhoto = async (req, res, next) => {
     }
 
     if (photoUrl && !existing.photoUrl) {
-      await assertMediaAssetLimit(existing.FamilyTree.ownerId);
+      await assertPhotoLimit(existing.FamilyTree.ownerId);
     }
 
     if (photoUrl && storage.isReady() && existing.photoUrl && existing.photoUrl !== photoUrl) {

@@ -12,7 +12,7 @@ assert_status() {
     echo "  ✓ $name (HTTP $actual)"
     PASS=$((PASS + 1))
   else
-    echo "  ✗ $name — attendu HTTP $expected, reçu $actual"
+    echo "  ✗ $name, attendu HTTP $expected, reçu $actual"
     [ -n "$body" ] && echo "    $body"
     FAIL=$((FAIL + 1))
   fi
@@ -29,7 +29,7 @@ assert_json() {
   fi
 }
 
-echo "=== geneamap — Tests d'intégration API ==="
+echo "=== geneamap, Tests d'intégration API ==="
 echo "API: $API"
 echo
 
@@ -102,7 +102,7 @@ else
   FAIL=$((FAIL + 1))
 fi
 
-# Node positions — démo lisible sans auth
+# Node positions, démo lisible sans auth
 code=$(curl -s -o /dev/null -w '%{http_code}' "$API/node-positions/tree/$TREE_ID")
 assert_status "GET positions démo sans auth autorisé" "200" "$code"
 
@@ -151,13 +151,13 @@ if [ "$code" = "200" ]; then
   echo "  ✓ GET /plans (HTTP 200)"
   PASS=$((PASS + 1))
 elif [ "$code" = "404" ]; then
-  echo "  ○ GET /plans — endpoint absent (ignoré)"
+  echo "  ○ GET /plans, endpoint absent (ignoré)"
 else
   echo "  ✓ GET /plans (HTTP $code)"
   PASS=$((PASS + 1))
 fi
 
-# Admin API — login admin
+# Admin API, login admin
 admin_login=$(curl -s -X POST "$API/auth/login" \
   -H 'Content-Type: application/json' \
   -d '{"phone":"0700000010","password":"admin123"}')
@@ -205,7 +205,7 @@ if [ -n "$ADMIN_TOKEN" ]; then
   assert_status "GET /admin/plans" "200" "$code"
 fi
 
-# Collaboration — partage et invitations
+# Collaboration, partage et invitations
 if [ -n "$TOKEN" ]; then
   demo_login=$(curl -s -X POST "$API/auth/login" \
     -H 'Content-Type: application/json' \
@@ -320,8 +320,11 @@ for i in d.get('invites',[]):
 fi
 
 # Billing & planActive
-billing_json=$(curl -s -X POST "$API/billing/preview" -H 'Content-Type: application/json' -d '{"plan":"FAMILY"}')
-assert_json "Billing preview FAMILY 24 USD" "d.get('finalAmount') == 24 and d.get('limits',{}).get('maxTrees') == 4" "$billing_json"
+billing_json=$(curl -s -X POST "$API/billing/preview" -H 'Content-Type: application/json' -d '{"plan":"FAMILY","billingInterval":"yearly"}')
+assert_json "Billing preview FAMILY 24 USD/an" "d.get('finalAmount') == 24 and d.get('limits',{}).get('maxTrees') == 3" "$billing_json"
+
+billing_monthly_json=$(curl -s -X POST "$API/billing/preview" -H 'Content-Type: application/json' -d '{"plan":"FAMILY","billingInterval":"monthly"}')
+assert_json "Billing preview FAMILY 2.5 USD/mois" "d.get('finalAmount') == 2.5" "$billing_monthly_json"
 
 reg_email="billing-test-$(date +%s)@example.com"
 reg_phone="07$(printf '%08d' $(( ($(date +%s) + RANDOM + 1) % 100000000 )))"
@@ -337,7 +340,7 @@ if [ -n "$NEW_TOKEN" ]; then
   assert_status "Création arbre avec forfait Découverte" "201" "$code" "$(cat /tmp/genea_free_plan_tree.json 2>/dev/null)"
 fi
 
-# Arbre public — admin (Patrimoine)
+# Arbre public, admin (Patrimoine)
 if [ -n "$ADMIN_TOKEN" ]; then
   admin_trees=$(curl -s "$API/family-trees" -H "$ADMIN_AUTH")
   PUBLIC_TREE_ID=$(echo "$admin_trees" | python3 -c "

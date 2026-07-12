@@ -18,7 +18,7 @@ export function resolveMediaUrl(url: string | null | undefined): string | null {
   return url
 }
 
-/** URLs servies par le proxy API — nécessitent le JWT (pas envoyé par <img>) */
+/** URLs servies par le proxy API - nécessitent le JWT (pas envoyé par <img>) */
 export function isProtectedMediaUrl(url: string | null | undefined): boolean {
   if (!url) return false
   const resolved = resolveMediaUrl(url) || url

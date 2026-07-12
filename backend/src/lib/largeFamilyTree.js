@@ -1,5 +1,5 @@
 /**
- * Arbre de test — 40 personnes sur 5 générations (Famille Traoré)
+ * Arbre de test - 40 personnes sur 5 générations (Famille Traoré)
  */
 
 const prisma = require('./prisma');
@@ -200,7 +200,7 @@ async function createLargeFamilyTree(ownerId) {
   const tree = await prisma.familyTree.create({
     data: {
       name: 'Famille Traoré',
-      description: 'Arbre de test — 40 personnes sur 5 générations',
+      description: 'Arbre de test : 40 personnes sur 5 générations',
       isPublic: false,
       visibility: 'PRIVATE',
       isDemo: false,

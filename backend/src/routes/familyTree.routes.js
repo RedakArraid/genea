@@ -31,6 +31,7 @@ router.post('/invites/:token/accept', isAuth, collaborationController.acceptInvi
 router.get('/:id/access', isAuth, collaborationController.getTreeAccess);
 router.get('/:id/collaborators', isAuth, collaborationController.listCollaborators);
 router.post('/:id/collaborators', isAuth, collaborationController.inviteCollaborator);
+router.patch('/:id/collaborators/:userId', isAuth, collaborationController.updateCollaborator);
 router.delete('/:id/collaborators/:userId', isAuth, collaborationController.removeCollaborator);
 router.delete('/:id/invites/:inviteId', isAuth, collaborationController.revokeInvite);
 router.put('/:id/visibility', isAuth, collaborationController.updateVisibility);

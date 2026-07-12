@@ -1,11 +1,11 @@
 /**
- * Script de seed — admin, test user, arbre perso, démo Famille Dupont
+ * Script de seed, admin, test user, arbre perso, démo Famille Dupont
  * Comptes (téléphone = identifiant principal) :
- *   0700000010 / admin@geneamap.com — admin123 (admin)
- *   0700000001 / test@example.com — password123
- *   0700000002 / demo@geneamap.com — password123
- *   0700000003 / famille40@geneamap.com — password123 (famille 40 personnes)
- *   0700000004 / testeur@geneamap.com — password123 (testeur paiement, plan inactif)
+ *   0700000010 / admin@geneamap.com, admin123 (admin)
+ *   0700000001 / test@example.com, password123
+ *   0700000002 / demo@geneamap.com, password123
+ *   0700000003 / famille40@geneamap.com, password123 (famille 40 personnes)
+ *   0700000004 / testeur@geneamap.com, password123 (testeur paiement, plan inactif)
  */
 
 const prisma = require('../src/lib/prisma');
@@ -114,8 +114,8 @@ async function main() {
   }
 
   console.log(`Created users: ${admin.phone}, ${user.phone}, ${demoOwner.phone}, ${testeur.phone}, ${famille40User.phone}`);
-  console.log('Testeur CI — tel: 0700000004 | email: testeur@geneamap.com | mdp: password123');
-  console.log('Famille 40 — tel: 0700000003 | email: famille40@geneamap.com | mdp: password123');
+  console.log('Testeur CI, tel: 0700000004 | email: testeur@geneamap.com | mdp: password123');
+  console.log('Famille 40, tel: 0700000003 | email: famille40@geneamap.com | mdp: password123');
 
   const personalTree = await prisma.familyTree.create({
     data: {
@@ -133,7 +133,7 @@ async function main() {
       firstName: 'Personne',
       lastName: 'Racine',
       gender: 'other',
-      biography: 'Personne racine — modifiez ces informations.',
+      biography: 'Personne racine. Modifiez ces informations.',
       treeId: personalTree.id,
     },
   });

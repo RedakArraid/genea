@@ -5,7 +5,7 @@
     "header": "Administration plateforme",
     "backToApp": "Retour app",
     "logout": "Déconnexion",
-    "navAria": "Admin — {{title}}",
+    "navAria": "Admin, {{title}}",
     "nav": {
       "dashboard": "Tableau de bord",
       "users": "Utilisateurs",
@@ -29,7 +29,7 @@
     "searchPlaceholder": "Rechercher…",
     "pagination": "Page {{page}} / {{totalPages}}",
     "noData": "Aucune donnée",
-    "dash": "—",
+    "dash": "-",
     "actions": "Actions",
     "view": "Voir",
     "name": "Nom",
@@ -161,6 +161,30 @@
       "loadFailed": "Impossible de charger les arbres",
       "deleteSuccess": "Arbre supprimé",
       "demoUseDemoPage": "Utilisez la page Démo pour réinitialiser l'arbre démo"
+    },
+    "collaborators": {
+      "manage": "Gérer les collaborateurs",
+      "title": "Collaborateurs — {{name}}",
+      "add": "Ajouter un collaborateur",
+      "emailPlaceholder": "email@exemple.com",
+      "viewer": "Lecture",
+      "editor": "Édition",
+      "canManage": "Peut gérer les collaborateurs",
+      "canManageShort": "Gestion collabs",
+      "invite": "Inviter",
+      "pending": "Invitations en attente",
+      "revoke": "Révoquer",
+      "empty": "Aucun collaborateur",
+      "removeConfirm": "Retirer ce collaborateur ?",
+      "loadFailed": "Impossible de charger les collaborateurs",
+      "inviteSuccess": "Collaborateur invité",
+      "inviteFailed": "Échec de l'invitation",
+      "updateSuccess": "Collaborateur mis à jour",
+      "updateFailed": "Échec de la mise à jour",
+      "removeSuccess": "Collaborateur retiré",
+      "removeFailed": "Échec du retrait",
+      "revokeSuccess": "Invitation révoquée",
+      "revokeFailed": "Échec de la révocation"
     }
   },
   "storage": {
@@ -285,7 +309,7 @@
   },
   "demo": {
     "title": "Arbre démo",
-    "subtitle": "Famille Dupont — environnement partagé",
+    "subtitle": "Famille Dupont, environnement partagé",
     "warning": {
       "title": "Mutations partagées",
       "description": "L'arbre démo est modifiable par tous les visiteurs. Utilisez la réinitialisation pour restaurer l'état initial."
@@ -313,13 +337,14 @@
   },
   "plans": {
     "title": "Forfaits",
-    "subtitle_one": "Limites définies en code — {{count}} utilisateur au total",
-    "subtitle_other": "Limites définies en code — {{count}} utilisateurs au total",
+    "subtitle_one": "Limites définies en code, {{count}} utilisateur au total",
+    "subtitle_other": "Limites définies en code, {{count}} utilisateurs au total",
     "usersCount": "{{count}} users ({{pct}}%)",
     "limits": {
       "trees": "Arbres : {{value}}",
       "personsPerTree": "Personnes / arbre : {{value}}",
-      "media": "Photos & docs : {{value}}",
+      "fichesTotal": "Fiches (documents) : {{value}}",
+      "photosTotal": "Photos de profil : {{value}}",
       "collaborators": "Collaborateurs : {{value}}"
     },
     "toasts": {
@@ -328,7 +353,7 @@
   },
   "promo": {
     "title": "Codes promo",
-    "subtitle": "Réductions par marché ou campagne — créez un code par pays/région (ex. lancement France, partenaire Sénégal).",
+    "subtitle": "Réductions par marché ou campagne, créez un code par pays/région (ex. lancement France, partenaire Sénégal).",
     "newCode": "Nouveau code",
     "noCodes": "Aucun code promo",
     "editTitle": "Modifier le code",

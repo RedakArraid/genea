@@ -1,5 +1,5 @@
 /**
- * Moteur de layout organigramme (ESM) — miroir de shared/org-layout.js pour le navigateur.
+ * Moteur de layout organigramme (ESM) - miroir de shared/org-layout.js pour le navigateur.
  */
 
 export const ORG_CARD_W = 140

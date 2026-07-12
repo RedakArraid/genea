@@ -15,8 +15,9 @@ interface PlanData {
   priceLabel?: string
   maxTrees?: number
   maxPersonsPerTree?: number
+  maxFichesTotal?: number | null
+  maxPhotosTotal?: number | null
   maxCollaborators?: number
-  maxMediaAssets?: number
   features?: string[]
 }
 
@@ -79,7 +80,8 @@ export default function AdminPlansPage() {
                     <ul className="space-y-1 text-sm text-muted-foreground">
                       <li>{t("plans.limits.trees", { value: formatLimit(plan.maxTrees) })}</li>
                       <li>{t("plans.limits.personsPerTree", { value: formatLimit(plan.maxPersonsPerTree) })}</li>
-                      <li>{t("plans.limits.media", { value: formatLimit(plan.maxMediaAssets) ?? t("common.dash") })}</li>
+                      <li>{t("plans.limits.fichesTotal", { value: formatLimit(plan.maxFichesTotal) ?? t("common.dash") })}</li>
+                      <li>{t("plans.limits.photosTotal", { value: formatLimit(plan.maxPhotosTotal) ?? t("common.dash") })}</li>
                       <li>{t("plans.limits.collaborators", { value: formatLimit(plan.maxCollaborators) })}</li>
                     </ul>
                     <ul className="space-y-2">

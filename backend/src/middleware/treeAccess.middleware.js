@@ -85,7 +85,7 @@ const canWriteTree = async (req, res, next) => {
         return next();
       }
       const fork = await getOrCreateDemoFork(req.user.id);
-      // req.params.id ne désigne le treeId que pour les routes /family-trees/:id/... —
+      // req.params.id ne désigne le treeId que pour les routes /family-trees/:id/... -
       // pour les routes déléguées (positions, edges), :id référence une autre entité
       // et est traduit séparément par leur propre wrapper avant d'arriver ici.
       if (req.params.id === treeId) req.params.id = fork.id;
@@ -169,7 +169,7 @@ const canEditPersonInfo = async (req, res, next) => {
     }
     if (person.FamilyTree?.isDemo) {
       return res.status(403).json({
-        message: 'Les fiches personnes ne sont pas modifiables en démo — créez votre propre arbre pour éditer',
+        message: 'Les fiches personnes ne sont pas modifiables en démo. Créez votre propre arbre pour éditer',
       });
     }
     if (!req.user?.id) {

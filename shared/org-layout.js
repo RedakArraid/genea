@@ -1,5 +1,5 @@
 /**
- * Moteur de layout organigramme — source unique pour frontend, seed backend et tests.
+ * Moteur de layout organigramme, source unique pour frontend, seed backend et tests.
  * Monté dans Docker sous /app/shared (voir docker-compose.yml).
  */
 

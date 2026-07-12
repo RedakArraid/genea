@@ -23,13 +23,13 @@ function ok(name, cond) {
   else { console.log(`  ✗ ${name}`); fail++ }
 }
 
-console.log('=== geneamap — Tests layout engine ===\n')
+console.log('=== geneamap, Tests layout engine ===\n')
 
 for (const layout of ['vertical', 'horizontal', 'radial']) {
   const { positions } = computeLayout(people, layout, 'spacious')
-  ok(`computeLayout ${layout} — toutes les personnes placées`, people.every((p) => positions[p.id]))
+  ok(`computeLayout ${layout}, toutes les personnes placées`, people.every((p) => positions[p.id]))
   const conns = buildConnections(people, positions, 'elbow', layout)
-  ok(`buildConnections ${layout} — connexions générées`, conns.length > 0)
+  ok(`buildConnections ${layout}, connexions générées`, conns.length > 0)
 }
 
 const { positions: vPos } = computeLayout(people, 'vertical', 'spacious')
@@ -37,7 +37,7 @@ const { positions: hPos } = computeLayout(people, 'horizontal', 'spacious')
 ok('horizontal transpose vertical (Jean x/y inversés)', vPos.a.x === hPos.a.y && vPos.a.y === hPos.a.x)
 
 const spouseConns = buildConnections(people, vPos, 'elbow', 'vertical').filter((c) => c.kind === 'spouse')
-ok('liaison conjointe — midpoint défini', spouseConns.every((c) => typeof c.midX === 'number' && typeof c.midY === 'number'))
+ok('liaison conjointe, midpoint défini', spouseConns.every((c) => typeof c.midX === 'number' && typeof c.midY === 'number'))
 
 const multiSpouse = [
   { id: 'hub', generation: 1, parentIds: [], spouseIds: ['s1', 's2'], given: 'Khadara', sur: 'D' },
@@ -47,17 +47,17 @@ const multiSpouse = [
 
 console.log('\n--- Multi-conjoints sans enfants ---')
 const { positions: msPos } = computeLayout(multiSpouse, 'vertical', 'spacious')
-ok('multi-conjoints — toutes placées', multiSpouse.every((p) => msPos[p.id]))
+ok('multi-conjoints, toutes placées', multiSpouse.every((p) => msPos[p.id]))
 ok(
-  'multi-conjoints — hub au centre (x entre les conjoint·es)',
+  'multi-conjoints, hub au centre (x entre les conjoint·es)',
   msPos.hub.x > msPos.s1.x && msPos.hub.x < msPos.s2.x
 )
 ok(
-  'multi-conjoints — même génération alignée (y identique)',
+  'multi-conjoints, même génération alignée (y identique)',
   msPos.hub.y === msPos.s1.y && msPos.hub.y === msPos.s2.y
 )
 ok(
-  'multi-conjoints — ordre [s1][hub][s2]',
+  'multi-conjoints, ordre [s1][hub][s2]',
   msPos.s1.x < msPos.hub.x && msPos.hub.x < msPos.s2.x
 )
 
@@ -73,16 +73,16 @@ const polygamyFamily = [
 console.log('\n--- Polygamie avec enfants ---')
 const { positions: polyPos } = computeLayout(polygamyFamily, 'vertical', 'spacious')
 const dadMariamDist = Math.hypot(polyPos.dad.x - polyPos.m1.x, polyPos.dad.y - polyPos.m1.y)
-ok('polygamie — conjoint·es proches (< 500px)', dadMariamDist < 500)
-ok('polygamie — toutes les épouses placées', ['m1', 'm2', 'm3'].every((id) => polyPos[id]))
-ok('polygamie — pas de ligne conjugale aberrante', dadMariamDist < 480)
+ok('polygamie, conjoint·es proches (< 500px)', dadMariamDist < 500)
+ok('polygamie, toutes les épouses placées', ['m1', 'm2', 'm3'].every((id) => polyPos[id]))
+ok('polygamie, pas de ligne conjugale aberrante', dadMariamDist < 480)
 
 ok(
-  'layoutNeedsRecompute — détecte positions éloignées',
+  'layoutNeedsRecompute, détecte positions éloignées',
   layoutNeedsRecompute(polygamyFamily, { dad: { x: 3000, y: 40 }, m1: { x: 860, y: 40 } })
 )
 ok(
-  'layoutNeedsRecompute — ignore positions saines',
+  'layoutNeedsRecompute, ignore positions saines',
   !layoutNeedsRecompute(polygamyFamily, polyPos)
 )
 
@@ -118,22 +118,22 @@ const orgPeople = [
 const orgOpts = { organization: true }
 const { positions: orgPos } = computeLayout(orgPeople, 'vertical', 'spacious', orgOpts)
 const orgCard = getCardDimensions('square', orgOpts)
-ok('org — toutes les personnes placées', orgPeople.every((p) => orgPos[p.id]))
-ok('org — directeurs espacés (gap >= carte + marge)', orgPos.dir2.x - orgPos.dir1.x >= orgCard.w + 40)
+ok('org, toutes les personnes placées', orgPeople.every((p) => orgPos[p.id]))
+ok('org, directeurs espacés (gap >= carte + marge)', orgPos.dir2.x - orgPos.dir1.x >= orgCard.w + 40)
 ok(
-  'layoutNeedsOrgRecompute — détecte grille serrée',
+  'layoutNeedsOrgRecompute, détecte grille serrée',
   layoutNeedsOrgRecompute(orgPeople, { dir1: { x: 0, y: 200 }, dir2: { x: 120, y: 200 } })
 )
 ok(
-  'layoutNeedsOrgRecompute — ignore layout org sain',
+  'layoutNeedsOrgRecompute, ignore layout org sain',
   !layoutNeedsOrgRecompute(orgPeople, orgPos)
 )
-ok('org — CEO au sommet = niveau max', formatGenerationBadge(1, { isOrg: true, maxGeneration: 4 }) === 'N4')
-ok('org — base = N1', formatGenerationBadge(4, { isOrg: true, maxGeneration: 4 }) === 'N1')
-ok('org — toDisplayLevel cohérent', toDisplayLevel(2, getMaxGeneration(orgPeople)) === 2)
+ok('org, CEO au sommet = niveau max', formatGenerationBadge(1, { isOrg: true, maxGeneration: 4 }) === 'N4')
+ok('org, base = N1', formatGenerationBadge(4, { isOrg: true, maxGeneration: 4 }) === 'N1')
+ok('org, toDisplayLevel cohérent', toDisplayLevel(2, getMaxGeneration(orgPeople)) === 2)
 const promoLex = getPresetLexicon('promo')
-ok('promo — badge V', formatGenerationBadge(1, { isOrg: true, maxGeneration: 3, lexicon: promoLex }) === 'V3')
-ok('promo — filtre niveau', formatLevelFilterLabel(2, 3, promoLex) === 'Vague 2 (V2)')
+ok('promo, badge V', formatGenerationBadge(1, { isOrg: true, maxGeneration: 3, lexicon: promoLex }) === 'V3')
+ok('promo, filtre niveau', formatLevelFilterLabel(2, 3, promoLex) === 'Vague 2 (V2)')
 
 console.log('\n--- Challenge Family (source + 7 par promo) ---')
 const promoRows = []
@@ -160,9 +160,9 @@ const cfNorm = normalizePersons(
   promoRows.map((p) => ({ id: p.id, firstName: p.given, lastName: p.sur, treeId: 't' })),
   cfRels
 )
-ok('challenge — racine seule en G1', cfNorm.filter((p) => p.generation === 1).length === 1)
-ok('challenge — 7 par promo (G2)', cfNorm.filter((p) => p.generation === 2).length === 7)
-ok('challenge — 7 par promo (G3)', cfNorm.filter((p) => p.generation === 3).length === 7)
+ok('challenge, racine seule en G1', cfNorm.filter((p) => p.generation === 1).length === 1)
+ok('challenge, 7 par promo (G2)', cfNorm.filter((p) => p.generation === 2).length === 7)
+ok('challenge, 7 par promo (G3)', cfNorm.filter((p) => p.generation === 3).length === 7)
 const cfLayout = computeLayout(cfNorm, 'vertical', 'spacious', orgOpts)
 const cfByGen = new Map()
 for (const p of cfNorm) {
@@ -170,7 +170,7 @@ for (const p of cfNorm) {
   cfByGen.get(p.generation).push(p)
 }
 const rowsAligned = [...cfByGen.values()].every((row) => new Set(row.map((p) => cfLayout.positions[p.id]?.y)).size === 1)
-ok('challenge — chaque niveau sur une ligne', rowsAligned)
+ok('challenge, chaque niveau sur une ligne', rowsAligned)
 const root = cfNorm.find((p) => p.id === rootId)
 const rootPos = cfLayout.positions[rootId]
 const g2Children = cfNorm.filter((p) => p.generation === 2)
@@ -178,25 +178,25 @@ const minX = Math.min(...g2Children.map((p) => cfLayout.positions[p.id].x))
 const maxX = Math.max(...g2Children.map((p) => cfLayout.positions[p.id].x)) + orgCard.w
 const rootCenter = rootPos.x + orgCard.w / 2
 const rowCenter = (minX + maxX) / 2
-ok('challenge — source centrée sur la promo', Math.abs(rootCenter - rowCenter) < 2)
+ok('challenge, source centrée sur la promo', Math.abs(rootCenter - rowCenter) < 2)
 const pres2020 = cfNorm.find((p) => p.id === promoIds[0][0])
 const g3Children = cfNorm.filter((p) => p.generation === 3)
 const minX3 = Math.min(...g3Children.map((p) => cfLayout.positions[p.id].x))
 const maxX3 = Math.max(...g3Children.map((p) => cfLayout.positions[p.id].x)) + orgCard.w
 const presCenter = cfLayout.positions[pres2020.id].x + orgCard.w / 2
-ok('challenge — président centré sur promo suivante', Math.abs(presCenter - (minX3 + maxX3) / 2) < 2)
+ok('challenge, président centré sur promo suivante', Math.abs(presCenter - (minX3 + maxX3) / 2) < 2)
 const g2Row = cfNorm.filter((p) => p.generation === 2)
 const g2Center = (Math.min(...g2Row.map((p) => cfLayout.positions[p.id].x)) + Math.max(...g2Row.map((p) => cfLayout.positions[p.id].x)) + orgCard.w) / 2
-ok('challenge — président au centre de sa promo', Math.abs(presCenter - g2Center) < 2)
+ok('challenge, président au centre de sa promo', Math.abs(presCenter - g2Center) < 2)
 const rowCenters = [...cfByGen.keys()].map((gen) => {
   const row = cfByGen.get(gen)
   const xs = row.map((p) => cfLayout.positions[p.id].x)
   return (Math.min(...xs) + Math.max(...xs) + orgCard.w) / 2
 })
-ok('challenge — pas de dérive latérale', rowCenters.every((c) => Math.abs(c - rowCenters[0]) < 2))
+ok('challenge, pas de dérive latérale', rowCenters.every((c) => Math.abs(c - rowCenters[0]) < 2))
 const sharedLayout = orgLayout.computeVerticalOrg(cfNorm, 'spacious')
 ok(
-  'challenge — parité shared/org-layout',
+  'challenge, parité shared/org-layout',
   cfNorm.every((p) => {
     const a = cfLayout.positions[p.id]
     const b = sharedLayout.positions[p.id]
@@ -206,7 +206,7 @@ ok(
 const staleY = Object.fromEntries(
   cfNorm.map((p) => [p.id, { x: cfLayout.positions[p.id].x, y: cfLayout.positions[p.id].y + 40 }])
 )
-ok('challenge — détecte layout Y obsolète', layoutNeedsOrgRecompute(cfNorm, staleY, 'spacious'))
+ok('challenge, détecte layout Y obsolète', layoutNeedsOrgRecompute(cfNorm, staleY, 'spacious'))
 
 console.log('\n--- Arrière-plan organigramme ---')
 const bgConfig = { imageUrl: 'https://example.com/logo.png', mode: 'REPEAT', opacity: 0.2, overlay: true, tileSize: 120 }

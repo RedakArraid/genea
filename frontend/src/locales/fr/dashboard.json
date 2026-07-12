@@ -41,7 +41,7 @@
     "typeGenealogy": "Famille",
     "typeGenealogyHint": "Lignée familiale, ancêtres, GEDCOM",
     "typeOrganization": "Organisation",
-    "typeOrganizationHint": "Organigramme — niveaux et subordination paramétrables",
+    "typeOrganizationHint": "Organigramme, niveaux et subordination paramétrables",
     "orgPresetLabel": "Modèle de terminologie",
     "orgPresets": {
       "enterprise": "Entreprise",
@@ -59,7 +59,12 @@
   },
   "activatePlan": {
     "title": "Activez votre forfait pour créer un arbre",
-    "subtitle": "Créez un compte gratuit (60 fiches) ou passez à Famille / Patrimoine pour exporter et aller plus loin.",
+    "subtitle": "Créez un compte gratuit (10 personnes) ou passez à Famille / Patrimoine pour exporter et aller plus loin.",
+    "seePricing": "Voir les tarifs"
+  },
+  "trialExpired": {
+    "title": "Période d'essai terminée",
+    "subtitle": "Votre essai de 30 jours est expiré. Consultez vos arbres en lecture seule ou passez à un forfait payant pour continuer à modifier.",
     "seePricing": "Voir les tarifs"
   },
   "sidebar": {

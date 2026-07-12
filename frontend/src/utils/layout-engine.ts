@@ -187,7 +187,7 @@ function computeSpouseOnlyLayout(people, density = 'spacious', organization = fa
 }
 
 /**
- * Disposition verticale par unités familiales — chaque branche sous ses parents.
+ * Disposition verticale par unités familiales - chaque branche sous ses parents.
  */
 function computeVerticalPedigree(people, density = 'spacious', organization = false) {
   if (!hasParentChildLinks(people)) {
@@ -444,7 +444,7 @@ function computeVerticalPedigree(people, density = 'spacious', organization = fa
     x += w + branchGap * 2;
   }
 
-  // Nœuds isolés / non placés — fallback par génération
+  // Nœuds isolés / non placés - fallback par génération
   const byGen = groupByGeneration(people.filter((p) => !placed.has(p.id)));
   let fallbackY =
     Object.values(positions).reduce((max, pos) => Math.max(max, pos.y), 40) + cardH + vGap;
@@ -469,14 +469,14 @@ function computeVerticalPedigree(people, density = 'spacious', organization = fa
 }
 
 /**
- * Organigramme — délègue au module partagé `shared/org-layout.js`.
+ * Organigramme - délègue au module partagé `shared/org-layout.js`.
  */
 function computeVerticalOrg(people, density = 'spacious') {
   return orgLayout.computeVerticalOrg(people, density);
 }
 
 /**
- * Disposition verticale (haut → bas) — délègue au moteur pedigree.
+ * Disposition verticale (haut → bas) - délègue au moteur pedigree.
  */
 function computeVertical(people, density = 'spacious', organization = false) {
   if (organization) return computeVerticalOrg(people, density);
@@ -484,7 +484,7 @@ function computeVertical(people, density = 'spacious', organization = false) {
 }
 
 /**
- * Disposition horizontale (gauche → droite) — transpose le pedigree vertical.
+ * Disposition horizontale (gauche → droite) - transpose le pedigree vertical.
  * Conjoint·es empilé·es verticalement, descendants vers la droite.
  */
 function computeHorizontal(people, density = 'spacious', organization = false) {
@@ -515,7 +515,7 @@ function computeRadial(people, density = 'spacious') {
   for (const [idx, g] of gens.entries()) {
     const row = byGen.get(g);
     if (idx === 0) {
-      // Centre — G1
+      // Centre - G1
       row.forEach((p, i) => {
         positions[p.id] = {
           x: cx - cardW / 2 + (row.length > 1 ? (i - (row.length - 1) / 2) * (cardW + 20) : 0),
@@ -722,7 +722,7 @@ export function buildConnections(people, positions, connStyle = 'elbow', layout 
     });
   });
 
-  // Connexions parent-enfant — barre de fratrie partagée pour éviter les croisements
+  // Connexions parent-enfant - barre de fratrie partagée pour éviter les croisements
   const childGroups = new Map();
   people.forEach((p) => {
     const parentIds = p.parentIds || [];
@@ -938,7 +938,7 @@ export function normalizePersons(apiPersons, apiRelationships = []) {
     return {
       id: p.id,
       given: p.firstName || p.given || '?',
-      sur: p.lastName || p.sur || '—',
+      sur: p.lastName || p.sur || '-',
       born: birthYear,
       died: deathYear,
       birthDate: p.birthDate || null,

@@ -27,7 +27,7 @@ exports.getMyPlan = async (req, res, next) => {
 
 exports.upgradePlan = async (req, res) => {
   res.status(402).json({
-    message: 'Paiement requis — utilisez POST /api/billing/initialize',
+    message: 'Paiement requis. Utilisez POST /api/billing/initialize',
     billingUrl: '/pricing',
   });
 };

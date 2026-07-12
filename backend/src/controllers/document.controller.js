@@ -4,7 +4,7 @@
 
 const prisma = require('../lib/prisma');
 const storage = require('../lib/storage');
-const { assertMediaAssetLimit } = require('../lib/planAccess');
+const { assertFicheLimit } = require('../lib/planAccess');
 const { storageConfig } = require('../config/storage.config');
 
 const VALID_CATEGORIES = new Set(storageConfig.documentCategories.map((c) => c.id));
@@ -42,7 +42,7 @@ exports.uploadDocument = async (req, res, next) => {
       return res.status(404).json({ message: 'Personne non trouvée' });
     }
 
-    await assertMediaAssetLimit(person.FamilyTree.ownerId);
+    await assertFicheLimit(person.FamilyTree.ownerId);
 
     const validation = storage.validateFile('document', req.file.mimetype, req.file.size);
     if (!validation.ok) {

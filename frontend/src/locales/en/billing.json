@@ -4,11 +4,16 @@
     "sectionBadge": "Pricing",
     "title": "Simple pricing, worldwide",
     "sectionTitle": "International-friendly pricing",
-    "subtitle": "Free account to get started, then Family and Heritage plans to go further. Secure card payment via Paystack.",
-    "sectionSubtitle": "Start for free, then Family and Heritage as you grow. Card payment via Paystack.",
+    "subtitle": "Discovery free (30-day trial), Family 15,600 FCFA ($24)/year or 1,625 FCFA ($2.50)/month, Heritage 27,300 FCFA ($42)/year or 2,925 FCFA ($4.50)/month. Secure card payment via Paystack.",
+    "sectionSubtitle": "Prices shown in FCFA and USD. Discovery: free, 30-day trial. Family: 15,600 FCFA ($24) per year or 1,625 FCFA ($2.50) per month. Heritage: 27,300 FCFA ($42) per year or 2,925 FCFA ($4.50) per month.",
+    "tariffSummaryTitle": "Pricing summary",
+    "tariffDiscovery": "Free · 30-day trial",
+    "tariffFamily": "{{yearlyPrice}} per year or {{monthlyPrice}} per month",
+    "tariffPatrimony": "{{yearlyPrice}} per year or {{monthlyPrice}} per month",
+    "tariffPaymentNote": "FCFA amounts are indicative (rate 1 USD = 650 FCFA). Payment is processed in USD via Paystack.",
     "promoCode": "Promo code",
-    "promoHint": "Country or campaign codes — enter yours if you have one.",
-    "securePayment": "Credit & debit card payment — secure",
+    "promoHint": "Country or campaign codes: enter yours if you have one.",
+    "securePayment": "Secure credit and debit card payment",
     "current": "Current",
     "currentPlan": "Current plan",
     "redirecting": "Redirecting…",
@@ -21,7 +26,7 @@
     "perYear": "Per year",
     "perMonth": "Per month",
     "free": "Free",
-    "freeForever": "Free forever"
+    "trialDays": "30-day trial"
   },
   "callback": {
     "verifying": "Verifying payment…",
@@ -41,34 +46,39 @@
       "priceLabel": "Free",
       "cta": "Start for free",
       "features": [
-        "1 tree (genealogy or organization)",
-        "Up to 60 profiles",
-        "15 photos & documents",
-        "Private sharing (2 collaborators)"
+        "1 tree, up to 10 people",
+        "No photos or profile sheets (documents)",
+        "Private sharing (2 collaborators)",
+        "No matching with public trees"
       ]
     },
     "FAMILY": {
       "name": "Family",
-      "priceLabel": "$24 / year",
-      "cta": "Choose Family",
+      "priceLabel": "15,600 FCFA ($24) / year",
+      "priceLabelMonthly": "1,625 FCFA ($2.50) / month",
+      "priceNote": "Yearly or monthly billing",
+      "cta": "Choose yearly",
+      "ctaMonthly": "Choose monthly",
       "features": [
-        "4 trees, 350 profiles per tree",
+        "3 trees, 50 people max per tree",
+        "100 profile sheets (documents) total",
         "Org charts & custom lexicon",
-        "80 photos & documents included",
-        "Unlimited collaborators",
+        "10 collaborators per tree",
         "GEDCOM & PDF export"
       ]
     },
     "PATRIMONY": {
       "name": "Heritage",
-      "priceLabel": "$42 / year",
-      "priceLabelMonthly": "$4.50 / month",
+      "priceLabel": "27,300 FCFA ($42) / year",
+      "priceLabelMonthly": "2,925 FCFA ($4.50) / month",
+      "priceNote": "Yearly or monthly billing",
       "cta": "Choose yearly",
       "ctaMonthly": "Choose monthly",
       "features": [
-        "Unlimited people and trees",
+        "5 trees, 200 people max per tree",
+        "30 collaborators per tree",
         "Large org charts & backgrounds",
-        "Unlimited photos & documents",
+        "Unlimited photos & profile sheets (documents)",
         "GEDCOM & PDF import/export",
         "Edit history",
         "Priority support"

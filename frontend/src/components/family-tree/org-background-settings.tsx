@@ -179,7 +179,7 @@ export function OrgBackgroundSettings({ tree, canEdit }: OrgBackgroundSettingsPr
         <>
           <div className="flex flex-col gap-2">
             <Label htmlFor="bg-opacity">
-              {t("org.background.opacity")} — {Math.round(opacity * 100)}%
+              {t("org.background.opacity")}: {Math.round(opacity * 100)}%
             </Label>
             <input
               id="bg-opacity"
@@ -197,7 +197,7 @@ export function OrgBackgroundSettings({ tree, canEdit }: OrgBackgroundSettingsPr
           {mode === "REPEAT" && (
             <div className="flex flex-col gap-2">
               <Label htmlFor="bg-tile">
-                {t("org.background.tileSize")} — {tileSize}px
+                {t("org.background.tileSize")}: {tileSize}px
               </Label>
               <input
                 id="bg-tile"

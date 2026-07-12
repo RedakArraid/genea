@@ -1,5 +1,5 @@
 /**
- * Client HTTP OpenWA — envoi WhatsApp et statut de session.
+ * Client HTTP OpenWA - envoi WhatsApp et statut de session.
  */
 
 const { getEffectiveOpenWaConfig } = require('./openWaSettings');

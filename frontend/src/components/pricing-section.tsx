@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom"
 import { Check } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { PLANS, formatDualPrice, isFreePlan } from "@/lib/plans"
+import { PLANS, getPlanIntervals } from "@/lib/plans"
+import { PlanPriceBlock } from "@/components/pricing-price-block"
 import { buttonVariants } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { useReveal } from "@/hooks/use-reveal"
 
@@ -23,12 +23,9 @@ export function PricingSection() {
     >
       <div className="mx-auto max-w-6xl px-6">
         <div className="mb-10 text-center">
-          <Badge variant="secondary" className="mb-3">{t("pricing.sectionBadge")}</Badge>
           <h2 className="text-3xl font-bold tracking-tight">{t("pricing.sectionTitle")}</h2>
-          <p className="mt-2 text-muted-foreground">
-            {t("pricing.sectionSubtitle")}
-          </p>
         </div>
+
         <div className="grid gap-6 md:grid-cols-3">
           {PLANS.map((plan) => {
             const features = t(`plans.${plan.id}.features`, { returnObjects: true }) as string[]
@@ -45,13 +42,10 @@ export function PricingSection() {
                     {plan.featured && <span className="text-primary">★</span>}
                     {t(`plans.${plan.id}.name`)}
                   </CardTitle>
-                  <CardDescription className="text-2xl font-semibold text-foreground">
-                    {isFreePlan(plan.id)
-                      ? t("pricing.free")
-                      : plan.id === "PATRIMONY"
-                        ? `${formatDualPrice("PATRIMONY", "yearly")} · ${formatDualPrice("PATRIMONY", "monthly")}`
-                        : formatDualPrice(plan.id)}
-                  </CardDescription>
+                  <PlanPriceBlock
+                    planId={plan.id}
+                    showBothIntervals={getPlanIntervals(plan.id).length > 1}
+                  />
                 </CardHeader>
                 <CardContent className="flex-1">
                   <ul className="flex flex-col gap-2 text-sm">

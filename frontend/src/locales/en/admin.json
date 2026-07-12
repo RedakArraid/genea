@@ -5,7 +5,7 @@
     "header": "Platform administration",
     "backToApp": "Back to app",
     "logout": "Log out",
-    "navAria": "Admin — {{title}}",
+    "navAria": "Admin, {{title}}",
     "nav": {
       "dashboard": "Dashboard",
       "users": "Users",
@@ -29,7 +29,7 @@
     "searchPlaceholder": "Search…",
     "pagination": "Page {{page}} / {{totalPages}}",
     "noData": "No data",
-    "dash": "—",
+    "dash": "-",
     "actions": "Actions",
     "view": "View",
     "name": "Name",
@@ -161,6 +161,30 @@
       "loadFailed": "Failed to load trees",
       "deleteSuccess": "Tree deleted",
       "demoUseDemoPage": "Use the Demo page to reset the demo tree"
+    },
+    "collaborators": {
+      "manage": "Manage collaborators",
+      "title": "Collaborators — {{name}}",
+      "add": "Add collaborator",
+      "emailPlaceholder": "email@example.com",
+      "viewer": "View",
+      "editor": "Edit",
+      "canManage": "Can manage collaborators",
+      "canManageShort": "Collab admin",
+      "invite": "Invite",
+      "pending": "Pending invites",
+      "revoke": "Revoke",
+      "empty": "No collaborators",
+      "removeConfirm": "Remove this collaborator?",
+      "loadFailed": "Failed to load collaborators",
+      "inviteSuccess": "Collaborator invited",
+      "inviteFailed": "Invite failed",
+      "updateSuccess": "Collaborator updated",
+      "updateFailed": "Update failed",
+      "removeSuccess": "Collaborator removed",
+      "removeFailed": "Remove failed",
+      "revokeSuccess": "Invite revoked",
+      "revokeFailed": "Revoke failed"
     }
   },
   "storage": {
@@ -285,7 +309,7 @@
   },
   "demo": {
     "title": "Demo tree",
-    "subtitle": "Dupont family — shared environment",
+    "subtitle": "Dupont family, shared environment",
     "warning": {
       "title": "Shared mutations",
       "description": "The demo tree can be edited by all visitors. Use reset to restore the initial state."
@@ -313,13 +337,14 @@
   },
   "plans": {
     "title": "Plans",
-    "subtitle_one": "Code-defined limits — {{count}} user total",
-    "subtitle_other": "Code-defined limits — {{count}} users total",
+    "subtitle_one": "Code-defined limits, {{count}} user total",
+    "subtitle_other": "Code-defined limits, {{count}} users total",
     "usersCount": "{{count}} users ({{pct}}%)",
     "limits": {
       "trees": "Trees: {{value}}",
       "personsPerTree": "Persons per tree: {{value}}",
-      "media": "Photos & docs: {{value}}",
+      "fichesTotal": "Profile sheets (documents): {{value}}",
+      "photosTotal": "Profile photos: {{value}}",
       "collaborators": "Collaborators: {{value}}"
     },
     "toasts": {
@@ -328,7 +353,7 @@
   },
   "promo": {
     "title": "Promo codes",
-    "subtitle": "Discounts by market or campaign — create one code per country/region (e.g. France launch, Senegal partner).",
+    "subtitle": "Discounts by market or campaign, create one code per country/region (e.g. France launch, Senegal partner).",
     "newCode": "New code",
     "noCodes": "No promo codes",
     "editTitle": "Edit code",

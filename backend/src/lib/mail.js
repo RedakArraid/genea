@@ -72,7 +72,7 @@ async function sendMail({ to, subject, text, html }) {
   const transport = await getTransporter();
 
   if (!transport) {
-    console.warn(`[mail] SMTP non configuré — email non envoyé à ${to}`);
+    console.warn(`[mail] SMTP non configuré - email non envoyé à ${to}`);
     if (process.env.NODE_ENV === 'development' && text) {
       console.info(`[mail] Aperçu:\n${text}`);
     }

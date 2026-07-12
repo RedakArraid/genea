@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 
 /**
- * Authentification optionnelle — enrichit req.user si un token valide est présent.
+ * Authentification optionnelle - enrichit req.user si un token valide est présent.
  */
 const optionalAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;

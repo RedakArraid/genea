@@ -50,8 +50,20 @@ function generateReference(prefix = 'genea') {
 
 function isPlanEntitlementActive(user) {
   if (!user?.planActive) return false;
-  if (!user.planExpiresAt) return true;
-  return new Date(user.planExpiresAt) > new Date();
+  const expiresAt = resolvePlanExpiresAt(user);
+  if (!expiresAt) return true;
+  return expiresAt > new Date();
 }
 
-module.exports = { fulfillPayment, generateReference, isPlanEntitlementActive };
+/** Date d'expiration effective (planExpiresAt ou essai SOLO depuis createdAt). */
+function resolvePlanExpiresAt(user) {
+  if (!user) return null;
+  if (user.planExpiresAt) return new Date(user.planExpiresAt);
+  if (user.plan === 'SOLO' && user.createdAt) {
+    const { SOLO_TRIAL_DAYS } = require('../plans');
+    return new Date(new Date(user.createdAt).getTime() + SOLO_TRIAL_DAYS * 24 * 60 * 60 * 1000);
+  }
+  return null;
+}
+
+module.exports = { fulfillPayment, generateReference, isPlanEntitlementActive, resolvePlanExpiresAt };

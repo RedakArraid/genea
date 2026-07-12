@@ -1,5 +1,6 @@
 const express = require('express');
 const adminController = require('../controllers/admin.controller');
+const adminCollaborationController = require('../controllers/adminCollaboration.controller');
 const { isAuth } = require('../middleware/auth.middleware');
 const { isAdmin } = require('../middleware/admin.middleware');
 
@@ -13,6 +14,11 @@ router.get('/users/:id', adminController.getUser);
 router.patch('/users/:id', adminController.updateUser);
 router.delete('/users/:id', adminController.deleteUser);
 router.get('/trees', adminController.listTrees);
+router.get('/trees/:id/collaborators', adminCollaborationController.listTreeCollaborators);
+router.post('/trees/:id/collaborators', adminCollaborationController.inviteTreeCollaborator);
+router.patch('/trees/:id/collaborators/:userId', adminCollaborationController.updateTreeCollaborator);
+router.delete('/trees/:id/collaborators/:userId', adminCollaborationController.removeTreeCollaborator);
+router.delete('/trees/:id/invites/:inviteId', adminCollaborationController.revokeTreeInvite);
 router.delete('/trees/:id', adminController.deleteTree);
 router.get('/demo', adminController.getDemoInfo);
 router.post('/demo/reset', adminController.resetDemo);

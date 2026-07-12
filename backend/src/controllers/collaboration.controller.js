@@ -1,7 +1,8 @@
 const crypto = require('crypto');
 const prisma = require('../lib/prisma');
 const { getEffectivePlanLimits } = require('../lib/planAccess');
-const { resolveTreeAccess, requireTreeRead, requireTreeWrite } = require('../lib/treeAccess');
+const { resolveTreeAccess, requireTreeRead } = require('../lib/treeAccess');
+const { assertCanManageCollaborators } = require('../lib/collaborationAccess');
 const { notifyTreeInviteEmail, notifyTreeAccessEmail } = require('../lib/treeInviteMail');
 
 exports.getTreeAccess = async (req, res, next) => {
@@ -48,7 +49,7 @@ exports.listCollaborators = async (req, res, next) => {
 exports.inviteCollaborator = async (req, res, next) => {
   try {
     const { id: treeId } = req.params;
-    const { email, role = 'VIEWER' } = req.body;
+    const { email, role = 'VIEWER', canManageCollaborators = false } = req.body;
 
     if (!email) {
       return res.status(400).json({ message: 'Email requis' });
@@ -61,12 +62,11 @@ exports.inviteCollaborator = async (req, res, next) => {
     if (!tree || tree.isDemo) {
       return res.status(403).json({ message: 'Impossible d\'inviter sur cet arbre' });
     }
-    if (tree.ownerId !== req.user.id) {
-      return res.status(403).json({ message: 'Seul le propriétaire peut inviter' });
-    }
+    await assertCanManageCollaborators(req.user.id, tree);
 
-    const owner = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const owner = await prisma.user.findUnique({ where: { id: tree.ownerId } });
     const limits = getEffectivePlanLimits(owner);
+    const manageFlag = !!canManageCollaborators;
 
     const normalizedEmail = email.toLowerCase().trim();
     const existingUser = await prisma.user.findUnique({
@@ -100,8 +100,8 @@ exports.inviteCollaborator = async (req, res, next) => {
         where: {
           treeId_userId: { treeId, userId: existingUser.id },
         },
-        create: { treeId, userId: existingUser.id, role },
-        update: { role },
+        create: { treeId, userId: existingUser.id, role, canManageCollaborators: manageFlag },
+        update: { role, canManageCollaborators: manageFlag },
       });
 
       const emailResult = await notifyTreeAccessEmail({
@@ -121,6 +121,7 @@ exports.inviteCollaborator = async (req, res, next) => {
           email: existingUser.email,
           name: existingUser.name,
           role,
+          canManageCollaborators: manageFlag,
         },
       });
     }
@@ -131,6 +132,7 @@ exports.inviteCollaborator = async (req, res, next) => {
         treeId,
         email: normalizedEmail,
         role,
+        canManageCollaborators: manageFlag,
         token,
         invitedById: req.user.id,
       },
@@ -152,10 +154,61 @@ exports.inviteCollaborator = async (req, res, next) => {
         id: invite.id,
         email: invite.email,
         role: invite.role,
+        canManageCollaborators: invite.canManageCollaborators,
         token: invite.token,
       },
     });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+    next(error);
+  }
+};
+
+exports.updateCollaborator = async (req, res, next) => {
+  try {
+    const { id: treeId, userId } = req.params;
+    const { role, canManageCollaborators } = req.body;
+
+    const tree = await prisma.familyTree.findUnique({ where: { id: treeId } });
+    if (!tree || tree.isDemo) {
+      return res.status(403).json({ message: 'Modification impossible' });
+    }
+    await assertCanManageCollaborators(req.user.id, tree);
+
+    if (userId === tree.ownerId) {
+      return res.status(400).json({ message: 'Le propriétaire ne peut pas être modifié' });
+    }
+
+    const data = {};
+    if (role !== undefined) {
+      if (!['VIEWER', 'EDITOR'].includes(role)) {
+        return res.status(400).json({ message: 'Rôle invalide' });
+      }
+      data.role = role;
+    }
+    if (canManageCollaborators !== undefined) {
+      data.canManageCollaborators = !!canManageCollaborators;
+    }
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ message: 'Aucune modification demandée' });
+    }
+
+    const updated = await prisma.treeCollaborator.update({
+      where: { treeId_userId: { treeId, userId } },
+      data,
+      include: { User: { select: { id: true, email: true, name: true } } },
+    });
+
+    res.json({ message: 'Collaborateur mis à jour', collaborator: updated });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'Collaborateur introuvable' });
+    }
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     next(error);
   }
 };
@@ -164,12 +217,16 @@ exports.removeCollaborator = async (req, res, next) => {
   try {
     const { id: treeId, userId } = req.params;
     const tree = await prisma.familyTree.findUnique({ where: { id: treeId } });
-    if (!tree || tree.ownerId !== req.user.id) {
-      return res.status(403).json({ message: 'Action non autorisée' });
+    if (!tree) {
+      return res.status(404).json({ message: 'Arbre non trouvé' });
     }
+    await assertCanManageCollaborators(req.user.id, tree);
     await prisma.treeCollaborator.deleteMany({ where: { treeId, userId } });
     res.json({ message: 'Collaborateur retiré' });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     next(error);
   }
 };
@@ -178,15 +235,19 @@ exports.revokeInvite = async (req, res, next) => {
   try {
     const { id: treeId, inviteId } = req.params;
     const tree = await prisma.familyTree.findUnique({ where: { id: treeId } });
-    if (!tree || tree.ownerId !== req.user.id) {
-      return res.status(403).json({ message: 'Action non autorisée' });
+    if (!tree) {
+      return res.status(404).json({ message: 'Arbre non trouvé' });
     }
+    await assertCanManageCollaborators(req.user.id, tree);
     await prisma.treeInvite.update({
       where: { id: inviteId },
       data: { status: 'revoked' },
     });
     res.json({ message: 'Invitation révoquée' });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     next(error);
   }
 };
@@ -262,8 +323,12 @@ exports.acceptInvite = async (req, res, next) => {
           treeId: invite.treeId,
           userId: user.id,
           role: invite.role,
+          canManageCollaborators: invite.canManageCollaborators,
         },
-        update: { role: invite.role },
+        update: {
+          role: invite.role,
+          canManageCollaborators: invite.canManageCollaborators,
+        },
       }),
       prisma.treeInvite.update({
         where: { id: invite.id },

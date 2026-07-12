@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useLocation, useNavigate, useParams } from "react-router-dom"
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { useAuthStore } from "@/stores/auth-store"
@@ -18,7 +18,7 @@ import {
   LinkExistingChildDialog,
 } from "@/components/family-tree/dialogs"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Eye } from "lucide-react"
 import { uploadPersonPhoto, setPersonPhoto } from "@/lib/upload"
 import { exportTreeGedcom, exportTreePdf } from "@/lib/export-api"
@@ -38,7 +38,7 @@ function personForEdit(person: NormalizedPerson, treeId: string, raw?: Person): 
   return {
     id: person.id,
     firstName: person.given,
-    lastName: person.sur !== "—" ? person.sur : "",
+    lastName: person.sur !== "-" ? person.sur : "",
     birthDate: person.birthDate,
     deathDate: person.deathDate,
     birthPlace: person.place || null,
@@ -79,10 +79,12 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   const canDrag = isDemo || canWrite
   const readOnly = !canWrite
   const canChangePhoto = canWrite
-  const canShare = !isDemo && treeAccess?.role === "owner"
+  const canManageCollaborators = !isDemo && !!treeAccess?.canManageCollaborators
+  const canManageVisibility = !isDemo && treeAccess?.role === "owner" && canWrite
+  const canShare = canManageCollaborators || canManageVisibility
   const isOrg = isOrganizationTree(currentTree)
   const canExport = !!isAuthenticated && !!treeAccess?.canExport && !isDemo
-  const canImport = canExport && canWrite && !isOrg
+  const canImport = !!isAuthenticated && !!treeAccess?.canImport && canWrite && !isOrg
   const canExportGedcom = canExport && !isOrg
   const canVersioning = !!isAuthenticated && !!treeAccess?.canVersioning && !isDemo
   const pageHeight = publicDemo || isPublicRoute ? "flex min-h-0 flex-1 flex-col" : "h-full min-h-0"
@@ -126,7 +128,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
 
   /**
    * Écrire sur l'arbre démo redirige côté API vers une copie personnelle
-   * (voir lib/demoFork.js) — on bascule l'URL dessus au lieu de rafraîchir
+   * (voir lib/demoFork.js) - on bascule l'URL dessus au lieu de rafraîchir
    * l'arbre public partagé, pour que les modifications ne le touchent jamais.
    */
   const refreshOrRedirectAfterWrite = (fallbackTreeId: string, options?: { silent?: boolean }) => {
@@ -343,7 +345,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     }
     const result = await addPerson(treeId, {
       firstName: formData.firstName,
-      lastName: formData.lastName || "—",
+      lastName: formData.lastName || "-",
       birthDate: formData.birthDate || undefined,
       birthPlace: formData.birthPlace || undefined,
       deathDate: formData.deathDate || undefined,
@@ -446,7 +448,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     }
 
     const child = people.find((p) => p.id === childId)
-    const name = child ? `${child.given}${child.sur && child.sur !== "—" ? ` ${child.sur}` : ""}` : ""
+    const name = child ? `${child.given}${child.sur && child.sur !== "-" ? ` ${child.sur}` : ""}` : ""
 
     if (linked) {
       toast.success(t("page.childLinked", { name: name || "?" }))
@@ -523,12 +525,19 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
               ? canWrite
                 ? t("page.demoSharedWrite")
                 : t("page.demoReadOnly")
+              : treeAccess?.planExpired && treeAccess?.role === "owner"
+                ? t("page.trialExpired")
               : isPublicRoute && !isAuthenticated
                 ? t("page.publicReadOnly")
                 : readOnly && isAuthenticated
                   ? t("page.authReadOnly")
                   : t("page.guestReadOnly")}
           </span>
+          {treeAccess?.planExpired && treeAccess?.role === "owner" && (
+            <Link to="/pricing" className={buttonVariants({ variant: "outline", size: "sm", className: "h-7 border-amber-300 bg-background" })}>
+              {t("page.upgradePlan")}
+            </Link>
+          )}
           {(publicDemo || (readOnly && !isAuthenticated)) && (
             <>
               <Button size="sm" variant="outline" className="h-7 border-amber-300 bg-background" onClick={() => navigate("/login")}>
@@ -648,7 +657,8 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         onClose={() => setIsShareOpen(false)}
         treeId={currentTree.id}
         visibility={currentTree.visibility || (currentTree.isPublic ? "PUBLIC" : "PRIVATE")}
-        canManage={!isDemo && !readOnly && treeAccess?.role === "owner"}
+        canManageCollaborators={canManageCollaborators}
+        canManageVisibility={canManageVisibility}
       />
 
       <TreeSettingsSheet

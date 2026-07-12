@@ -4,7 +4,7 @@
 
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
-const { assertPlanEntitlement, getEffectivePlanLimits } = require('../lib/planAccess');
+const { assertPlanEntitlement, evaluatePersonCapacity, getEffectivePlanLimits } = require('../lib/planAccess');
 const { requireTreeRead } = require('../lib/treeAccess');
 const { loadTreeExportData, assertCanExportTree, assertCanExportGedcom, assertCanImportExportTree, slugifyFilename } = require('../lib/exportAccess');
 const { isOrganizationTree } = require('../lib/treeType');
@@ -413,12 +413,18 @@ exports.importGedcom = async (req, res, next) => {
 
     const owner = await prisma.user.findUnique({ where: { id: tree.ownerId } });
     const limits = getEffectivePlanLimits(owner);
-    const currentCount = tree.Person?.length ?? await prisma.person.count({ where: { treeId: id } });
     const parsedPreview = require('../lib/gedcom').parseGedcom(gedcomText);
-    if (currentCount + parsedPreview.individuals.length > limits.maxPersonsPerTree) {
-      return res.status(403).json({
-        message: `Import dépasserait la limite de ${limits.maxPersonsPerTree} personnes`,
-        code: 'PLAN_LIMIT_REACHED',
+    const currentCount = tree.Person?.length ?? await prisma.person.count({ where: { treeId: id } });
+    const capacity = evaluatePersonCapacity(limits, {
+      treePersonCount: currentCount,
+      additional: parsedPreview.individuals.length,
+    });
+    if (!capacity.ok) {
+      return res.status(capacity.statusCode).json({
+        message: capacity.message,
+        code: capacity.code,
+        maxPersons: capacity.maxPersons,
+        planName: capacity.planName,
       });
     }
 

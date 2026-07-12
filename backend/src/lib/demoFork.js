@@ -1,5 +1,5 @@
 /**
- * Copie personnelle de l'arbre démo — chaque utilisateur qui écrit sur la démo
+ * Copie personnelle de l'arbre démo - chaque utilisateur qui écrit sur la démo
  * obtient un clone privé (isDemo=false) au lieu de modifier l'arbre public partagé.
  */
 
@@ -81,7 +81,7 @@ async function getOrCreateDemoFork(userId) {
       const fork = await tx.familyTree.create({
         data: {
           name: `${demoTree.name} (votre copie)`,
-          description: "Votre copie personnelle de la démo — vos modifications restent ici, l'arbre public n'est pas affecté.",
+          description: "Votre copie personnelle de la démo. Vos modifications restent ici, l'arbre public n'est pas affecté.",
           isPublic: false,
           visibility: 'PRIVATE',
           isDemo: false,
