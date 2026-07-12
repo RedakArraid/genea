@@ -3,8 +3,6 @@ import { useTranslation } from "react-i18next"
 import { isOrganizationTree } from "@/lib/tree-type"
 import { applyTemplate, resolveOrgLexicon, type OrgLexiconConfig } from "@/lib/org-lexicon"
 import type { FamilyTree, TreeType } from "@/types"
-import { isOrganizationTree } from "@/lib/tree-type"
-import { applyTemplate, resolveOrgLexicon, type OrgLexiconConfig } from "@/lib/org-lexicon"
 
 type LexiconTree =
   | Pick<FamilyTree, "treeType" | "orgLexicon">

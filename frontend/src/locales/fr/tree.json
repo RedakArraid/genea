@@ -189,6 +189,7 @@
     "linkDeleted": "Lien supprimé",
     "deleteLinkConfirm": "Supprimer ce lien ?",
     "treeNotFound": "Arbre introuvable",
+    "treeMoved": "Arbre introuvable — redirection vers « {{name}} »",
     "demoSharedWrite": "Mode démo partagé — structure libre (ajouts, liens, photos, documents). Fiches texte verrouillées. Les changements sont visibles par tous.",
     "demoReadOnly": "Mode démo — déplacez les cartes pour explorer. Connectez-vous pour ajouter, lier et sauvegarder.",
     "publicReadOnly": "Consultation publique en lecture seule — explorez l'arbre sans compte. Connectez-vous pour le modifier.",

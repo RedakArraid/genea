@@ -189,6 +189,7 @@
     "linkDeleted": "Link removed",
     "deleteLinkConfirm": "Remove this link?",
     "treeNotFound": "Tree not found",
+    "treeMoved": "Tree not found — redirecting to \"{{name}}\"",
     "demoSharedWrite": "Shared demo mode — free structure (add, link, photos, documents). Text profiles locked. Changes visible to everyone.",
     "demoReadOnly": "Demo mode — drag cards to explore. Log in to add, link and save.",
     "publicReadOnly": "Public read-only view — explore without an account. Log in to edit.",

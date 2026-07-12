@@ -46,7 +46,7 @@ router.post(
     body('deathDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Format de date de décès invalide'),
     body('occupation').optional(),
     body('biography').optional(),
-    body('gender').optional().isIn(['male', 'female', 'other']).withMessage('Genre invalide'),
+    body('gender').optional({ checkFalsy: true }).isIn(['male', 'female', 'other']).withMessage('Genre invalide'),
     body('photoUrl').optional(),
   ],
   personController.createPerson
@@ -72,7 +72,7 @@ router.put(
     body('deathDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Format de date de décès invalide'),
     body('occupation').optional(),
     body('biography').optional(),
-    body('gender').optional().isIn(['male', 'female', 'other']).withMessage('Genre invalide'),
+    body('gender').optional({ checkFalsy: true }).isIn(['male', 'female', 'other']).withMessage('Genre invalide'),
     body('photoUrl').optional(),
   ],
   personController.updatePerson

@@ -21,7 +21,7 @@ interface FamilyTreeState {
   isLoading: boolean
   error: string | null
   fetchTrees: () => Promise<void>
-  fetchTreeById: (treeId: string, options?: { silent?: boolean }) => Promise<void>
+  fetchTreeById: (treeId: string, options?: { silent?: boolean }) => Promise<{ notFound?: boolean } | void>
   fetchCollaborators: (treeId: string) => Promise<{ collaborators: TreeCollaborator[]; invites: TreeInvite[] } | null>
   inviteCollaborator: (
     treeId: string,
@@ -98,10 +98,15 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
     if (!silent) set({ isLoading: true, error: null })
     try {
       const { data } = await api.get(`/family-trees/${treeId}`)
-      set({ currentTree: data.tree, treeAccess: data.access ?? null, isLoading: false })
+      set({ currentTree: data.tree, treeAccess: data.access ?? null, isLoading: false, error: null })
     } catch (error: unknown) {
+      const statusCode =
+        typeof error === "object" && error !== null && "response" in error
+          ? (error as { response?: { status?: number } }).response?.status
+          : undefined
       const message = storeError(error, "tree:store.fetchTreeError")
-      set({ error: message, isLoading: false })
+      set({ error: message, isLoading: false, currentTree: statusCode === 404 ? null : get().currentTree })
+      return { notFound: statusCode === 404 }
     }
   },
 
@@ -185,13 +190,19 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
 
   addPerson: async (treeId, personData) => {
     try {
-      const { data } = await api.post(`/persons/tree/${treeId}`, personData)
-      const position = personData.position || { x: 0, y: 0 }
+      const { position, ...raw } = personData
+      const payload: Record<string, unknown> = {}
+      for (const [key, value] of Object.entries(raw)) {
+        if (value === undefined || value === "") continue
+        payload[key] = value
+      }
+      const { data } = await api.post(`/persons/tree/${treeId}`, payload)
+      const nodePosition = position || { x: 0, y: 0 }
       await api.post("/node-positions", {
         nodeId: data.person.id,
         treeId,
-        x: position.x,
-        y: position.y,
+        x: nodePosition.x,
+        y: nodePosition.y,
       })
       return { success: true, person: data.person }
     } catch (error: unknown) {

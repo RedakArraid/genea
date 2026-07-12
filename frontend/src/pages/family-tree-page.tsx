@@ -133,12 +133,23 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     positionsDirtyRef.current = false
     lastRelsHashRef.current = null
     setPositions({})
-    if (treeId) {
-      if (!publicDemo && !isPublicRoute) rememberLastTreeId(treeId)
-      fetchTreeById(treeId)
-    }
+    if (!treeId) return () => resetState()
+
+    if (!publicDemo && !isPublicRoute) rememberLastTreeId(treeId)
+    void (async () => {
+      const result = await fetchTreeById(treeId)
+      if (result?.notFound && !publicDemo && !isPublicRoute) {
+        const { fetchTrees } = useFamilyTreeStore.getState()
+        await fetchTrees()
+        const fallback = useFamilyTreeStore.getState().trees.find((t) => t.name === "Challenge Family")
+        if (fallback) {
+          toast.info(t("page.treeMoved", { name: fallback.name }))
+          navigate(`/family-tree/${fallback.id}`, { replace: true })
+        }
+      }
+    })()
     return () => resetState()
-  }, [treeId, fetchTreeById, resetState, publicDemo, isPublicRoute])
+  }, [treeId, fetchTreeById, resetState, publicDemo, isPublicRoute, navigate, t])
 
   useEffect(() => {
     if (!currentTree?.Person?.length || isDraggingCardRef.current) return
@@ -174,7 +185,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     const staleLayout =
       hasAllPositions &&
       (orgTree
-        ? layoutNeedsOrgRecompute(normalizedPeople, dbPositions)
+        ? layoutNeedsOrgRecompute(normalizedPeople, dbPositions, tweaks.density)
         : layoutNeedsRecompute(normalizedPeople, dbPositions))
     const needsLayout = relsChanged || !hasAllPositions || Object.keys(dbPositions).length === 0 || staleLayout
 
@@ -302,13 +313,14 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     }
     const result = await addPerson(treeId, {
       firstName: formData.firstName,
-      lastName: formData.lastName,
-      birthDate: formData.birthDate || null,
-      birthPlace: formData.birthPlace || null,
-      deathDate: formData.deathDate || null,
-      gender: formData.gender || null,
-      biography: formData.biography || null,
-      photoUrl,
+      lastName: formData.lastName || "—",
+      birthDate: formData.birthDate || undefined,
+      birthPlace: formData.birthPlace || undefined,
+      deathDate: formData.deathDate || undefined,
+      occupation: formData.occupation || undefined,
+      biography: formData.biography || undefined,
+      gender: formData.gender || undefined,
+      photoUrl: photoUrl ?? undefined,
       position: { x: 300, y: 200 },
     })
     if (result.success && result.person) {
