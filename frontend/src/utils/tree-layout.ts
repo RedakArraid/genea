@@ -64,7 +64,8 @@ export function layoutNeedsRecompute(
 
 export function layoutNeedsOrgRecompute(
   people: NormalizedPerson[],
-  positions: Record<string, { x: number; y: number }>
+  positions: Record<string, { x: number; y: number }>,
+  density: "spacious" | "compact" = "spacious"
 ) {
-  return rawLayoutNeedsOrgRecompute(people, positions)
+  return rawLayoutNeedsOrgRecompute(people, positions, density)
 }

@@ -1,6 +1,5 @@
 import type { LevelOrder, OrgLexiconConfig } from "../types"
 import { resolveOrgLexicon } from "./org-lexicon"
-import { isOrganizationTree } from "./tree-type"
 
 export function getMaxGeneration(people: { generation?: number }[]): number {
   if (!people.length) return 1

@@ -24,7 +24,7 @@ function groupByGeneration(people: Array<{ generation?: number; id: string }>) {
   return map
 }
 
-function orgRowHubs(row: Array<{ id: string }>, people: Array<{ id: string; parentIds?: string[] }>) {
+function orgRowHubs<T extends { id: string }>(row: T[], people: Array<{ id: string; parentIds?: string[] }>): T[] {
   return row.filter((p) => people.some((c) => (c.parentIds || []).includes(p.id)))
 }
 
