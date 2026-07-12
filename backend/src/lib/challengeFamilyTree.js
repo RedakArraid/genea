@@ -8,7 +8,7 @@ const { normalizeOrgLexicon } = require('./orgLexicon');
 const {
   computeVerticalOrg,
   translatePositions,
-} = require('../../../shared/org-layout');
+} = require('./org-layout');
 
 const TREE_NAME = 'Challenge Family';
 const MEMBERS_PER_PROMO = 7;
