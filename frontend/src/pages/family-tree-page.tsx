@@ -26,6 +26,7 @@ import { importTreeGedcom } from "@/lib/import-api"
 import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
 import { rememberLastTreeId } from "@/lib/post-login-destination"
 import { TreeOnboardingHint } from "@/components/family-tree/tree-onboarding-hint"
+import { consumePendingDemoFork } from "@/lib/demo-fork-signal"
 
 interface FamilyTreePageProps {
   treeIdOverride?: string
@@ -123,6 +124,30 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     hidePhotos: false,
   })
 
+  /**
+   * Écrire sur l'arbre démo redirige côté API vers une copie personnelle
+   * (voir lib/demoFork.js) — on bascule l'URL dessus au lieu de rafraîchir
+   * l'arbre public partagé, pour que les modifications ne le touchent jamais.
+   */
+  const refreshOrRedirectAfterWrite = (fallbackTreeId: string, options?: { silent?: boolean }) => {
+    const forkedTreeId = consumePendingDemoFork()
+    if (forkedTreeId && forkedTreeId !== treeId) {
+      toast.success(t("page.demoForked"))
+      navigate(`/family-tree/${forkedTreeId}`, { replace: true })
+      return
+    }
+    fetchTreeById(fallbackTreeId, options ?? { silent: true })
+  }
+
+  /** Variante pour les écritures "silencieuses" (positions) qui ne rafraîchissaient déjà rien. */
+  const redirectIfForked = () => {
+    const forkedTreeId = consumePendingDemoFork()
+    if (forkedTreeId && forkedTreeId !== treeId) {
+      toast.success(t("page.demoForked"))
+      navigate(`/family-tree/${forkedTreeId}`, { replace: true })
+    }
+  }
+
   const handleOpenAddModal = (parentId: string | null = null, relType: string | null = null, parent2Id: string | null = null) => {
     setAddPersonRelData({ parentId, parent2Id, relType })
     setIsAddOpen(true)
@@ -138,6 +163,11 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     if (!publicDemo && !isPublicRoute) rememberLastTreeId(treeId)
     void (async () => {
       const result = await fetchTreeById(treeId)
+      const forkedTreeId = consumePendingDemoFork()
+      if (forkedTreeId && forkedTreeId !== treeId) {
+        navigate(`/family-tree/${forkedTreeId}`, { replace: true })
+        return
+      }
       if (result?.notFound && !publicDemo && !isPublicRoute) {
         const { fetchTrees } = useFamilyTreeStore.getState()
         await fetchTrees()
@@ -195,7 +225,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
       const { positions: computed } = computeLayout(normalizedPeople, tweaks.layout, tweaks.density, layoutOpts)
       setPositions(computed)
       if (canWrite) {
-        updateNodePositions(Object.entries(computed).map(([id, pos]) => ({ id, position: pos as Position })))
+        updateNodePositions(Object.entries(computed).map(([id, pos]) => ({ id, position: pos as Position }))).then(redirectIfForked)
       }
     }
 
@@ -229,7 +259,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         if (!dbPos || Math.abs(dbPos.x - pos.x) > 1 || Math.abs(dbPos.y - pos.y) > 1) hasChanged = true
         return { id, position: pos }
       })
-      if (hasChanged) updateNodePositions(toSave)
+      if (hasChanged) updateNodePositions(toSave).then(redirectIfForked)
     }, 1000)
     return () => clearTimeout(handler)
   }, [positions, currentTree, updateNodePositions, canWrite])
@@ -262,7 +292,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
       if ((key === "layout" || key === "density") && !readOnly) {
         const { positions: computed } = computeLayout(people, next.layout, next.density, layoutOpts)
         setPositions(computed)
-        updateNodePositions(Object.entries(computed).map(([id, pos]) => ({ id, position: pos as import("@/types").Position })))
+        updateNodePositions(Object.entries(computed).map(([id, pos]) => ({ id, position: pos as import("@/types").Position }))).then(redirectIfForked)
         setFitRequestId((id) => id + 1)
       } else if (key === "layout" || key === "density") {
         const { positions: computed } = computeLayout(people, next.layout, next.density, layoutOpts)
@@ -279,7 +309,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     setPositions(computed)
     positionsDirtyRef.current = false
     if (!readOnly) {
-      updateNodePositions(Object.entries(computed).map(([id, pos]) => ({ id, position: pos as Position })))
+      updateNodePositions(Object.entries(computed).map(([id, pos]) => ({ id, position: pos as Position }))).then(redirectIfForked)
     }
     setFitRequestId((id) => id + 1)
     toast.success(t("page.reorganized"))
@@ -335,7 +365,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         await addRelationship({ sourceId: relToId2, targetId: result.person.id, type: "parent" })
       }
       toast.success(t("page.personAdded", { name: result.person.firstName }))
-      fetchTreeById(treeId, { silent: true })
+      refreshOrRedirectAfterWrite(treeId)
       setIsAddOpen(false)
     } else {
       toast.error(result.message)
@@ -358,7 +388,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     try {
       const { url } = await uploadPersonPhoto(file, treeId, personId)
       await setPersonPhoto(personId, url)
-      await fetchTreeById(treeId, { silent: true })
+      refreshOrRedirectAfterWrite(treeId)
     } catch {
       toast.error(t("person.photoUploadFailed"))
       throw new Error("photo upload failed")
@@ -372,7 +402,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     if (result.success) {
       toast.success(t("page.personDeleted"))
       setSelectedId(null)
-      if (treeId) fetchTreeById(treeId, { silent: true })
+      if (treeId) refreshOrRedirectAfterWrite(treeId)
     } else toast.error(result.message)
   }
 
@@ -393,7 +423,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     const result = await addRelationship(payload)
     if (result.success) {
       toast.success(t("page.linkCreated"))
-      if (treeId) fetchTreeById(treeId, { silent: true })
+      if (treeId) refreshOrRedirectAfterWrite(treeId)
       setIsRelationOpen(false)
     } else toast.error(result.message)
   }
@@ -424,7 +454,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
       toast.info(t("page.linkAlreadyExists"))
     }
 
-    await fetchTreeById(treeId, { silent: true })
+    refreshOrRedirectAfterWrite(treeId)
     setIsLinkChildOpen(false)
     setLinkChildParentIds([])
   }
@@ -434,7 +464,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     const result = await deleteRelationship(relId)
     if (result.success) {
       toast.success(t("page.linkDeleted"))
-      if (treeId) fetchTreeById(treeId, { silent: true })
+      if (treeId) refreshOrRedirectAfterWrite(treeId)
     } else toast.error(result.message)
   }
 
@@ -570,7 +600,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
             if (Object.keys(snapshot).length === 0) return
             updateNodePositions(
               Object.entries(snapshot).map(([id, position]) => ({ id, position }))
-            )
+            ).then(redirectIfForked)
           }}
         />
       </div>

@@ -1,5 +1,6 @@
 const prisma = require('../lib/prisma');
 const { requireTreeRead, requireTreeWrite, resolveTreeAccess } = require('../lib/treeAccess');
+const { getOrCreateDemoFork, translateDemoEntityId } = require('../lib/demoFork');
 
 const canAccessPerson = async (req, res, next) => {
   try {
@@ -57,9 +58,26 @@ const canDeleteRelationship = async (req, res, next) => {
       return res.status(404).json({ message: 'Relation non trouvée' });
     }
 
-    const source = await prisma.person.findUnique({ where: { id: relationship.sourceId } });
+    const source = await prisma.person.findUnique({ where: { id: relationship.sourceId }, include: { FamilyTree: true } });
     if (!source) {
       return res.status(404).json({ message: 'Personne non trouvée' });
+    }
+
+    if (source.FamilyTree?.isDemo) {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: 'Connectez-vous pour modifier la démo' });
+      }
+      const adminAccess = await resolveTreeAccess(req.user.id, source.treeId);
+      if (adminAccess.role !== 'admin') {
+        const fork = await getOrCreateDemoFork(req.user.id);
+        const forkedRelationshipId = await translateDemoEntityId(fork.id, 'relationship', id);
+        if (!forkedRelationshipId) {
+          return res.status(404).json({ message: 'Relation non trouvée dans votre copie de la démo' });
+        }
+        req.params.id = forkedRelationshipId;
+        res.locals.demoForkTreeId = fork.id;
+        return next();
+      }
     }
 
     await requireTreeWrite(req.user.id, source.treeId);
@@ -94,12 +112,39 @@ const canCreateRelationship = async (req, res, next) => {
     }
 
     const [source, target] = await Promise.all([
-      prisma.person.findUnique({ where: { id: sourceId } }),
-      prisma.person.findUnique({ where: { id: targetId } }),
+      prisma.person.findUnique({ where: { id: sourceId }, include: { FamilyTree: true } }),
+      prisma.person.findUnique({ where: { id: targetId }, include: { FamilyTree: true } }),
     ]);
 
     if (!source || !target) {
       return res.status(404).json({ message: 'Une ou plusieurs personnes non trouvées' });
+    }
+
+    // Cas mixte possible : une personne vient d'être créée dans le fork (même
+    // requête "ajouter enfant + lier"), l'autre référence encore l'arbre démo
+    // canonique. On résout les deux vers le même fork avant de comparer les arbres.
+    if (source.FamilyTree?.isDemo || target.FamilyTree?.isDemo) {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: 'Connectez-vous pour modifier la démo' });
+      }
+      const demoTreeId = source.FamilyTree?.isDemo ? source.treeId : target.treeId;
+      const adminAccess = await resolveTreeAccess(req.user.id, demoTreeId);
+      if (adminAccess.role !== 'admin') {
+        const fork = await getOrCreateDemoFork(req.user.id);
+        const resolveId = async (person) => {
+          if (person.treeId === fork.id) return person.id;
+          if (person.FamilyTree?.isDemo) return translateDemoEntityId(fork.id, 'person', person.id);
+          return null;
+        };
+        const [forkedSourceId, forkedTargetId] = await Promise.all([resolveId(source), resolveId(target)]);
+        if (!forkedSourceId || !forkedTargetId) {
+          return res.status(404).json({ message: 'Personne non trouvée dans votre copie de la démo' });
+        }
+        req.body.sourceId = forkedSourceId;
+        req.body.targetId = forkedTargetId;
+        res.locals.demoForkTreeId = fork.id;
+        return next();
+      }
     }
 
     if (source.treeId !== target.treeId) {

@@ -1,5 +1,6 @@
 import axios from "axios"
 import { useAuthStore } from "@/stores/auth-store"
+import { setPendingDemoFork } from "@/lib/demo-fork-signal"
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001/api",
@@ -20,7 +21,13 @@ api.interceptors.request.use((config) => {
 })
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const forkTreeId = response.data?.demoForkTreeId
+    if (typeof forkTreeId === "string") {
+      setPendingDemoFork(forkTreeId)
+    }
+    return response
+  },
   (error) => {
     if (error.response?.status === 401) {
       const hadToken = !!localStorage.getItem("token")

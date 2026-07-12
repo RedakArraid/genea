@@ -1,5 +1,8 @@
 const prisma = require('../lib/prisma');
 const { resolveTreeAccess, requireTreeRead, requireTreeWrite } = require('../lib/treeAccess');
+const { getOrCreateDemoFork, translateDemoEntityId } = require('../lib/demoFork');
+
+const OWNER_ACCESS = { canRead: true, canWrite: true, canEditPerson: true, canExport: false, canVersioning: false, role: 'owner', isDemo: false };
 
 const canReadTree = async (req, res, next) => {
   try {
@@ -22,6 +25,16 @@ const canReadTree = async (req, res, next) => {
     }
 
     if (tree.isDemo) {
+      if (req.user?.id) {
+        const existingFork = await prisma.familyTree.findUnique({ where: { demoForkOwnerId: req.user.id } });
+        if (existingFork) {
+          req.params.id = existingFork.id;
+          req.params.treeId = existingFork.id;
+          res.locals.demoForkTreeId = existingFork.id;
+          req.treeAccess = OWNER_ACCESS;
+          return next();
+        }
+      }
       req.treeAccess = {
         canRead: true,
         canWrite: !!req.user?.id,
@@ -71,13 +84,25 @@ const canWriteTree = async (req, res, next) => {
         req.treeAccess = adminAccess;
         return next();
       }
-      req.treeAccess = {
-        canRead: true,
-        canWrite: true,
-        canEditPerson: false,
-        role: 'demo',
-        isDemo: true,
-      };
+      const fork = await getOrCreateDemoFork(req.user.id);
+      // req.params.id ne désigne le treeId que pour les routes /family-trees/:id/... —
+      // pour les routes déléguées (positions, edges), :id référence une autre entité
+      // et est traduit séparément par leur propre wrapper avant d'arriver ici.
+      if (req.params.id === treeId) req.params.id = fork.id;
+      req.params.treeId = fork.id;
+      if (req.body && typeof req.body === 'object') {
+        if ('treeId' in req.body) req.body.treeId = fork.id;
+        // nodeId (positions) / personId (uploads) référencent une personne de l'arbre
+        // démo canonique : on les traduit vers leur équivalent dans le fork.
+        for (const field of ['nodeId', 'personId']) {
+          if (req.body[field]) {
+            const forkedPersonId = await translateDemoEntityId(fork.id, 'person', req.body[field]);
+            if (forkedPersonId) req.body[field] = forkedPersonId;
+          }
+        }
+      }
+      res.locals.demoForkTreeId = fork.id;
+      req.treeAccess = OWNER_ACCESS;
       return next();
     }
 
@@ -110,14 +135,16 @@ const canWritePerson = async (req, res, next) => {
         req.treeAccess = adminAccess;
         return next();
       }
-      req.personData = person;
-      req.treeAccess = {
-        canRead: true,
-        canWrite: true,
-        canEditPerson: false,
-        role: 'demo',
-        isDemo: true,
-      };
+      const fork = await getOrCreateDemoFork(req.user.id);
+      const forkedPersonId = await translateDemoEntityId(fork.id, 'person', personId);
+      if (!forkedPersonId) {
+        return res.status(404).json({ message: 'Personne non trouvée dans votre copie de la démo' });
+      }
+      const forkedPerson = await prisma.person.findUnique({ where: { id: forkedPersonId } });
+      req.params.id = forkedPersonId;
+      req.personData = forkedPerson;
+      res.locals.demoForkTreeId = fork.id;
+      req.treeAccess = OWNER_ACCESS;
       return next();
     }
 

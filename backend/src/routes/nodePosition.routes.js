@@ -7,6 +7,8 @@ const { body } = require('express-validator');
 const nodePositionController = require('../controllers/nodePosition.controller');
 const { isAuth, optionalAuth } = require('../middleware/auth.middleware');
 const { canReadTree, canWriteTree } = require('../middleware/treeAccess.middleware');
+const { resolveTreeAccess } = require('../lib/treeAccess');
+const { getOrCreateDemoFork, translateDemoEntityId } = require('../lib/demoFork');
 const prisma = require('../lib/prisma');
 
 const canWriteNodePosition = async (req, res, next) => {
@@ -16,6 +18,27 @@ const canWriteNodePosition = async (req, res, next) => {
     if (!pos) {
       return res.status(404).json({ message: 'Position non trouvée' });
     }
+
+    const tree = await prisma.familyTree.findUnique({ where: { id: pos.treeId } });
+    if (tree?.isDemo) {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: 'Connectez-vous pour modifier la démo' });
+      }
+      const adminAccess = await resolveTreeAccess(req.user.id, pos.treeId);
+      if (adminAccess.role !== 'admin') {
+        const fork = await getOrCreateDemoFork(req.user.id);
+        const forkedPositionId = await translateDemoEntityId(fork.id, 'nodePosition', posId);
+        if (!forkedPositionId) {
+          return res.status(404).json({ message: 'Position non trouvée dans votre copie de la démo' });
+        }
+        req.params.id = forkedPositionId;
+        req.params.treeId = fork.id;
+        res.locals.demoForkTreeId = fork.id;
+        req.treeAccess = { canRead: true, canWrite: true, canEditPerson: true, role: 'owner', isDemo: false };
+        return next();
+      }
+    }
+
     req.params.treeId = pos.treeId;
     return canWriteTree(req, res, next);
   } catch (error) {

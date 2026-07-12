@@ -61,6 +61,7 @@ model FamilyTree {
   isPublic         Boolean            @default(false)
   visibility       TreeVisibility     @default(PRIVATE)
   isDemo           Boolean            @default(false)
+  demoForkOwnerId  String?            @unique
   matchingOptIn    Boolean            @default(false)
   treeType             TreeType           @default(GENEALOGY)
   backgroundImageUrl   String?
@@ -110,6 +111,20 @@ model Person {
   Relationship_Relationship_sourceIdToPerson Relationship[] @relation("Relationship_sourceIdToPerson")
   Relationship_Relationship_targetIdToPerson Relationship[] @relation("Relationship_targetIdToPerson")
   PersonRevision                             PersonRevision[]
+}
+
+/// Correspondance entre une entité de l'arbre démo canonique et son clone
+/// dans la copie personnelle forkée d'un utilisateur (person/nodePosition/relationship/edge).
+model DemoForkMapping {
+  id         String   @id @default(uuid())
+  forkTreeId String
+  entityType String
+  originalId String
+  forkedId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([forkTreeId, entityType, originalId])
+  @@index([forkTreeId, entityType, forkedId])
 }
 
 model PersonRevision {

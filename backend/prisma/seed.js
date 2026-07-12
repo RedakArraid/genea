@@ -19,6 +19,7 @@ async function main() {
 
   await prisma.otpCode.deleteMany();
   await prisma.payment.deleteMany();
+  await prisma.demoForkMapping.deleteMany();
   await prisma.personDocument.deleteMany();
   await prisma.treeInvite.deleteMany();
   await prisma.treeCollaborator.deleteMany();

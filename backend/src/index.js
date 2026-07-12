@@ -55,6 +55,21 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Quand une écriture sur l'arbre démo est redirigée vers la copie personnelle
+// de l'utilisateur (voir lib/demoFork.js), on le signale dans la réponse pour
+// que le frontend bascule sur cette copie au lieu de l'arbre public partagé.
+app.use((req, res, next) => {
+  const originalJson = res.json.bind(res);
+  res.json = (body) => {
+    if (res.locals.demoForkTreeId && body && typeof body === 'object') {
+      body.demoForkTreeId = res.locals.demoForkTreeId;
+    }
+    return originalJson(body);
+  };
+  next();
+});
+
 app.use('/api/billing/webhooks', billingWebhookRoutes);
 app.use(morgan('dev'));
 

@@ -166,6 +166,27 @@ async function ensureDemoTree() {
 async function resetDemoTree() {
   const existing = await prisma.familyTree.findFirst({ where: { isDemo: true } });
   if (existing) {
+    // Les copies personnelles déjà forkées (voir lib/demoFork.js) sont des arbres
+    // indépendants et ne sont pas affectées par le reset — seuls les mappings vers
+    // cet arbre canonique (bientôt supprimé) sont nettoyés, pour ne pas accumuler
+    // des lignes orphelines dans DemoForkMapping.
+    const [persons, positions, relationships] = await Promise.all([
+      prisma.person.findMany({ where: { treeId: existing.id }, select: { id: true } }),
+      prisma.nodePosition.findMany({ where: { treeId: existing.id }, select: { id: true } }),
+      prisma.relationship.findMany({
+        where: { Person_Relationship_sourceIdToPerson: { treeId: existing.id } },
+        select: { id: true },
+      }),
+    ]);
+    await prisma.demoForkMapping.deleteMany({
+      where: {
+        OR: [
+          { entityType: 'person', originalId: { in: persons.map((p) => p.id) } },
+          { entityType: 'nodePosition', originalId: { in: positions.map((p) => p.id) } },
+          { entityType: 'relationship', originalId: { in: relationships.map((r) => r.id) } },
+        ],
+      },
+    });
     await prisma.familyTree.delete({ where: { id: existing.id } });
   }
 

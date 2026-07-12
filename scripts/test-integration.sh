@@ -128,7 +128,9 @@ if [ -n "$TOKEN" ] && [ -n "$TREE_ID" ] && [ -n "$STORAGE_PERSON_ID" ]; then
   assert_status "POST upload document" "201" "$doc_code" "$doc_body"
   DOC_ID=$(echo "$doc_body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('document',{}).get('id',''))" 2>/dev/null || echo "")
 
-  list_json=$(curl -s "$API/persons/$STORAGE_PERSON_ID/documents")
+  # Authentifié : cette personne vit désormais dans la copie privée forkée de
+  # l'utilisateur (voir lib/demoFork.js), plus dans la démo publique.
+  list_json=$(curl -s "$API/persons/$STORAGE_PERSON_ID/documents" -H "$AUTH")
   assert_json "GET documents liste" "len(d.get('documents',[])) >= 1" "$list_json"
 
   if [ -n "$DOC_ID" ]; then
