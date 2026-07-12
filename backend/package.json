@@ -10,6 +10,8 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
+    "seed:challenge": "node scripts/seed-challenge-family.js",
+    "seed:challenge:replace": "node scripts/seed-challenge-family.js --replace",
     "test": "jest --forceExit",
     "lint": "node --check src/index.js && bash ../scripts/lint-backend.sh"
   },

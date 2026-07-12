@@ -12,6 +12,7 @@ const prisma = require('../src/lib/prisma');
 const bcrypt = require('bcryptjs');
 const { createDemoTree } = require('../src/lib/demoTree');
 const { createLargeFamilyTree } = require('../src/lib/largeFamilyTree');
+const { createChallengeFamilyTree } = require('../src/lib/challengeFamilyTree');
 
 async function main() {
   console.log('Start seeding database...');
@@ -140,10 +141,16 @@ async function main() {
 
   const { tree: largeTree, personCount } = await createLargeFamilyTree(famille40User.id);
 
+  const { tree: challengeTree, personCount: challengeCount } = await createChallengeFamilyTree(
+    famille40User.id
+  );
+
   console.log('Created demo tree with 10 persons.');
   console.log(`Demo tree ID: ${demoTree.id}`);
   console.log(`Created large test tree with ${personCount} persons.`);
   console.log(`Large tree ID: ${largeTree.id}`);
+  console.log(`Created Challenge Family org tree with ${challengeCount} persons.`);
+  console.log(`Challenge Family tree ID: ${challengeTree.id}`);
   console.log('Database has been seeded!');
 }
 
