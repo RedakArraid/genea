@@ -395,7 +395,13 @@ fam40_login=$(curl -s -X POST "$API/auth/login" \
 FAM40_TOKEN=$(echo "$fam40_login" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
 if [ -n "$FAM40_TOKEN" ]; then
   fam40_trees=$(curl -s "$API/family-trees" -H "Authorization: Bearer $FAM40_TOKEN")
-  FAM40_TREE_ID=$(echo "$fam40_trees" | python3 -c "import sys,json; ts=json.load(sys.stdin).get('trees',[]); print(ts[0]['id'] if ts else '')" 2>/dev/null || echo "")
+  FAM40_TREE_ID=$(echo "$fam40_trees" | python3 -c "
+import sys, json
+ts = json.load(sys.stdin).get('trees', [])
+genealogy = [t for t in ts if t.get('treeType') != 'ORGANIZATION']
+pick = genealogy[0] if genealogy else (ts[0] if ts else None)
+print(pick['id'] if pick else '')
+" 2>/dev/null || echo "")
   if [ -n "$FAM40_TREE_ID" ]; then
     code=$(curl -s -o /tmp/genea_export.ged -w '%{http_code}' "$API/family-trees/$FAM40_TREE_ID/export/gedcom" \
       -H "Authorization: Bearer $FAM40_TOKEN")
