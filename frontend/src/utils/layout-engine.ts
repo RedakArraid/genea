@@ -5,7 +5,7 @@
  * Supporte 3 dispositions : vertical, horizontal, radial.
  */
 
-import orgLayout from '../../../shared/org-layout.js';
+import * as orgLayout from '../lib/org-layout';
 
 // Dimensions de carte par défaut (style square)
 export const CARD_W = 120;

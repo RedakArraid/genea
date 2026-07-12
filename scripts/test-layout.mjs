@@ -5,7 +5,7 @@ import { computeLayout, buildConnections, normalizePersons, layoutNeedsRecompute
 import { formatGenerationBadge, getMaxGeneration, toDisplayLevel, formatLevelFilterLabel } from '../frontend/src/lib/generation-level.ts'
 import { getPresetLexicon } from '../frontend/src/lib/org-lexicon.ts'
 import { isTreeBackgroundActive, getDefaultBackgroundOpacity, buildViewportBackgroundStyle } from '../frontend/src/lib/tree-background.ts'
-import orgLayout from '../shared/org-layout.js'
+import * as orgLayout from '../frontend/src/lib/org-layout.ts'
 
 const people = [
   { id: 'a', generation: 1, parentIds: [], spouseIds: ['b'], given: 'Jean', sur: 'Dupont' },
