@@ -1,12 +1,30 @@
 /**
- * Arbre test Challenge Family — 5 promos, président + vice-président par génération.
- * Chaîne : le président de la promo N est supérieur (parent) du binôme promo N+1.
+ * Arbre test Challenge Family — carte racine + 5 promos × 7 membres.
+ * La carte « Challenge Family » est la source ; chaque président parraine la promo suivante.
  */
 
 const prisma = require('./prisma');
 const { normalizeOrgLexicon } = require('./orgLexicon');
+const {
+  computeVerticalOrg,
+  translatePositions,
+} = require('../../../shared/org-layout');
 
 const TREE_NAME = 'Challenge Family';
+const MEMBERS_PER_PROMO = 7;
+
+const SUBJECTS = [
+  'Mathématiques',
+  'Physique',
+  'Informatique',
+  'Chimie',
+  'SVT',
+  'Anglais',
+  'Philosophie',
+  'Histoire',
+  'Économie',
+];
+
 const ORG_LEXICON = normalizeOrgLexicon({
   preset: 'custom',
   levelTerm: 'Génération',
@@ -26,100 +44,81 @@ const ORG_LEXICON = normalizeOrgLexicon({
   addTitle: 'Ajouter un membre',
 });
 
-/** @type {Array<{ year: number, president: object, vicePresident: object }>} */
+const ROOT_ENTITY = {
+  firstName: 'Challenge',
+  lastName: 'Family',
+  role: 'Association',
+  subjects: ['Source de toutes les promos'],
+  birthMonth: 1,
+  birthYear: 2018,
+  biography: 'Association Challenge Family — source de toutes les générations et promos',
+};
+
+/** @type {Array<{ year: number, members: Array<{ firstName: string, lastName: string, role: string, subjects: string[], birthMonth: number }> }>} */
 const PROMOS = [
   {
     year: 2020,
-    president: {
-      firstName: 'Amadou',
-      lastName: 'Diallo',
-      occupation: 'Mathématiques · Informatique',
-      biography: 'Président — Promo 2020 (génération fondatrice)',
-      birthDate: '2002-09-14',
-    },
-    vicePresident: {
-      firstName: 'Fatou',
-      lastName: 'Koné',
-      occupation: 'Physique · Chimie',
-      biography: 'Vice-présidente — Promo 2020',
-      birthDate: '2002-11-03',
-    },
+    members: [
+      { firstName: 'Amadou', lastName: 'Diallo', role: 'Président', subjects: ['Mathématiques', 'Informatique'], birthMonth: 9 },
+      { firstName: 'Fatou', lastName: 'Koné', role: 'Vice-présidente', subjects: ['Physique', 'Chimie'], birthMonth: 11 },
+      { firstName: 'Sekou', lastName: 'Camara', role: 'Membre', subjects: ['Mathématiques'], birthMonth: 2 },
+      { firstName: 'Awa', lastName: 'Touré', role: 'Membre', subjects: ['SVT', 'Anglais'], birthMonth: 4 },
+      { firstName: 'Lassana', lastName: 'Fofana', role: 'Membre', subjects: ['Informatique'], birthMonth: 6 },
+      { firstName: 'Maimouna', lastName: 'Sylla', role: 'Membre', subjects: ['Philosophie'], birthMonth: 8 },
+      { firstName: 'Bakary', lastName: 'Doumbia', role: 'Membre', subjects: ['Histoire', 'Économie'], birthMonth: 12 },
+    ],
   },
   {
     year: 2021,
-    president: {
-      firstName: 'Ibrahim',
-      lastName: 'Traoré',
-      occupation: 'Mathématiques · Physique',
-      biography: 'Président — Promo 2021',
-      birthDate: '2003-02-18',
-    },
-    vicePresident: {
-      firstName: 'Aïcha',
-      lastName: 'Coulibaly',
-      occupation: 'Informatique · SVT',
-      biography: 'Vice-présidente — Promo 2021',
-      birthDate: '2003-05-22',
-    },
+    members: [
+      { firstName: 'Ibrahim', lastName: 'Traoré', role: 'Président', subjects: ['Mathématiques', 'Physique'], birthMonth: 2 },
+      { firstName: 'Aïcha', lastName: 'Coulibaly', role: 'Vice-présidente', subjects: ['Informatique', 'SVT'], birthMonth: 5 },
+      { firstName: 'Ousmane', lastName: 'Kanté', role: 'Membre', subjects: ['Chimie'], birthMonth: 1 },
+      { firstName: 'Rokia', lastName: 'Sangaré', role: 'Membre', subjects: ['Mathématiques', 'Anglais'], birthMonth: 3 },
+      { firstName: 'Cheick', lastName: 'Diarra', role: 'Membre', subjects: ['Physique'], birthMonth: 7 },
+      { firstName: 'Hawa', lastName: 'Dembélé', role: 'Membre', subjects: ['Informatique', 'Philosophie'], birthMonth: 9 },
+      { firstName: 'Adama', lastName: 'Konaté', role: 'Membre', subjects: ['Économie'], birthMonth: 10 },
+    ],
   },
   {
     year: 2022,
-    president: {
-      firstName: 'Moussa',
-      lastName: 'Sanogo',
-      occupation: 'Chimie · Mathématiques',
-      biography: 'Président — Promo 2022',
-      birthDate: '2004-01-07',
-    },
-    vicePresident: {
-      firstName: 'Kadiatou',
-      lastName: 'Ouattara',
-      occupation: 'Physique · Anglais',
-      biography: 'Vice-présidente — Promo 2022',
-      birthDate: '2004-04-12',
-    },
+    members: [
+      { firstName: 'Moussa', lastName: 'Sanogo', role: 'Président', subjects: ['Chimie', 'Mathématiques'], birthMonth: 1 },
+      { firstName: 'Kadiatou', lastName: 'Ouattara', role: 'Vice-présidente', subjects: ['Physique', 'Anglais'], birthMonth: 4 },
+      { firstName: 'Fanta', lastName: 'Cissoko', role: 'Membre', subjects: ['SVT'], birthMonth: 2 },
+      { firstName: 'Drissa', lastName: 'Maïga', role: 'Membre', subjects: ['Informatique', 'Mathématiques'], birthMonth: 5 },
+      { firstName: 'Nana', lastName: 'Berté', role: 'Membre', subjects: ['Histoire'], birthMonth: 6 },
+      { firstName: 'Souleymane', lastName: 'Gaye', role: 'Membre', subjects: ['Physique', 'Chimie'], birthMonth: 8 },
+      { firstName: 'Aminata', lastName: 'Sow', role: 'Membre', subjects: ['Philosophie', 'Anglais'], birthMonth: 11 },
+    ],
   },
   {
     year: 2023,
-    president: {
-      firstName: 'Oumar',
-      lastName: 'Bamba',
-      occupation: 'Informatique · Mathématiques',
-      biography: 'Président — Promo 2023',
-      birthDate: '2005-08-30',
-    },
-    vicePresident: {
-      firstName: 'Salimata',
-      lastName: 'Diabaté',
-      occupation: 'Physique · Chimie',
-      biography: 'Vice-présidente — Promo 2023',
-      birthDate: '2005-10-15',
-    },
+    members: [
+      { firstName: 'Oumar', lastName: 'Bamba', role: 'Président', subjects: ['Informatique', 'Mathématiques'], birthMonth: 8 },
+      { firstName: 'Salimata', lastName: 'Diabaté', role: 'Vice-présidente', subjects: ['Physique', 'Chimie'], birthMonth: 10 },
+      { firstName: 'Mamadou', lastName: 'Sissoko', role: 'Membre', subjects: ['Mathématiques'], birthMonth: 3 },
+      { firstName: 'Bintou', lastName: 'Keita', role: 'Membre', subjects: ['SVT', 'Anglais'], birthMonth: 4 },
+      { firstName: 'Thierno', lastName: 'Bah', role: 'Membre', subjects: ['Économie', 'Histoire'], birthMonth: 6 },
+      { firstName: 'Ramatou', lastName: 'Diop', role: 'Membre', subjects: ['Informatique'], birthMonth: 7 },
+      { firstName: 'Lamine', lastName: 'Ndiaye', role: 'Membre', subjects: ['Philosophie'], birthMonth: 12 },
+    ],
   },
   {
     year: 2024,
-    president: {
-      firstName: 'Youssouf',
-      lastName: 'Cissé',
-      occupation: 'Mathématiques · Physique · Chimie',
-      biography: 'Président — Promo 2024',
-      birthDate: '2006-03-25',
-    },
-    vicePresident: {
-      firstName: 'Mariam',
-      lastName: 'Keita',
-      occupation: 'Informatique · Philosophie',
-      biography: 'Vice-présidente — Promo 2024',
-      birthDate: '2006-06-08',
-    },
+    members: [
+      { firstName: 'Youssouf', lastName: 'Cissé', role: 'Président', subjects: ['Mathématiques', 'Physique', 'Chimie'], birthMonth: 3 },
+      { firstName: 'Mariam', lastName: 'Keita', role: 'Vice-présidente', subjects: ['Informatique', 'Philosophie'], birthMonth: 6 },
+      { firstName: 'Idrissa', lastName: 'Ba', role: 'Membre', subjects: ['Anglais'], birthMonth: 1 },
+      { firstName: 'Coumba', lastName: 'Fall', role: 'Membre', subjects: ['SVT', 'Mathématiques'], birthMonth: 2 },
+      { firstName: 'Modibo', lastName: 'Sangho', role: 'Membre', subjects: ['Physique'], birthMonth: 5 },
+      { firstName: 'Astou', lastName: 'Mbaye', role: 'Membre', subjects: ['Chimie', 'Informatique'], birthMonth: 9 },
+      { firstName: 'Samba', lastName: 'Wane', role: 'Membre', subjects: ['Histoire', 'Économie'], birthMonth: 11 },
+    ],
   },
 ];
 
-const CARD_W = 140;
-const CARD_H = 200;
-const H_GAP = 48;
-const V_GAP = 120;
-const ORIGIN_X = 320;
+const ORIGIN_X = 600;
 const ORIGIN_Y = 80;
 
 async function createRelationship(type, sourceId, targetId) {
@@ -131,13 +130,26 @@ async function createRelationship(type, sourceId, targetId) {
   }
 }
 
-function personPayload(def, treeId, promoYear) {
+function rootPayload(treeId) {
   return {
-    firstName: def.firstName,
-    lastName: def.lastName,
-    occupation: def.occupation,
-    biography: def.biography,
-    birthDate: def.birthDate ? new Date(def.birthDate) : null,
+    firstName: ROOT_ENTITY.firstName,
+    lastName: ROOT_ENTITY.lastName,
+    occupation: ROOT_ENTITY.subjects.join(' · '),
+    biography: ROOT_ENTITY.biography,
+    birthDate: new Date(ROOT_ENTITY.birthYear, ROOT_ENTITY.birthMonth - 1, 1),
+    birthPlace: 'Association',
+    treeId,
+  };
+}
+
+function memberPayload(member, treeId, promoYear) {
+  const subjects = member.subjects.join(' · ');
+  return {
+    firstName: member.firstName,
+    lastName: member.lastName,
+    occupation: subjects,
+    biography: `${member.role} — Promo ${promoYear}`,
+    birthDate: new Date(2000 + (promoYear - 2020), member.birthMonth - 1, 15),
     birthPlace: `Promo ${promoYear}`,
     treeId,
   };
@@ -158,7 +170,8 @@ async function createChallengeFamilyTree(ownerId, options = {}) {
   if (existing) {
     if (!replace) {
       const full = await prisma.familyTree.findUnique({ where: { id: existing.id } });
-      return { tree: full, personCount: 10, skipped: true, promos: [] };
+      const count = await prisma.person.count({ where: { treeId: existing.id } });
+      return { tree: full, personCount: count, skipped: true, promos: [] };
     }
     await prisma.familyTree.delete({ where: { id: existing.id } });
   }
@@ -167,7 +180,7 @@ async function createChallengeFamilyTree(ownerId, options = {}) {
     data: {
       name: TREE_NAME,
       description:
-        'Association Challenge Family — 5 promos. Chaque promo a un président et un vice-président. Le président de la génération précédente parraine la promo suivante.',
+        'Association Challenge Family — carte source + 5 promos de 7 membres. Le président de chaque génération parraine la promo suivante.',
       isPublic: false,
       visibility: 'PRIVATE',
       treeType: 'ORGANIZATION',
@@ -176,54 +189,74 @@ async function createChallengeFamilyTree(ownerId, options = {}) {
     },
   });
 
+  const root = await prisma.person.create({ data: rootPayload(tree.id) });
+
   const created = [];
-  for (let i = 0; i < PROMOS.length; i++) {
-    const promo = PROMOS[i];
-    const pres = await prisma.person.create({
-      data: personPayload(promo.president, tree.id, promo.year),
-    });
-    const vp = await prisma.person.create({
-      data: personPayload(promo.vicePresident, tree.id, promo.year),
-    });
-    created.push({ year: promo.year, pres, vp });
+  for (const promo of PROMOS) {
+    const people = [];
+    for (const member of promo.members) {
+      const person = await prisma.person.create({
+        data: memberPayload(member, tree.id, promo.year),
+      });
+      people.push(person);
+    }
+    created.push({ year: promo.year, people, president: people[0] });
   }
 
-  // Chaîne : président promo N → président + VP promo N+1
+  // Source → toute la promo fondatrice 2020
+  for (const person of created[0].people) {
+    await createRelationship('parent', root.id, person.id);
+  }
+
+  // Président promo N → les 7 membres de la promo N+1
   for (let i = 1; i < created.length; i++) {
-    const prevPres = created[i - 1].pres;
-    const { pres, vp } = created[i];
-    await createRelationship('parent', prevPres.id, pres.id);
-    await createRelationship('parent', prevPres.id, vp.id);
+    const prevPresident = created[i - 1].president;
+    for (const person of created[i].people) {
+      await createRelationship('parent', prevPresident.id, person.id);
+    }
   }
 
-  // Positions initiales (layout org vertical)
-  const positions = [];
-  for (let i = 0; i < created.length; i++) {
-    const y = ORIGIN_Y + i * (CARD_H + V_GAP);
-    const rowW = CARD_W * 2 + H_GAP;
-    const x0 = ORIGIN_X - rowW / 2 + CARD_W / 2;
-    positions.push(
-      { nodeId: created[i].pres.id, x: x0, y, treeId: tree.id },
-      { nodeId: created[i].vp.id, x: x0 + CARD_W + H_GAP, y, treeId: tree.id }
-    );
-  }
+  const layoutPeople = [
+    { id: root.id, generation: 1, parentIds: [] },
+    ...created.flatMap((promo, promoIdx) =>
+      promo.people.map((person) => ({
+        id: person.id,
+        generation: promoIdx + 2,
+        parentIds: promoIdx === 0 ? [root.id] : [created[promoIdx - 1].president.id],
+      }))
+    ),
+  ];
+
+  const { positions: rawPositions } = computeVerticalOrg(layoutPeople, 'spacious');
+  const translated = translatePositions(rawPositions, { originY: ORIGIN_Y, centerX: ORIGIN_X });
+  const positions = Object.entries(translated).map(([nodeId, pos]) => ({
+    nodeId,
+    x: pos.x,
+    y: pos.y,
+    treeId: tree.id,
+  }));
+
   await prisma.nodePosition.createMany({ data: positions });
 
   return {
     tree,
-    personCount: created.length * 2,
+    rootPersonId: root.id,
+    personCount: 1 + created.length * MEMBERS_PER_PROMO,
     skipped: false,
     promos: created.map((c) => ({
       year: c.year,
-      presidentId: c.pres.id,
-      vicePresidentId: c.vp.id,
+      presidentId: c.president.id,
+      memberIds: c.people.map((p) => p.id),
     })),
   };
 }
 
 module.exports = {
   TREE_NAME,
+  MEMBERS_PER_PROMO,
+  ROOT_ENTITY,
   ORG_LEXICON,
   PROMOS,
+  SUBJECTS,
   createChallengeFamilyTree,
 };
