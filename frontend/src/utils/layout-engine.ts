@@ -12,6 +12,7 @@ export const CARD_W_H = 180; // style horizontal
 export const LINE_INSET = 0;
 
 const ROW_ALIGN_RATIO = 0.45;
+const MAX_SPOUSE_LINE_DIST = CARD_W * 4;
 
 export function getCardDimensions(cardStyle = 'square') {
   switch (cardStyle) {
@@ -187,6 +188,30 @@ function computeVerticalPedigree(people, density = 'spacious') {
   const positions = {};
   const placed = new Set();
 
+  function sameGenSpouseIds(p) {
+    return (p.spouseIds || []).filter((sId) => {
+      const s = byId[sId];
+      return s && s.generation === p.generation;
+    });
+  }
+
+  function preferredSpouse(p) {
+    if (!p?.spouseIds?.length) return null;
+    let best = null;
+    let bestCount = -1;
+    for (const sId of sameGenSpouseIds(p)) {
+      const s = byId[sId];
+      if (!s) continue;
+      const count = directChildren(p, s).length;
+      if (count > bestCount) {
+        bestCount = count;
+        best = s;
+      }
+    }
+    if (best) return best;
+    return primarySpouse(p);
+  }
+
   function primarySpouse(p) {
     if (!p?.spouseIds?.length) return null;
     for (const sId of p.spouseIds) {
@@ -194,6 +219,76 @@ function computeVerticalPedigree(people, density = 'spacious') {
       if (s && s.generation === p.generation) return s;
     }
     return byId[p.spouseIds[0]] || null;
+  }
+
+  function clusterRowWidth(ids) {
+    if (!ids.length) return 0;
+    return ids.length * cardW + Math.max(0, ids.length - 1) * hGap;
+  }
+
+  function placeSpouseCluster(personIds, centerX, y) {
+    const ordered = orderSpouseCluster(personIds, byId);
+    const rowW = clusterRowWidth(ordered);
+    let x = centerX - rowW / 2;
+    for (const id of ordered) {
+      if (!placed.has(id)) {
+        positions[id] = { x, y };
+        placed.add(id);
+      }
+      x += cardW + hGap;
+    }
+    return rowW;
+  }
+
+  function attachUnplacedSpouses(hubId, y) {
+    const hub = byId[hubId];
+    if (!hub) return;
+    const missing = sameGenSpouseIds(hub).filter((sId) => !placed.has(sId));
+    if (!missing.length) return;
+
+    const placedSpouses = sameGenSpouseIds(hub).filter((sId) => placed.has(sId));
+    const anchorIds = [hubId, ...placedSpouses];
+    const rightEdge = Math.max(...anchorIds.map((id) => positions[id].x + cardW));
+    const ordered = orderSpouseCluster(missing, byId);
+    let x = rightEdge + hGap;
+    for (const sId of ordered) {
+      positions[sId] = { x, y };
+      placed.add(sId);
+      x += cardW + hGap;
+    }
+  }
+
+  function placeCouple(p, spouse, centerX, y) {
+    if (spouse && placed.has(spouse.id) && !placed.has(p.id)) {
+      const spouseX = positions[spouse.id].x;
+      const leftSide = spouseX - cardW - hGap;
+      positions[p.id] = { x: Math.max(40, leftSide), y };
+      placed.add(p.id);
+      attachUnplacedSpouses(p.id, y);
+      attachUnplacedSpouses(spouse.id, y);
+      return coupleWidth(spouse);
+    }
+
+    if (placed.has(p.id)) {
+      if (spouse && !placed.has(spouse.id)) {
+        const hubX = positions[p.id].x;
+        positions[spouse.id] = { x: hubX + cardW + hGap, y };
+        placed.add(spouse.id);
+      }
+      attachUnplacedSpouses(p.id, y);
+      return coupleWidth(spouse);
+    }
+
+    if (spouse) {
+      const rowW = placeSpouseCluster(orderSpouseCluster([p.id, spouse.id], byId), centerX, y);
+      attachUnplacedSpouses(p.id, y);
+      attachUnplacedSpouses(spouse.id, y);
+      return rowW;
+    }
+
+    positions[p.id] = { x: centerX - cardW / 2, y };
+    placed.add(p.id);
+    return cardW;
   }
 
   function directChildren(p, spouse) {
@@ -211,33 +306,21 @@ function computeVerticalPedigree(people, density = 'spacious') {
     return spouse ? 2 * cardW + hGap : cardW;
   }
 
-  function placeCouple(p, spouse, centerX, y) {
-    const w = coupleWidth(spouse);
-    const leftX = centerX - w / 2;
-    positions[p.id] = { x: leftX, y };
-    placed.add(p.id);
-    if (spouse) {
-      positions[spouse.id] = { x: leftX + cardW + hGap, y };
-      placed.add(spouse.id);
-    }
-    return w;
-  }
-
   function orderedChildren(p, spouse) {
-    return directChildren(p, spouse).sort((a, b) => measureBranch(b) - measureBranch(a));
+    return directChildren(p, spouse).sort((a, b) => measureBranch(b, spouse) - measureBranch(a, spouse));
   }
 
-  function measureBranch(personId) {
+  function measureBranch(personId, parentSpouse = null) {
     const p = byId[personId];
     if (!p) return cardW;
-    const spouse = primarySpouse(p);
+    const spouse = parentSpouse || preferredSpouse(p);
     const children = orderedChildren(p, spouse);
 
     if (children.length === 0) return coupleWidth(spouse);
 
     const hasNested = children.some((cid) => {
       const c = byId[cid];
-      const cs = primarySpouse(c);
+      const cs = preferredSpouse(c);
       return directChildren(c, cs).length > 0;
     });
 
@@ -245,7 +328,7 @@ function computeVerticalPedigree(people, density = 'spacious') {
       let rowW = 0;
       for (let i = 0; i < children.length; i++) {
         const c = byId[children[i]];
-        const cs = primarySpouse(c);
+        const cs = preferredSpouse(c);
         rowW += coupleWidth(cs) + (i < children.length - 1 ? branchGap : 0);
       }
       return Math.max(coupleWidth(spouse), rowW);
@@ -258,10 +341,21 @@ function computeVerticalPedigree(people, density = 'spacious') {
     return Math.max(coupleWidth(spouse), total);
   }
 
+  function existingBranchWidth(personId) {
+    const pos = positions[personId];
+    if (!pos) return 0;
+    const clusterIds = [personId, ...sameGenSpouseIds(byId[personId]).filter((id) => placed.has(id))];
+    const minX = Math.min(...clusterIds.map((id) => positions[id]?.x ?? pos.x));
+    const maxX = Math.max(...clusterIds.map((id) => (positions[id]?.x ?? pos.x) + cardW));
+    return Math.max(cardW, maxX - minX);
+  }
+
   function assignBranch(personId, leftX, y) {
     const p = byId[personId];
-    if (!p || placed.has(personId)) return 0;
-    const spouse = primarySpouse(p);
+    if (!p) return 0;
+    if (placed.has(personId)) return existingBranchWidth(personId);
+
+    const spouse = preferredSpouse(p);
 
     const children = orderedChildren(p, spouse);
     const childY = y + cardH + vGap;
@@ -274,7 +368,7 @@ function computeVerticalPedigree(people, density = 'spacious') {
 
     const hasNested = children.some((cid) => {
       const c = byId[cid];
-      const cs = primarySpouse(c);
+      const cs = preferredSpouse(c);
       return directChildren(c, cs).length > 0;
     });
 
@@ -282,7 +376,7 @@ function computeVerticalPedigree(people, density = 'spacious') {
       let cx = leftX;
       for (let i = 0; i < children.length; i++) {
         const c = byId[children[i]];
-        const cs = primarySpouse(c);
+        const cs = preferredSpouse(c);
         const unitW = coupleWidth(cs);
         if (cs) {
           placeCouple(c, cs, cx + unitW / 2, childY);
@@ -319,10 +413,12 @@ function computeVerticalPedigree(people, density = 'spacious') {
   let x = 40;
   for (const root of roots) {
     if (seenRoots.has(root.id)) continue;
-    const spouse = primarySpouse(root);
+    const spouse = preferredSpouse(root);
     if (spouse) {
       seenRoots.add(root.id);
       seenRoots.add(spouse.id);
+      sameGenSpouseIds(root).forEach((id) => seenRoots.add(id));
+      sameGenSpouseIds(spouse).forEach((id) => seenRoots.add(id));
     } else {
       seenRoots.add(root.id);
     }
@@ -419,13 +515,6 @@ function computeRadial(people, density = 'spacious') {
   return { positions, canvasW: canvasSize, canvasH: canvasSize };
 }
 
-/**
- * Point d'entrée principal.
- * @param {Array} people - tableau de personnes (doit avoir `id` et `generation`)
- * @param {'vertical'|'horizontal'|'radial'} layout
- * @param {'compact'|'spacious'} density
- * @returns {{ positions: Object, canvasW: number, canvasH: number }}
- */
 export function computeLayout(people, layout = 'vertical', density = 'spacious') {
   if (!people || people.length === 0) {
     return { positions: {}, canvasW: 800, canvasH: 600 };
@@ -440,6 +529,27 @@ export function computeLayout(people, layout = 'vertical', density = 'spacious')
     default:
       return computeVertical(people, density);
   }
+}
+
+/** Détecte un placement obsolète (ex. conjoint·es trop éloigné·es). */
+export function layoutNeedsRecompute(people, positions, cardW = CARD_W) {
+  if (!people?.length || !positions) return false;
+  const byId = Object.fromEntries(people.map((p) => [p.id, p]));
+  const done = new Set();
+  for (const p of people) {
+    for (const sId of p.spouseIds || []) {
+      const key = [p.id, sId].sort().join('::');
+      if (done.has(key)) continue;
+      done.add(key);
+      const s = byId[sId];
+      if (!s || s.generation !== p.generation) continue;
+      const a = positions[p.id];
+      const b = positions[sId];
+      if (!a || !b) continue;
+      if (Math.hypot(a.x - b.x, a.y - b.y) > MAX_SPOUSE_LINE_DIST) return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -545,6 +655,7 @@ export function buildConnections(people, positions, connStyle = 'elbow', layout 
       const a = positions[p.id];
       const b = positions[sId];
       if (!a || !b) return;
+      if (Math.hypot(a.x - b.x, a.y - b.y) > MAX_SPOUSE_LINE_DIST) return;
 
       const personA = byId[p.id];
       const personB = byId[sId];

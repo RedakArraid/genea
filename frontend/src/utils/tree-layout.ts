@@ -6,6 +6,7 @@ import {
   normalizePersons as rawNormalizePersons,
   buildConnections as rawBuildConnections,
   computeLineage as rawComputeLineage,
+  layoutNeedsRecompute as rawLayoutNeedsRecompute,
   CARD_W,
   CARD_H,
   getCardDimensions as rawGetCardDimensions,
@@ -49,4 +50,12 @@ export function buildConnections(
 
 export function computeLineage(rootId: string, people: NormalizedPerson[]) {
   return rawComputeLineage(rootId, people) as Set<string>
+}
+
+export function layoutNeedsRecompute(
+  people: NormalizedPerson[],
+  positions: Record<string, { x: number; y: number }>,
+  cardW = CARD_W
+) {
+  return rawLayoutNeedsRecompute(people, positions, cardW)
 }

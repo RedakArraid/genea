@@ -1,7 +1,7 @@
 /**
  * Tests unitaires du moteur de layout (frontend)
  */
-import { computeLayout, buildConnections, normalizePersons } from '../frontend/src/utils/tree-layout.ts'
+import { computeLayout, buildConnections, normalizePersons, layoutNeedsRecompute } from '../frontend/src/utils/tree-layout.ts'
 
 const people = [
   { id: 'a', generation: 1, parentIds: [], spouseIds: ['b'], given: 'Jean', sur: 'Dupont' },
@@ -55,6 +55,31 @@ ok(
 ok(
   'multi-conjoints — ordre [s1][hub][s2]',
   msPos.s1.x < msPos.hub.x && msPos.hub.x < msPos.s2.x
+)
+
+const polygamyFamily = [
+  { id: 'dad', generation: 1, parentIds: [], spouseIds: ['m1', 'm2', 'm3'], given: 'Amadou', sur: 'D' },
+  { id: 'm1', generation: 1, parentIds: [], spouseIds: ['dad'], given: 'Mariam', sur: 'D' },
+  { id: 'm2', generation: 1, parentIds: [], spouseIds: ['dad'], given: 'Makeme', sur: 'D' },
+  { id: 'm3', generation: 1, parentIds: [], spouseIds: ['dad'], given: 'Autre', sur: 'D' },
+  { id: 'c1', generation: 2, parentIds: ['dad', 'm1'], spouseIds: [], given: 'Khadara', sur: 'D' },
+  { id: 'c2', generation: 2, parentIds: ['dad', 'm1'], spouseIds: [], given: 'Youssouf', sur: 'D' },
+]
+
+console.log('\n--- Polygamie avec enfants ---')
+const { positions: polyPos } = computeLayout(polygamyFamily, 'vertical', 'spacious')
+const dadMariamDist = Math.hypot(polyPos.dad.x - polyPos.m1.x, polyPos.dad.y - polyPos.m1.y)
+ok('polygamie — conjoint·es proches (< 500px)', dadMariamDist < 500)
+ok('polygamie — toutes les épouses placées', ['m1', 'm2', 'm3'].every((id) => polyPos[id]))
+ok('polygamie — pas de ligne conjugale aberrante', dadMariamDist < 480)
+
+ok(
+  'layoutNeedsRecompute — détecte positions éloignées',
+  layoutNeedsRecompute(polygamyFamily, { dad: { x: 3000, y: 40 }, m1: { x: 860, y: 40 } })
+)
+ok(
+  'layoutNeedsRecompute — ignore positions saines',
+  !layoutNeedsRecompute(polygamyFamily, polyPos)
 )
 
 console.log('\n--- Racine avec parents ---')
