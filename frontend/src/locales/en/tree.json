@@ -217,6 +217,11 @@
     "inviteError": "Error sending invitation"
   },
   "org": {
+    "canvas": {
+      "levelPlaceholder": "Level",
+      "allLevels": "All levels",
+      "levelLabel": "Level {{num}} (N{{num}})"
+    },
     "person": {
       "firstName": "First name",
       "firstNameRequired": "First name *",

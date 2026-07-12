@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
 import { normalizePersons } from "@/utils/tree-layout"
+import { isOrganizationTree } from "@/lib/tree-type"
+import { formatGenerationBadge, getMaxGeneration } from "@/lib/generation-level"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -33,6 +35,8 @@ export default function TimelinePage() {
   }
 
   const normalized = normalizePersons(currentTree.Person || [], currentTree.Relationship)
+  const isOrg = isOrganizationTree(currentTree)
+  const maxGeneration = getMaxGeneration(normalized)
   const sorted = [...normalized]
     .filter((p) => p.born !== null)
     .sort((a, b) => (+a.born!) - (+b.born!))
@@ -71,7 +75,7 @@ export default function TimelinePage() {
                 <div>
                   <p className="font-medium">{p.given} {p.sur !== "—" ? p.sur : ""}</p>
                   <p className="text-sm text-muted-foreground">
-                    G{p.generation}
+                    {formatGenerationBadge(p.generation, { isOrg, maxGeneration })}
                     {p.died ? ` · ${p.born}–${p.died}` : ""}
                     {p.place ? ` · ${p.place}` : ""}
                   </p>

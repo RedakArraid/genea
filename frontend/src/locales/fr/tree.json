@@ -217,6 +217,11 @@
     "inviteError": "Erreur lors de l'invitation"
   },
   "org": {
+    "canvas": {
+      "levelPlaceholder": "Niveau",
+      "allLevels": "Tous les niveaux",
+      "levelLabel": "Niveau {{num}} (N{{num}})"
+    },
     "person": {
       "firstName": "Prénom",
       "firstNameRequired": "Prénom *",

@@ -2,6 +2,7 @@
  * Tests unitaires du moteur de layout (frontend)
  */
 import { computeLayout, buildConnections, normalizePersons, layoutNeedsRecompute, layoutNeedsOrgRecompute, getCardDimensions } from '../frontend/src/utils/tree-layout.ts'
+import { formatGenerationBadge, getMaxGeneration, toOrgLevel } from '../frontend/src/lib/generation-level.ts'
 
 const people = [
   { id: 'a', generation: 1, parentIds: [], spouseIds: ['b'], given: 'Jean', sur: 'Dupont' },
@@ -124,6 +125,9 @@ ok(
   'layoutNeedsOrgRecompute — ignore layout org sain',
   !layoutNeedsOrgRecompute(orgPeople, orgPos)
 )
+ok('org — CEO au sommet = niveau max', formatGenerationBadge(1, { isOrg: true, maxGeneration: 4 }) === 'N4')
+ok('org — base = N1', formatGenerationBadge(4, { isOrg: true, maxGeneration: 4 }) === 'N1')
+ok('org — toOrgLevel cohérent', toOrgLevel(2, getMaxGeneration(orgPeople)) === 2)
 
 console.log(`\n=== Résultat layout : ${pass} passés, ${fail} échoués ===`)
 process.exit(fail > 0 ? 1 : 0)

@@ -24,6 +24,7 @@ import { PersonDocuments } from "@/components/family-tree/person-documents"
 import { PersonHistory } from "@/components/family-tree/person-history"
 import { ChildAddMenu } from "@/components/family-tree/child-add-menu"
 import { useTreeLexicon } from "@/hooks/use-tree-lexicon"
+import { formatGenerationBadge, getMaxGeneration } from "@/lib/generation-level"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 interface SidePanelProps {
@@ -162,6 +163,7 @@ function SidePanelContent({
 }: SidePanelProps) {
   const { t } = useTranslation("tree")
   const lex = useTreeLexicon(currentTree.treeType)
+  const maxGeneration = useMemo(() => getMaxGeneration(people), [people])
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState(() => {
     const raw = currentTree.Person?.find((p) => p.id === person.id)
@@ -288,7 +290,9 @@ function SidePanelContent({
   return (
     <>
       <div className="flex items-center justify-between border-b p-4">
-        <Badge variant="secondary">G{person.generation}</Badge>
+        <Badge variant="secondary">
+          {formatGenerationBadge(person.generation, { isOrg: lex.isOrg, maxGeneration })}
+        </Badge>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="size-4" />
         </Button>

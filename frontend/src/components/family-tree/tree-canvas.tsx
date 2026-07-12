@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { isOrganizationTree } from "@/lib/tree-type"
+import { getMaxGeneration, toOrgLevel } from "@/lib/generation-level"
 
 const TOOLBAR_H = 48
 const VIEW_PADDING = 40
@@ -569,21 +570,28 @@ export function TreeCanvas({
     return () => { window.__focusOn = undefined }
   }, [positions, jumpTo, cardW, cardH])
 
-  const maxGens = useMemo(() => {
-    if (!people.length) return 1
-    return Math.max(...people.map((p) => p.generation))
-  }, [people])
+  const maxGens = useMemo(() => getMaxGeneration(people), [people])
 
   const generationOptions = useMemo(
     () => [
-      { value: "all", label: t("canvas.allGenerations") },
-      ...Array.from({ length: maxGens }, (_, i) => ({
-        value: String(i + 1),
-        label: t("canvas.generationLabel", { num: i + 1 }),
-      })),
+      {
+        value: "all",
+        label: isOrg ? t("org.canvas.allLevels") : t("canvas.allGenerations"),
+      },
+      ...Array.from({ length: maxGens }, (_, i) => {
+        const gen = i + 1
+        return {
+          value: String(gen),
+          label: isOrg
+            ? t("org.canvas.levelLabel", { num: toOrgLevel(gen, maxGens) })
+            : t("canvas.generationLabel", { num: gen }),
+        }
+      }),
     ],
-    [maxGens, t]
+    [maxGens, isOrg, t]
   )
+
+  const generationPlaceholder = isOrg ? t("org.canvas.levelPlaceholder") : t("canvas.generationPlaceholder")
 
   return (
     <div
@@ -613,7 +621,7 @@ export function TreeCanvas({
               <MoreVertical className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>{t("canvas.generationPlaceholder")}</DropdownMenuLabel>
+              <DropdownMenuLabel>{generationPlaceholder}</DropdownMenuLabel>
               {generationOptions.map((opt) => (
                 <DropdownMenuItem
                   key={opt.value}
@@ -694,7 +702,7 @@ export function TreeCanvas({
         </div>
         <Select value={genFilter} onValueChange={(v) => v && onSetTweak("generation", v)}>
           <SelectTrigger size="sm" className="w-[180px]">
-            <SelectValue placeholder={t("canvas.generationPlaceholder")} />
+            <SelectValue placeholder={generationPlaceholder} />
           </SelectTrigger>
           <SelectContent className="max-h-64">
             {generationOptions.map((opt) => (
@@ -845,6 +853,7 @@ export function TreeCanvas({
               scale={scale}
               cardStyle={tweaks.cardStyle}
               isOrg={isOrg}
+              maxGeneration={maxGens}
               hidePhotos={tweaks.hidePhotos}
               hideDates={tweaks.hideDates}
               hidePlaces={tweaks.hidePlaces}
