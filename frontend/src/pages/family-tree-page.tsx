@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { useAuthStore } from "@/stores/auth-store"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
-import { normalizePersons, computeLayout, layoutNeedsRecompute } from "@/utils/tree-layout"
+import { normalizePersons, computeLayout } from "@/utils/tree-layout"
 import type { NormalizedPerson, Person, Position, TreeTweaks } from "@/types"
 import { isOrganizationTree } from "@/lib/tree-type"
 import { TreeCanvas } from "@/components/family-tree/tree-canvas"
@@ -168,8 +168,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     }
 
     const hasAllPositions = normalizedPeople.every((p: NormalizedPerson) => dbPositions[p.id])
-    const staleLayout = hasAllPositions && layoutNeedsRecompute(normalizedPeople, dbPositions)
-    const needsLayout = relsChanged || !hasAllPositions || Object.keys(dbPositions).length === 0 || staleLayout
+    const needsLayout = relsChanged || !hasAllPositions || Object.keys(dbPositions).length === 0
 
     if (!needsLayout) {
       setPositions(dbPositions)
