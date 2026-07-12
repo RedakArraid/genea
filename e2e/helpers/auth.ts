@@ -33,7 +33,7 @@ export async function loginWithPassword(
   await page.locator("#login").fill(loginId)
   await page.locator("#password").fill(creds.password)
   await page.getByTestId("login-submit").click()
-  await page.waitForURL(/\/dashboard/, { timeout: 15_000 })
+  await page.waitForURL(/\/(dashboard|family-tree)/, { timeout: 15_000 })
 }
 
 export async function getFirstTreeId(page: Page): Promise<string> {

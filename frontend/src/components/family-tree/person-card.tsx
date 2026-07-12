@@ -74,6 +74,37 @@ export function PersonCard({
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return
+
+    // Touch : tap pour sélectionner, le canvas gère le pan continu
+    if (e.pointerType === "touch" || e.pointerType === "pen") {
+      const pointerId = e.pointerId
+      const startX = e.clientX
+      const startY = e.clientY
+      let moved = false
+
+      const onMove = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return
+        if (Math.hypot(ev.clientX - startX, ev.clientY - startY) > 8) moved = true
+      }
+
+      const cleanup = () => {
+        window.removeEventListener("pointermove", onMove)
+        window.removeEventListener("pointerup", onUp)
+        window.removeEventListener("pointercancel", onUp)
+      }
+
+      const onUp = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return
+        if (!moved) onSelect?.(person.id)
+        cleanup()
+      }
+
+      window.addEventListener("pointermove", onMove)
+      window.addEventListener("pointerup", onUp)
+      window.addEventListener("pointercancel", onUp)
+      return
+    }
+
     e.stopPropagation()
     e.preventDefault()
     if (!onDrag) {
@@ -126,7 +157,7 @@ export function PersonCard({
   return (
     <div
       className={cn(
-        "tree-person-card absolute z-[2] flex flex-col cursor-grab select-none rounded-lg border bg-card shadow-sm transition-opacity active:cursor-grabbing touch-none",
+        "tree-person-card absolute z-[2] flex flex-col cursor-grab select-none rounded-lg border bg-card shadow-sm transition-opacity active:cursor-grabbing",
         dragging && "z-[30]",
         cardStyle !== "round" && cardStyle !== "minimal" && "w-[120px]",
         selected && "ring-2 ring-primary",

@@ -260,5 +260,13 @@
     "uploading": "Uploading…",
     "chooseFile": "Choose a file",
     "storageHint": "MinIO storage unavailable — configure S3_* in the backend."
+  },
+  "onboarding": {
+    "title": "How to use the tree",
+    "stepSelect": "Click a card to select a person",
+    "stepEdit": "Edit details in the side panel",
+    "stepAdd": "Add parents, children, or spouses with the + button",
+    "addCta": "Add a person",
+    "dismiss": "Dismiss help"
   }
 }

@@ -57,6 +57,7 @@
   },
   "sidebar": {
     "navigation": "Navigation",
+    "currentTree": "Open tree",
     "myTrees": "My trees",
     "noTree": "No tree",
     "myProfile": "My profile"
@@ -78,5 +79,18 @@
     "comparePlans": "Compare plans and switch from the public Pricing page.",
     "managePlan": "Manage my plan",
     "language": "Interface language"
+  },
+  "welcome": {
+    "defaultName": "there",
+    "greeting": "Hello {{name}}",
+    "emptySubtitle": "Welcome to geneamap. Here's how to get started in a few minutes.",
+    "hasTreesSubtitle": "Pick up where you left off, or create a new tree.",
+    "openTree": "Open \"{{name}}\"",
+    "tryDemo": "Try the demo",
+    "steps": {
+      "create": "Create a tree (family or company)",
+      "add": "Add people and their relationships",
+      "share": "Share with your family or team"
+    }
   }
 }

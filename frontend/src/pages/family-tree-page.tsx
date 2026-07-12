@@ -23,6 +23,8 @@ import { uploadPersonPhoto, setPersonPhoto } from "@/lib/upload"
 import { exportTreeGedcom, exportTreePdf } from "@/lib/export-api"
 import { importTreeGedcom } from "@/lib/import-api"
 import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
+import { rememberLastTreeId } from "@/lib/post-login-destination"
+import { TreeOnboardingHint } from "@/components/family-tree/tree-onboarding-hint"
 
 interface FamilyTreePageProps {
   treeIdOverride?: string
@@ -130,9 +132,12 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     positionsDirtyRef.current = false
     lastRelsHashRef.current = null
     setPositions({})
-    if (treeId) fetchTreeById(treeId)
+    if (treeId) {
+      if (!publicDemo && !isPublicRoute) rememberLastTreeId(treeId)
+      fetchTreeById(treeId)
+    }
     return () => resetState()
-  }, [treeId, fetchTreeById, resetState])
+  }, [treeId, fetchTreeById, resetState, publicDemo, isPublicRoute])
 
   useEffect(() => {
     if (!currentTree?.Person?.length || isDraggingCardRef.current) return
@@ -477,6 +482,13 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
             </Button>
           )}
         </div>
+      )}
+      {!publicDemo && !isPublicRoute && (
+        <TreeOnboardingHint
+          personCount={people.length}
+          canWrite={canWrite && !isDemo}
+          onAddPerson={() => handleOpenAddModal()}
+        />
       )}
       <div className="flex min-h-0 flex-1">
       <div className="relative min-w-0 flex-1">

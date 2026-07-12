@@ -178,6 +178,7 @@ export function TreeCanvas({
   const innerRef = useRef<HTMLDivElement>(null)
   const lastFitKeyRef = useRef<string | null>(null)
   const isDraggingCardRef = useRef(false)
+  const isPanningRef = useRef(false)
   const dragRafRef = useRef<number | null>(null)
   const pendingDragRef = useRef<{ id: string; x: number; y: number } | null>(null)
   const positionsRef = useRef(positions)
@@ -254,7 +255,10 @@ export function TreeCanvas({
   }, [setPositions, onCardDragStateChange])
 
   const onPointerDownBg = (e: React.PointerEvent) => {
-    if (isDraggingCardRef.current) return
+    if (e.button !== 0 || isDraggingCardRef.current) return
+    // Touch/pen : géré par les listeners touch natifs (Safari iOS)
+    if (e.pointerType === "touch" || e.pointerType === "pen") return
+
     const el = e.target as HTMLElement
     const isBackground =
       el === wrapRef.current ||
@@ -264,21 +268,43 @@ export function TreeCanvas({
       el.tagName === "path"
     if (!isBackground) return
 
+    const wrap = wrapRef.current
+    if (!wrap) return
+
+    e.preventDefault()
+    wrap.setPointerCapture(e.pointerId)
+
+    const pointerId = e.pointerId
     const startX = e.clientX
     const startY = e.clientY
-    const startPan = { ...pan }
+    const startPan = { ...panRef.current }
+    isPanningRef.current = true
     setPanning(true)
 
     const onMove = (ev: PointerEvent) => {
-      setPan({ x: startPan.x + (ev.clientX - startX), y: startPan.y + (ev.clientY - startY) })
+      if (ev.pointerId !== pointerId) return
+      ev.preventDefault()
+      setPan({
+        x: startPan.x + (ev.clientX - startX),
+        y: startPan.y + (ev.clientY - startY),
+      })
     }
-    const onUp = () => {
+
+    const onEnd = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return
+      isPanningRef.current = false
       setPanning(false)
-      window.removeEventListener("pointermove", onMove)
-      window.removeEventListener("pointerup", onUp)
+      wrap.removeEventListener("pointermove", onMove)
+      wrap.removeEventListener("pointerup", onEnd)
+      wrap.removeEventListener("pointercancel", onEnd)
+      if (wrap.hasPointerCapture(pointerId)) {
+        wrap.releasePointerCapture(pointerId)
+      }
     }
-    window.addEventListener("pointermove", onMove)
-    window.addEventListener("pointerup", onUp)
+
+    wrap.addEventListener("pointermove", onMove, { passive: false })
+    wrap.addEventListener("pointerup", onEnd)
+    wrap.addEventListener("pointercancel", onEnd)
   }
 
   const onWheel = useCallback(
@@ -309,17 +335,39 @@ export function TreeCanvas({
     const wrap = wrapRef.current
     if (!wrap) return
 
+    const isInteractiveTarget = (target: EventTarget | null) => {
+      const el = target as HTMLElement | null
+      return !!el?.closest("button, input, textarea, a, select, [role='combobox'], [data-no-pan]")
+    }
+
     const touches = new Map<number, { x: number; y: number }>()
     let pinchStartDist = 0
     let pinchStartScale = 1
     let pinchStartPan = { x: 0, y: 0 }
     let pinchCenter = { x: 0, y: 0 }
+    let singleFingerPan: { x: number; y: number; pan: { x: number; y: number } } | null = null
 
     const onTouchStart = (e: TouchEvent) => {
-      if (isDraggingCardRef.current) return
+      if (isDraggingCardRef.current || isInteractiveTarget(e.target)) return
+
       for (const touch of e.changedTouches) {
         touches.set(touch.identifier, { x: touch.clientX, y: touch.clientY })
       }
+
+      if (e.touches.length === 1) {
+        e.preventDefault()
+        const touch = e.touches[0]
+        singleFingerPan = {
+          x: touch.clientX,
+          y: touch.clientY,
+          pan: { ...panRef.current },
+        }
+        isPanningRef.current = true
+        setPanning(true)
+      } else if (e.touches.length > 1) {
+        singleFingerPan = null
+      }
+
       if (touches.size === 2) {
         const pts = [...touches.values()]
         pinchStartDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
@@ -330,6 +378,18 @@ export function TreeCanvas({
     }
 
     const onTouchMove = (e: TouchEvent) => {
+      if (isDraggingCardRef.current) return
+
+      if (singleFingerPan && e.touches.length === 1) {
+        e.preventDefault()
+        const touch = e.touches[0]
+        setPan({
+          x: singleFingerPan.pan.x + (touch.clientX - singleFingerPan.x),
+          y: singleFingerPan.pan.y + (touch.clientY - singleFingerPan.y),
+        })
+        return
+      }
+
       if (touches.size < 2 || pinchStartDist === 0) return
       e.preventDefault()
       for (const touch of e.changedTouches) {
@@ -353,14 +413,19 @@ export function TreeCanvas({
         touches.delete(touch.identifier)
       }
       if (touches.size < 2) pinchStartDist = 0
+      if (e.touches.length === 0) {
+        singleFingerPan = null
+        isPanningRef.current = false
+        setPanning(false)
+      }
     }
 
-    wrap.addEventListener("touchstart", onTouchStart, { passive: true })
+    wrap.addEventListener("touchstart", onTouchStart, { passive: false, capture: true })
     wrap.addEventListener("touchmove", onTouchMove, { passive: false })
     wrap.addEventListener("touchend", onTouchEnd)
     wrap.addEventListener("touchcancel", onTouchEnd)
     return () => {
-      wrap.removeEventListener("touchstart", onTouchStart)
+      wrap.removeEventListener("touchstart", onTouchStart, { capture: true })
       wrap.removeEventListener("touchmove", onTouchMove)
       wrap.removeEventListener("touchend", onTouchEnd)
       wrap.removeEventListener("touchcancel", onTouchEnd)
@@ -424,7 +489,7 @@ export function TreeCanvas({
     if (!wrap || people.length === 0) return
 
     const observer = new ResizeObserver(() => {
-      if (lastFitKeyRef.current && !isDraggingCardRef.current) fitToView()
+      if (lastFitKeyRef.current && !isDraggingCardRef.current && !isPanningRef.current) fitToView()
     })
     observer.observe(wrap)
     return () => observer.disconnect()
@@ -457,10 +522,13 @@ export function TreeCanvas({
   return (
     <div
       ref={wrapRef}
-      className={cn("relative size-full overflow-hidden bg-muted/20", panning && "cursor-grabbing")}
+      className={cn(
+        "relative size-full touch-none overscroll-none overflow-hidden bg-muted/20",
+        panning && "cursor-grabbing"
+      )}
       onPointerDown={onPointerDownBg}
     >
-      <div className="absolute inset-x-0 top-0 z-10 border-b bg-background/95 p-2 backdrop-blur">
+      <div className="absolute inset-x-0 top-0 z-10 border-b bg-background/95 p-2 backdrop-blur" data-no-pan>
         {/* Mobile toolbar */}
         <div className="flex items-center gap-2 md:hidden">
           <div className="relative min-w-0 flex-1">
@@ -769,7 +837,7 @@ export function TreeCanvas({
             ))}
       </div>
 
-      <div className="absolute bottom-4 right-4 flex flex-col gap-1 rounded-lg border bg-background p-1 shadow">
+      <div className="absolute bottom-4 right-4 flex flex-col gap-1 rounded-lg border bg-background p-1 shadow" data-no-pan>
         <Button size="sm" variant="ghost" onClick={() => setScale((s) => Math.min(2.5, s * 1.15))}>+</Button>
         <span className="px-2 text-center text-xs">{Math.round(scale * 100)}%</span>
         <Button size="sm" variant="ghost" onClick={() => setScale((s) => Math.max(0.2, s / 1.15))}>−</Button>

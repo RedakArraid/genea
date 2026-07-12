@@ -260,5 +260,13 @@
     "uploading": "Envoi…",
     "chooseFile": "Choisir un fichier",
     "storageHint": "Stockage MinIO non disponible — configurez S3_* dans le backend."
+  },
+  "onboarding": {
+    "title": "Comment utiliser l'arbre",
+    "stepSelect": "Cliquez sur une fiche pour la sélectionner",
+    "stepEdit": "Modifiez les infos dans le panneau de droite",
+    "stepAdd": "Ajoutez parents, enfants ou conjoints via le bouton +",
+    "addCta": "Ajouter une personne",
+    "dismiss": "Masquer l'aide"
   }
 }

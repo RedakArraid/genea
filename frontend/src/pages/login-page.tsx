@@ -5,6 +5,7 @@ import { TreePine } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
 import { composePhone, DEFAULT_COUNTRY, normalizePhoneInput } from "@/lib/phone"
+import { resolvePostLoginPath } from "@/lib/post-login-destination"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -21,8 +22,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
 
-  const goAfterLogin = () => {
-    navigate(redirect.startsWith("/") ? redirect : "/dashboard")
+  const goAfterLogin = async () => {
+    const target = await resolvePostLoginPath(redirect)
+    navigate(target)
   }
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -41,7 +43,7 @@ export default function LoginPage() {
     setLoading(false)
     if (result.success) {
       toast.success(t("login.success"))
-      goAfterLogin()
+      await goAfterLogin()
     } else {
       toast.error(result.message)
     }

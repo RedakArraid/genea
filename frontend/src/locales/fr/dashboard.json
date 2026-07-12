@@ -57,6 +57,7 @@
   },
   "sidebar": {
     "navigation": "Navigation",
+    "currentTree": "Arbre ouvert",
     "myTrees": "Mes arbres",
     "noTree": "Aucun arbre",
     "myProfile": "Mon profil"
@@ -78,5 +79,18 @@
     "comparePlans": "Comparez les forfaits et changez d'offre depuis la page publique Tarifs.",
     "managePlan": "Gérer mon forfait",
     "language": "Langue de l'interface"
+  },
+  "welcome": {
+    "defaultName": "vous",
+    "greeting": "Bonjour {{name}}",
+    "emptySubtitle": "Bienvenue sur geneamap. Voici comment démarrer en quelques minutes.",
+    "hasTreesSubtitle": "Reprenez là où vous en étiez, ou créez un nouvel arbre.",
+    "openTree": "Ouvrir « {{name}} »",
+    "tryDemo": "Explorer la démo",
+    "steps": {
+      "create": "Créez un arbre (famille ou entreprise)",
+      "add": "Ajoutez des personnes et leurs liens",
+      "share": "Partagez avec votre famille ou votre équipe"
+    }
   }
 }

@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
+import { WelcomePanel } from "@/components/dashboard/welcome-panel"
 import type { TreeType } from "@/types"
 
 export default function DashboardPage() {
@@ -94,6 +95,14 @@ export default function DashboardPage() {
         </Card>
       )}
 
+      <WelcomePanel
+        userName={user?.name}
+        trees={trees}
+        sharedTrees={sharedTrees}
+        planActive={planActive}
+        onCreateTree={() => setOpen(true)}
+      />
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t("title")}</h1>
@@ -105,28 +114,30 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t("stats.trees")}</CardDescription>
-            <CardTitle className="text-3xl">{trees.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t("stats.totalPersons")}</CardDescription>
-            <CardTitle className="text-3xl">
-              {trees.reduce((acc, tree) => acc + (tree._count?.Person || 0), 0)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t("stats.publicTrees")}</CardDescription>
-            <CardTitle className="text-3xl">{trees.filter((tree) => tree.isPublic).length}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {trees.length + sharedTrees.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>{t("stats.trees")}</CardDescription>
+              <CardTitle className="text-3xl">{trees.length + sharedTrees.length}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>{t("stats.totalPersons")}</CardDescription>
+              <CardTitle className="text-3xl">
+                {[...trees, ...sharedTrees].reduce((acc, tree) => acc + (tree._count?.Person || 0), 0)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>{t("stats.publicTrees")}</CardDescription>
+              <CardTitle className="text-3xl">{trees.filter((tree) => tree.isPublic).length}</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+      )}
 
       {sharedTrees.length > 0 && (
         <div className="flex flex-col gap-4">

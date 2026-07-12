@@ -35,16 +35,14 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 import { cn } from "@/lib/utils"
 import { isOrganizationTree } from "@/lib/tree-type"
 
-const navItems: Array<{
-  key: string
-  href: string
-  icon: typeof LayoutDashboard
-  treeScoped?: boolean
-}> = [
+const mainNavItems = [
   { key: "dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { key: "matches", href: "matches", icon: Sparkles, treeScoped: true },
-  { key: "timeline", href: "timeline", icon: Timer, treeScoped: true },
-]
+] as const
+
+const treeNavItems = [
+  { key: "matches", href: "matches", icon: Sparkles },
+  { key: "timeline", href: "timeline", icon: Timer },
+] as const
 
 export function AppShell() {
   const { t } = useTranslation(["common", "dashboard"])
@@ -53,9 +51,9 @@ export function AppShell() {
   const { id: treeId } = useParams()
   const { user, logout, isAdmin } = useAuthStore()
   const { trees, sharedTrees, currentTree, fetchTrees } = useFamilyTreeStore()
-  const activeTreeId = treeId ?? trees[0]?.id ?? sharedTrees[0]?.id
   const allTrees = [...trees, ...sharedTrees]
-  const activeTree = allTrees.find((t) => t.id === activeTreeId) ?? currentTree
+  const activeTree = allTrees.find((t) => t.id === treeId) ?? currentTree
+  const onTreeRoute = Boolean(treeId && location.pathname.startsWith("/family-tree/"))
   const hideMatches = isOrganizationTree(activeTree)
 
   useEffect(() => {
@@ -82,32 +80,46 @@ export function AppShell() {
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("dashboard:sidebar.navigation")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navItems.map((item) => {
-                  const href = item.treeScoped && activeTreeId
-                    ? `/family-tree/${activeTreeId}/${item.href}`
-                    : item.href
-                  const active = item.treeScoped
-                    ? location.pathname.includes(`/${item.href}`)
-                    : location.pathname === item.href
-
-                  if (item.treeScoped && !activeTreeId) return null
-                  if (item.key === "matches" && hideMatches) return null
-
-                  return (
-                    <SidebarMenuItem key={item.key}>
-                      <SidebarMenuButton render={<Link to={href} />} isActive={active}>
-                        <item.icon />
-                        <span>{t(`nav.${item.key}`)}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
+                {mainNavItems.map((item) => (
+                  <SidebarMenuItem key={item.key}>
+                    <SidebarMenuButton
+                      render={<Link to={item.href} />}
+                      isActive={location.pathname === item.href}
+                    >
+                      <item.icon />
+                      <span>{t(`nav.${item.key}`)}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
+          {onTreeRoute && treeId && (
+            <SidebarGroup>
+              <SidebarGroupLabel>{t("dashboard:sidebar.currentTree")}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {treeNavItems.map((item) => {
+                    if (item.key === "matches" && hideMatches) return null
+                    const href = `/family-tree/${treeId}/${item.href}`
+                    const active = location.pathname.includes(`/${item.href}`)
+                    return (
+                      <SidebarMenuItem key={item.key}>
+                        <SidebarMenuButton render={<Link to={href} />} isActive={active}>
+                          <item.icon />
+                          <span>{t(`nav.${item.key}`)}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
 
           <SidebarGroup>
             <SidebarGroupLabel>{t("dashboard:sidebar.myTrees")}</SidebarGroupLabel>
