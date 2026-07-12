@@ -145,7 +145,7 @@ export function isPlanWriteAllowed(
   return true
 }
 
-export function normalizeBillingInterval(planId: PlanId, interval: BillingInterval = "yearly"): BillingInterval {
+export function normalizeBillingInterval(_planId: PlanId, interval: BillingInterval = "yearly"): BillingInterval {
   return interval
 }
 
