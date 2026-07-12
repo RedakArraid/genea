@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 import { Check } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { PLANS, formatDualPrice } from "@/lib/plans"
+import { PLANS, formatDualPrice, isFreePlan } from "@/lib/plans"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -46,9 +46,11 @@ export function PricingSection() {
                     {t(`plans.${plan.id}.name`)}
                   </CardTitle>
                   <CardDescription className="text-2xl font-semibold text-foreground">
-                    {plan.id === "PATRIMONY"
-                      ? `${formatDualPrice("PATRIMONY", "yearly")} · ${formatDualPrice("PATRIMONY", "monthly")}`
-                      : formatDualPrice(plan.id)}
+                    {isFreePlan(plan.id)
+                      ? t("pricing.free")
+                      : plan.id === "PATRIMONY"
+                        ? `${formatDualPrice("PATRIMONY", "yearly")} · ${formatDualPrice("PATRIMONY", "monthly")}`
+                        : formatDualPrice(plan.id)}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1">

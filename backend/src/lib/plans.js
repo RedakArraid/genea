@@ -1,9 +1,9 @@
 /**
  * Forfaits geneamap — tarification internationale (USD)
  *
- * Essai : $5 — paiement unique
- * Famille : $30/an
- * Patrimoine : $50/an ou $5/mois
+ * Découverte : gratuit à l'inscription
+ * Famille : $24/an — généalogie & petits organigrammes
+ * Patrimoine : $42/an ou $4,50/mois — illimité + versioning
  */
 
 const CURRENCY = 'USD';
@@ -11,53 +11,53 @@ const FX_USD_XOF = Number(process.env.FX_USD_XOF) || 650;
 
 /** Prix affichage FCFA (paiement reste USD via Paystack) */
 const PRICE_XOF = {
-  SOLO: 3250,
-  FAMILY: 19500,
-  PATRIMONY: 32500,
-  PATRIMONY_MONTHLY: 3250,
+  SOLO: 0,
+  FAMILY: 15600,
+  PATRIMONY: 27300,
+  PATRIMONY_MONTHLY: 2925,
 };
 
 const PLANS = {
   SOLO: {
     id: 'SOLO',
-    name: 'Essai',
-    billingPeriod: 'once',
-    priceUsd: 5,
-    priceLabel: '$5 — one-time',
-    durationDays: 90,
+    name: 'Découverte',
+    billingPeriod: 'free',
+    priceUsd: 0,
+    priceLabel: 'Gratuit',
+    durationDays: null,
     maxTrees: 1,
-    maxPersonsPerTree: 25,
+    maxPersonsPerTree: 60,
     maxCollaborators: 2,
-    maxMediaAssets: 10,
+    maxMediaAssets: 15,
     canPublicMatching: false,
     canExport: false,
     canVersioning: false,
     features: [
-      '1 arbre, jusqu\'à 25 fiches',
-      '90 jours pour tester geneamap',
+      '1 arbre (généalogie ou organisation)',
+      'Jusqu\'à 60 fiches',
+      '15 photos & documents',
       'Partage privé (2 collaborateurs)',
-      'Paiement carte sécurisé',
     ],
   },
   FAMILY: {
     id: 'FAMILY',
     name: 'Famille',
     billingPeriod: 'yearly',
-    priceUsd: 30,
-    priceLabel: '$30 / year',
+    priceUsd: 24,
+    priceLabel: '$24 / year',
     durationDays: 365,
-    maxTrees: 5,
-    maxPersonsPerTree: 500,
+    maxTrees: 4,
+    maxPersonsPerTree: 350,
     maxCollaborators: Infinity,
-    maxMediaAssets: 100,
+    maxMediaAssets: 80,
     canPublicMatching: true,
     canExport: true,
     canVersioning: false,
     features: [
-      '5 arbres, 500 fiches par arbre',
-      '100 photos & documents inclus',
+      '4 arbres, 350 fiches par arbre',
+      'Organigrammes & lexique personnalisé',
+      '80 photos & documents inclus',
       'Collaborateurs illimités',
-      'Arbres publics en lecture seule',
       'Export GEDCOM & PDF',
     ],
   },
@@ -65,10 +65,10 @@ const PLANS = {
     id: 'PATRIMONY',
     name: 'Patrimoine',
     billingPeriod: 'yearly',
-    priceUsd: 50,
-    priceMonthlyUsd: 5,
-    priceLabel: '$50 / year',
-    priceLabelMonthly: '$5 / month',
+    priceUsd: 42,
+    priceMonthlyUsd: 4.5,
+    priceLabel: '$42 / year',
+    priceLabelMonthly: '$4.50 / month',
     durationDays: 365,
     durationDaysMonthly: 30,
     maxTrees: Infinity,
@@ -80,8 +80,8 @@ const PLANS = {
     canVersioning: true,
     features: [
       'Personnes et arbres illimités',
+      'Grands organigrammes & arrière-plans',
       'Photos & documents illimités',
-      'Arbres publics en lecture seule',
       'Export & import GEDCOM, PDF',
       'Historique des modifications',
       'Support prioritaire',
@@ -123,11 +123,16 @@ function getPlanDurationDays(planId, billingInterval = 'yearly') {
   if (planId === 'PATRIMONY' && billingInterval === 'monthly') {
     return plan.durationDaysMonthly ?? 30;
   }
-  return plan.durationDays;
+  return plan.durationDays ?? null;
+}
+
+function isFreePlan(planId) {
+  const plan = PLANS[planId];
+  return !!plan && plan.priceUsd === 0;
 }
 
 function isPaidPlan(planId) {
-  return !!PLANS[planId];
+  return !!PLANS[planId] && !isFreePlan(planId);
 }
 
 function computeDiscountedAmount(baseAmount, promo) {
@@ -166,6 +171,7 @@ module.exports = {
   FX_USD_XOF,
   PRICE_XOF,
   getPlanDurationDays,
+  isFreePlan,
   isPaidPlan,
   computeDiscountedAmount,
   toPaystackAmount,

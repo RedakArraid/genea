@@ -4,8 +4,8 @@
     "sectionBadge": "Tarifs",
     "title": "Des tarifs simples, partout dans le monde",
     "sectionTitle": "Tarifs accessibles à l'international",
-    "subtitle": "Pas de freemium — un essai à petit prix, puis des forfaits annuels ou mensuels. Paiement par carte sécurisé (Paystack).",
-    "sectionSubtitle": "Essai à $5, puis forfaits Famille et Patrimoine. Paiement carte via Paystack.",
+    "subtitle": "Compte gratuit pour démarrer, puis forfaits Famille et Patrimoine pour aller plus loin. Paiement par carte sécurisé (Paystack).",
+    "sectionSubtitle": "Gratuit pour commencer, puis Famille et Patrimoine selon vos besoins. Paiement carte via Paystack.",
     "promoCode": "Code promo",
     "promoHint": "Codes par pays ou campagne — saisissez le vôtre si vous en avez un.",
     "securePayment": "Paiement par carte bancaire — sécurisé",
@@ -19,7 +19,9 @@
     "monthly": "Mensuel",
     "oneTime": "Paiement unique",
     "perYear": "Par an",
-    "perMonth": "Par mois"
+    "perMonth": "Par mois",
+    "free": "Gratuit",
+    "freeForever": "Gratuit à vie"
   },
   "callback": {
     "verifying": "Vérification du paiement…",
@@ -35,39 +37,40 @@
   },
   "plans": {
     "SOLO": {
-      "name": "Essai",
-      "priceLabel": "$5 — paiement unique",
-      "cta": "Tester geneamap",
+      "name": "Découverte",
+      "priceLabel": "Gratuit",
+      "cta": "Commencer gratuitement",
       "features": [
-        "1 arbre, jusqu'à 25 fiches",
-        "90 jours pour découvrir l'outil",
-        "Partage privé (2 collaborateurs)",
-        "Paiement carte sécurisé"
+        "1 arbre (généalogie ou organisation)",
+        "Jusqu'à 60 fiches",
+        "15 photos & documents",
+        "Partage privé (2 collaborateurs)"
       ]
     },
     "FAMILY": {
       "name": "Famille",
-      "priceLabel": "$30 / an",
+      "priceLabel": "$24 / an",
       "cta": "Choisir Famille",
       "features": [
-        "5 arbres, 500 fiches par arbre",
-        "100 photos & documents inclus",
+        "4 arbres, 350 fiches par arbre",
+        "Organigrammes & lexique personnalisé",
+        "80 photos & documents inclus",
         "Collaborateurs illimités",
-        "Arbres publics en lecture seule",
         "Export GEDCOM & PDF"
       ]
     },
     "PATRIMONY": {
       "name": "Patrimoine",
-      "priceLabel": "$50 / an",
-      "priceLabelMonthly": "$5 / mois",
+      "priceLabel": "$42 / an",
+      "priceLabelMonthly": "$4,50 / mois",
       "cta": "Choisir annuel",
       "ctaMonthly": "Choisir mensuel",
       "features": [
         "Personnes et arbres illimités",
+        "Grands organigrammes & arrière-plans",
         "Photos & documents illimités",
-        "Arbres publics en lecture seule",
-        "Export GEDCOM & PDF",
+        "Export & import GEDCOM, PDF",
+        "Historique des modifications",
         "Support prioritaire"
       ]
     }

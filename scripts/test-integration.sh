@@ -319,20 +319,20 @@ fi
 
 # Billing & planActive
 billing_json=$(curl -s -X POST "$API/billing/preview" -H 'Content-Type: application/json' -d '{"plan":"FAMILY"}')
-assert_json "Billing preview FAMILY 30 USD" "d.get('finalAmount') == 30 and d.get('limits',{}).get('maxTrees') == 5" "$billing_json"
+assert_json "Billing preview FAMILY 24 USD" "d.get('finalAmount') == 24 and d.get('limits',{}).get('maxTrees') == 4" "$billing_json"
 
 reg_email="billing-test-$(date +%s)@example.com"
 reg_phone="07$(printf '%08d' $(( ($(date +%s) + RANDOM + 1) % 100000000 )))"
 reg_json=$(curl -s -X POST "$API/auth/register" \
   -H 'Content-Type: application/json' \
   -d "{\"name\":\"Billing Test\",\"phone\":\"$reg_phone\",\"email\":\"$reg_email\",\"password\":\"password123\"}")
-assert_json "Inscription planActive=false" "d.get('user',{}).get('planActive') is False" "$reg_json"
+assert_json "Inscription planActive=true (Découverte gratuite)" "d.get('user',{}).get('planActive') is True" "$reg_json"
 NEW_TOKEN=$(echo "$reg_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token',''))" 2>/dev/null || echo "")
 if [ -n "$NEW_TOKEN" ]; then
-  code=$(curl -s -o /tmp/genea_no_plan_tree.json -w '%{http_code}' -X POST "$API/family-trees" \
+  code=$(curl -s -o /tmp/genea_free_plan_tree.json -w '%{http_code}' -X POST "$API/family-trees" \
     -H "Authorization: Bearer $NEW_TOKEN" -H 'Content-Type: application/json' \
-    -d '{"name":"Sans forfait"}')
-  assert_status "Création arbre sans forfait bloquée" "402" "$code" "$(cat /tmp/genea_no_plan_tree.json 2>/dev/null)"
+    -d '{"name":"Arbre gratuit"}')
+  assert_status "Création arbre avec forfait Découverte" "201" "$code" "$(cat /tmp/genea_free_plan_tree.json 2>/dev/null)"
 fi
 
 # Arbre public — admin (Patrimoine)

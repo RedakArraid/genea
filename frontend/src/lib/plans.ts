@@ -7,8 +7,8 @@ export interface PlanDefinition {
   priceUsd: number
   priceMonthlyUsd?: number
   priceLabel: string
-  billingPeriod: "once" | "yearly" | "monthly"
-  durationDays?: number
+  billingPeriod: "free" | "once" | "yearly" | "monthly"
+  durationDays?: number | null
   maxTrees: number
   maxPersonsPerTree: number
   maxCollaborators: number
@@ -26,65 +26,65 @@ export interface PlanDefinition {
 export const FX_USD_XOF = 650
 
 export const PRICE_XOF: Record<PlanId, number> & { PATRIMONY_MONTHLY: number } = {
-  SOLO: 3250,
-  FAMILY: 19500,
-  PATRIMONY: 32500,
-  PATRIMONY_MONTHLY: 3250,
+  SOLO: 0,
+  FAMILY: 15600,
+  PATRIMONY: 27300,
+  PATRIMONY_MONTHLY: 2925,
 }
 
 export const PLANS: PlanDefinition[] = [
   {
     id: "SOLO",
-    name: "Essai",
-    priceUsd: 5,
-    priceLabel: "$5 — one-time",
-    billingPeriod: "once",
-    durationDays: 90,
+    name: "Découverte",
+    priceUsd: 0,
+    priceLabel: "Gratuit",
+    billingPeriod: "free",
+    durationDays: null,
     maxTrees: 1,
-    maxPersonsPerTree: 25,
+    maxPersonsPerTree: 60,
     maxCollaborators: 2,
-    maxMediaAssets: 10,
+    maxMediaAssets: 15,
     canPublicMatching: false,
     canExport: false,
     canVersioning: false,
-    cta: "Try geneamap",
+    cta: "Commencer gratuitement",
     features: [
-      "1 tree, up to 25 profiles",
-      "90 days to explore",
+      "1 tree (genealogy or organization)",
+      "Up to 60 profiles",
+      "15 photos & documents",
       "Private sharing (2 collaborators)",
-      "Secure card payment",
     ],
   },
   {
     id: "FAMILY",
     name: "Famille",
-    priceUsd: 30,
-    priceLabel: "$30 / year",
+    priceUsd: 24,
+    priceLabel: "$24 / year",
     billingPeriod: "yearly",
     durationDays: 365,
-    maxTrees: 5,
-    maxPersonsPerTree: 500,
+    maxTrees: 4,
+    maxPersonsPerTree: 350,
     maxCollaborators: Infinity,
-    maxMediaAssets: 100,
+    maxMediaAssets: 80,
     canPublicMatching: true,
     canExport: true,
     canVersioning: false,
     featured: true,
     cta: "Choisir Famille",
     features: [
-      "5 arbres, 500 fiches par arbre",
-      "100 photos & documents inclus",
-      "Collaborateurs illimités",
-      "Arbres publics en lecture seule",
-      "Export GEDCOM & PDF",
+      "4 trees, 350 profiles per tree",
+      "Org charts & custom lexicon",
+      "80 photos & documents included",
+      "Unlimited collaborators",
+      "GEDCOM & PDF export",
     ],
   },
   {
     id: "PATRIMONY",
     name: "Patrimoine",
-    priceUsd: 50,
-    priceMonthlyUsd: 5,
-    priceLabel: "$50 / year",
+    priceUsd: 42,
+    priceMonthlyUsd: 4.5,
+    priceLabel: "$42 / year",
     billingPeriod: "yearly",
     durationDays: 365,
     maxTrees: Infinity,
@@ -97,18 +97,22 @@ export const PLANS: PlanDefinition[] = [
     cta: "Choisir annuel",
     ctaMonthly: "Choisir mensuel",
     features: [
-      "Personnes et arbres illimités",
-      "Photos & documents illimités",
-      "Export & import GEDCOM, PDF",
-      "Historique des modifications",
-      "Arbres publics en lecture seule",
-      "Support prioritaire",
+      "Unlimited people and trees",
+      "Large org charts & backgrounds",
+      "Unlimited photos & documents",
+      "GEDCOM & PDF import/export",
+      "Edit history",
+      "Priority support",
     ],
   },
 ]
 
 export function getPlanById(id: PlanId) {
   return PLANS.find((p) => p.id === id) ?? PLANS[0]
+}
+
+export function isFreePlan(planId: PlanId) {
+  return getPlanById(planId).priceUsd === 0
 }
 
 export function getPlanPrice(plan: PlanDefinition, interval: BillingInterval = "yearly") {
@@ -144,12 +148,14 @@ export function getPlanPriceXof(planId: PlanId, interval: BillingInterval = "yea
 
 export function formatDualPrice(planId: PlanId, interval: BillingInterval = "yearly") {
   const plan = getPlanById(planId)
+  if (plan.priceUsd === 0) return plan.priceLabel
   const usd = getPlanPrice(plan, interval)
   const xof = getPlanPriceXof(planId, interval)
   return `${formatXof(xof)} (${formatPrice(usd)})`
 }
 
 export function formatDualPriceFromUsd(amountUsd: number) {
+  if (amountUsd === 0) return "Gratuit"
   const xof = Math.round(amountUsd * FX_USD_XOF)
   return `${formatXof(xof)} (${formatPrice(amountUsd)})`
 }

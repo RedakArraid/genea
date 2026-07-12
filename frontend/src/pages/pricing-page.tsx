@@ -4,7 +4,7 @@ import { Check, CreditCard } from "lucide-react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
-import { PLANS, formatDualPrice, formatDualPriceFromUsd, getPlanPrice } from "@/lib/plans"
+import { PLANS, formatDualPrice, formatDualPriceFromUsd, getPlanPrice, isFreePlan } from "@/lib/plans"
 import type { BillingInterval } from "@/lib/billing-api"
 import type { PlanId } from "@/types"
 import { initializeCheckout, previewCheckout } from "@/lib/billing-api"
@@ -94,6 +94,10 @@ export default function PricingPage() {
 
   const handleCheckout = async (planId: PlanId, interval: BillingInterval = "yearly") => {
     if (!isAuthenticated) return
+    if (isFreePlan(planId)) {
+      navigate("/dashboard")
+      return
+    }
     if (!user?.email?.trim()) {
       toast.error(translateApiError({ code: "EMAIL_REQUIRED_FOR_PAYMENT" }))
       navigate("/profile")
@@ -151,6 +155,7 @@ export default function PricingPage() {
 
         <div className="grid gap-6 md:grid-cols-3">
           {PLANS.map((plan) => {
+            const isFree = isFreePlan(plan.id)
             const isPatrimony = plan.id === "PATRIMONY"
             const interval = isPatrimony ? patrimonyInterval : "yearly"
             const isCurrent = isAuthenticated && user?.plan === plan.id && planActive
@@ -174,20 +179,22 @@ export default function PricingPage() {
                     {isCurrent && <Badge variant="secondary" className="ml-auto text-xs">{t("pricing.current")}</Badge>}
                   </CardTitle>
                   <CardDescription className="text-2xl font-semibold text-foreground">
-                    {formatDualPriceFromUsd(finalAmount)}
-                    {finalAmount < basePrice && (
+                    {isFree && finalAmount === 0
+                      ? t("pricing.free")
+                      : formatDualPriceFromUsd(finalAmount)}
+                    {!isFree && finalAmount < basePrice && (
                       <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
                         {formatDualPrice(plan.id, interval)}
                       </span>
                     )}
                   </CardDescription>
                   <p className="text-xs text-muted-foreground">
-                    {isPatrimony
-                      ? interval === "monthly"
-                        ? t("pricing.perMonth")
-                        : t("pricing.perYear")
-                      : plan.id === "SOLO"
-                        ? t("pricing.oneTime")
+                    {isFree
+                      ? t("pricing.freeForever")
+                      : isPatrimony
+                        ? interval === "monthly"
+                          ? t("pricing.perMonth")
+                          : t("pricing.perYear")
                         : t("pricing.perYear")}
                   </p>
                   {isPatrimony && (

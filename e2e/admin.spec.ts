@@ -47,6 +47,6 @@ test.describe("Back-office admin", () => {
 
     await page.getByTestId("admin-nav-plans").click()
     await expect(page.getByRole("heading", { name: "Forfaits" })).toBeVisible()
-    await expect(page.getByText("Essai")).toBeVisible()
+    await expect(page.getByText("Découverte")).toBeVisible()
   })
 })

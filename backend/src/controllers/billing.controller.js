@@ -1,5 +1,13 @@
 const prisma = require('../lib/prisma');
-const { CURRENCY, getPlanPrice, getPlanLimits, serializePlan, toPaystackAmount, getPlanDisplayAmounts } = require('../lib/plans');
+const {
+  CURRENCY,
+  getPlanPrice,
+  getPlanLimits,
+  serializePlan,
+  toPaystackAmount,
+  getPlanDisplayAmounts,
+  isFreePlan,
+} = require('../lib/plans');
 const { validatePromoCode, applyDiscount } = require('../lib/promo');
 const { generateReference, fulfillPayment } = require('../lib/payments/fulfill');
 const payments = require('../lib/payments');
@@ -71,6 +79,15 @@ exports.initializeCheckout = async (req, res, next) => {
         400,
         'EMAIL_REQUIRED_FOR_PAYMENT',
         'Ajoutez une adresse email à votre profil pour effectuer un paiement en ligne.',
+      );
+    }
+
+    if (isFreePlan(plan)) {
+      return sendError(
+        res,
+        400,
+        'FREE_PLAN',
+        'Ce forfait est gratuit — créez un compte pour l\'activer.',
       );
     }
 

@@ -4,8 +4,8 @@
     "sectionBadge": "Pricing",
     "title": "Simple pricing, worldwide",
     "sectionTitle": "International-friendly pricing",
-    "subtitle": "No freemium — a low-cost trial, then yearly or monthly plans. Secure card payment via Paystack.",
-    "sectionSubtitle": "$5 trial, then Family and Heritage plans. Card payment via Paystack.",
+    "subtitle": "Free account to get started, then Family and Heritage plans to go further. Secure card payment via Paystack.",
+    "sectionSubtitle": "Start for free, then Family and Heritage as you grow. Card payment via Paystack.",
     "promoCode": "Promo code",
     "promoHint": "Country or campaign codes — enter yours if you have one.",
     "securePayment": "Credit & debit card payment — secure",
@@ -19,7 +19,9 @@
     "monthly": "Monthly",
     "oneTime": "One-time payment",
     "perYear": "Per year",
-    "perMonth": "Per month"
+    "perMonth": "Per month",
+    "free": "Free",
+    "freeForever": "Free forever"
   },
   "callback": {
     "verifying": "Verifying payment…",
@@ -35,39 +37,40 @@
   },
   "plans": {
     "SOLO": {
-      "name": "Trial",
-      "priceLabel": "$5 — one-time",
-      "cta": "Try geneamap",
+      "name": "Discovery",
+      "priceLabel": "Free",
+      "cta": "Start for free",
       "features": [
-        "1 tree, up to 25 profiles",
-        "90 days to explore the tool",
-        "Private sharing (2 collaborators)",
-        "Secure card payment"
+        "1 tree (genealogy or organization)",
+        "Up to 60 profiles",
+        "15 photos & documents",
+        "Private sharing (2 collaborators)"
       ]
     },
     "FAMILY": {
       "name": "Family",
-      "priceLabel": "$30 / year",
+      "priceLabel": "$24 / year",
       "cta": "Choose Family",
       "features": [
-        "5 trees, 500 profiles per tree",
-        "100 photos & documents included",
+        "4 trees, 350 profiles per tree",
+        "Org charts & custom lexicon",
+        "80 photos & documents included",
         "Unlimited collaborators",
-        "Public read-only trees",
         "GEDCOM & PDF export"
       ]
     },
     "PATRIMONY": {
       "name": "Heritage",
-      "priceLabel": "$50 / year",
-      "priceLabelMonthly": "$5 / month",
+      "priceLabel": "$42 / year",
+      "priceLabelMonthly": "$4.50 / month",
       "cta": "Choose yearly",
       "ctaMonthly": "Choose monthly",
       "features": [
         "Unlimited people and trees",
+        "Large org charts & backgrounds",
         "Unlimited photos & documents",
-        "Public read-only trees",
-        "GEDCOM & PDF export",
+        "GEDCOM & PDF import/export",
+        "Edit history",
         "Priority support"
       ]
     }

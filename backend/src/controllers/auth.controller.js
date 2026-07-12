@@ -79,6 +79,8 @@ exports.register = async (req, res, next) => {
         email: normalizedEmail,
         password: hashedPassword,
         locale: userLocale,
+        plan: 'SOLO',
+        planActive: true,
       },
     });
 
