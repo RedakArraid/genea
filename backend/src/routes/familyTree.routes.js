@@ -78,6 +78,13 @@ router.patch(
   familyTreeController.updateTreeBackground
 );
 
+router.patch(
+  '/:id/lexicon',
+  isAuth,
+  canWriteTree,
+  familyTreeController.updateOrgLexicon
+);
+
 /**
  * @route DELETE /api/family-trees/:id
  * @desc Supprimer un arbre généalogique

@@ -162,7 +162,7 @@ function SidePanelContent({
   onPersonRestored,
 }: SidePanelProps) {
   const { t } = useTranslation("tree")
-  const lex = useTreeLexicon(currentTree.treeType)
+  const lex = useTreeLexicon(currentTree)
   const maxGeneration = useMemo(() => getMaxGeneration(people), [people])
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState(() => {
@@ -291,7 +291,7 @@ function SidePanelContent({
     <>
       <div className="flex items-center justify-between border-b p-4">
         <Badge variant="secondary">
-          {formatGenerationBadge(person.generation, { isOrg: lex.isOrg, maxGeneration })}
+          {formatGenerationBadge(person.generation, { isOrg: lex.isOrg, maxGeneration, lexicon: lex.config })}
         </Badge>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="size-4" />

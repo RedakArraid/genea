@@ -24,7 +24,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import { WelcomePanel } from "@/components/dashboard/welcome-panel"
-import type { TreeType } from "@/types"
+import type { TreeType, OrgLexiconPreset } from "@/types"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export default function DashboardPage() {
   const { t } = useTranslation("dashboard")
@@ -33,11 +40,18 @@ export default function DashboardPage() {
   const planActive = user?.planActive ?? false
   const { trees, sharedTrees, isLoading, fetchTrees, createTree, deleteTree } = useFamilyTreeStore()
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState<{ name: string; description: string; isPublic: boolean; treeType: TreeType }>({
+  const [form, setForm] = useState<{
+    name: string
+    description: string
+    isPublic: boolean
+    treeType: TreeType
+    orgLexiconPreset: OrgLexiconPreset
+  }>({
     name: "",
     description: "",
     isPublic: false,
     treeType: "GENEALOGY",
+    orgLexiconPreset: "enterprise",
   })
   const [creating, setCreating] = useState(false)
 
@@ -51,12 +65,16 @@ export default function DashboardPage() {
       return
     }
     setCreating(true)
-    const result = await createTree(form)
+    const payload =
+      form.treeType === "ORGANIZATION"
+        ? form
+        : { name: form.name, description: form.description, isPublic: form.isPublic, treeType: form.treeType }
+    const result = await createTree(payload)
     setCreating(false)
     if (result.success && result.tree) {
       toast.success(t("treeCreated"))
       setOpen(false)
-      setForm({ name: "", description: "", isPublic: false, treeType: "GENEALOGY" })
+      setForm({ name: "", description: "", isPublic: false, treeType: "GENEALOGY", orgLexiconPreset: "enterprise" })
       navigate(`/family-tree/${result.tree.id}`)
     } else {
       toast.error(result.message)
@@ -301,6 +319,27 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
+            {form.treeType === "ORGANIZATION" && (
+              <div className="flex flex-col gap-2">
+                <Label>{t("createDialog.orgPresetLabel")}</Label>
+                <Select
+                  value={form.orgLexiconPreset}
+                  onValueChange={(v) =>
+                    v && setForm({ ...form, orgLexiconPreset: v as OrgLexiconPreset })
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="enterprise">{t("createDialog.orgPresets.enterprise")}</SelectItem>
+                    <SelectItem value="school">{t("createDialog.orgPresets.school")}</SelectItem>
+                    <SelectItem value="promo">{t("createDialog.orgPresets.promo")}</SelectItem>
+                    <SelectItem value="crew">{t("createDialog.orgPresets.crew")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex flex-col gap-2">
               <Label htmlFor="tree-name">{t("createDialog.nameLabel")}</Label>
               <Input

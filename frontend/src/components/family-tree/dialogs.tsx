@@ -3,8 +3,9 @@ import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { todayIsoDate, validateBirthDate } from "@/lib/person-dates"
 import { Trash2, UserPlus, Link2 } from "lucide-react"
-import type { NormalizedPerson, TreeTweaks, TreeType, TreeVisibility, TreeCollaborator, TreeInvite, FamilyTree } from "@/types"
+import type { NormalizedPerson, TreeTweaks, TreeVisibility, TreeCollaborator, TreeInvite, FamilyTree } from "@/types"
 import { OrgBackgroundSettings } from "@/components/family-tree/org-background-settings"
+import { OrgLexiconSettings } from "@/components/family-tree/org-lexicon-settings"
 import { isOrganizationTree } from "@/lib/tree-type"
 import { useTreeLexicon } from "@/hooks/use-tree-lexicon"
 import { useFamilyTreeStore } from "@/stores/family-tree-store"
@@ -48,7 +49,7 @@ interface AddPersonDialogProps {
   parentId?: string | null
   parent2Id?: string | null
   relationType?: string | null
-  treeType?: TreeType
+  treeLexicon?: Pick<FamilyTree, "treeType" | "orgLexicon">
 }
 
 export function AddPersonDialog({
@@ -59,10 +60,10 @@ export function AddPersonDialog({
   parentId,
   parent2Id,
   relationType,
-  treeType,
+  treeLexicon,
 }: AddPersonDialogProps) {
   const { t } = useTranslation("tree")
-  const lex = useTreeLexicon(treeType)
+  const lex = useTreeLexicon(treeLexicon)
   const storageConfig = useStorageConfig()
   const [loading, setLoading] = useState(false)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
@@ -633,6 +634,9 @@ export function TreeSettingsSheet({ open, onClose, tweaks, onSetTweak, tree, can
             </Select>
           </div>
           {showOrgBackground && tree && (
+            <OrgLexiconSettings tree={tree} canEdit={canEditBackground} />
+          )}
+          {showOrgBackground && tree && (
             <OrgBackgroundSettings tree={tree} canEdit={canEditBackground} />
           )}
         </div>
@@ -706,12 +710,12 @@ interface AddRelationDialogProps {
   person: NormalizedPerson
   people: NormalizedPerson[]
   onSubmit: (sourceId: string, targetId: string, relType: string) => Promise<void>
-  treeType?: TreeType
+  treeLexicon?: Pick<FamilyTree, "treeType" | "orgLexicon">
 }
 
-export function AddRelationDialog({ open, onClose, person, people, onSubmit, treeType }: AddRelationDialogProps) {
+export function AddRelationDialog({ open, onClose, person, people, onSubmit, treeLexicon }: AddRelationDialogProps) {
   const { t } = useTranslation("tree")
-  const lex = useTreeLexicon(treeType)
+  const lex = useTreeLexicon(treeLexicon)
   const [targetId, setTargetId] = useState("")
   const [relType, setRelType] = useState("parent")
   const [loading, setLoading] = useState(false)

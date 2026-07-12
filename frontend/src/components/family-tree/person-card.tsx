@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils"
 import { formatGenerationBadge } from "@/lib/generation-level"
 import { AuthenticatedImage } from "@/components/ui/authenticated-image"
 import { getCardDimensions } from "@/utils/tree-layout"
-import type { NormalizedPerson, PersonTone } from "@/types"
+import type { NormalizedPerson, PersonTone, OrgLexiconConfig } from "@/types"
 import { useState, useEffect } from "react"
 
 const TONE_STYLES: Record<PersonTone, { bg: string; fg: string; ring: string }> = {
@@ -32,6 +32,7 @@ interface PersonCardProps {
   cardStyle?: string
   isOrg?: boolean
   maxGeneration?: number
+  lexicon?: OrgLexiconConfig | null
   hidePhotos?: boolean
   hideDates?: boolean
   hidePlaces?: boolean
@@ -53,6 +54,7 @@ export function PersonCard({
   cardStyle = "square",
   isOrg = false,
   maxGeneration,
+  lexicon,
   hidePhotos = false,
   hideDates = false,
   hidePlaces = false,
@@ -182,7 +184,7 @@ export function PersonCard({
       {cardStyle !== "minimal" && (
         <div className={cn("relative h-20 overflow-hidden rounded-t-lg", tone.bg, cardStyle === "round" && "size-14 rounded-full")}>
           <span className="absolute left-1 top-1 rounded bg-background/80 px-1 text-[10px] font-medium">
-            {formatGenerationBadge(person.generation, { isOrg, maxGeneration })}
+            {formatGenerationBadge(person.generation, { isOrg, maxGeneration, lexicon })}
           </span>
           {showPhoto ? (
             <AuthenticatedImage

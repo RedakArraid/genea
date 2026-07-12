@@ -32,7 +32,7 @@
   "nameRequired": "Name is required",
   "treeTypeBadge": {
     "genealogy": "Family",
-    "organization": "Company"
+    "organization": "Organization"
   },
   "createDialog": {
     "title": "New tree",
@@ -40,8 +40,15 @@
     "typeLabel": "Tree type",
     "typeGenealogy": "Family",
     "typeGenealogyHint": "Family lineage, ancestors, GEDCOM",
-    "typeOrganization": "Company",
-    "typeOrganizationHint": "Org chart — Manager / Team",
+    "typeOrganization": "Organization",
+    "typeOrganizationHint": "Org chart — customizable levels and subordination",
+    "orgPresetLabel": "Terminology template",
+    "orgPresets": {
+      "enterprise": "Enterprise",
+      "school": "School",
+      "promo": "Cohort / promo",
+      "crew": "Crew"
+    },
     "nameLabel": "Name *",
     "namePlaceholder": "Smith family",
     "descLabel": "Description",

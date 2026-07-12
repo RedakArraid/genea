@@ -1,7 +1,7 @@
 import { create } from "zustand"
 import api from "@/lib/api"
 import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
-import type { FamilyTree, Person, Position, TreeAccess, TreeCollaborator, TreeInvite, TreeType, TreeVisibility, TreeBackgroundMode } from "@/types"
+import type { FamilyTree, Person, Position, TreeAccess, TreeCollaborator, TreeInvite, TreeType, TreeVisibility, TreeBackgroundMode, OrgLexiconConfig, OrgLexiconPreset } from "@/types"
 
 function storeError(error: unknown, fallbackKey: string) {
   return translateApiError(getApiErrorPayload(error), fallbackKey)
@@ -38,7 +38,13 @@ interface FamilyTreeState {
   acceptInvite: (token: string) => Promise<{ success: boolean; message?: string; treeId?: string }>
   removeCollaborator: (treeId: string, userId: string) => Promise<{ success: boolean; message?: string }>
   updateVisibility: (treeId: string, visibility: TreeVisibility) => Promise<{ success: boolean; message?: string }>
-  createTree: (data: { name: string; description?: string; isPublic?: boolean; treeType?: TreeType }) => Promise<{ success: boolean; tree?: FamilyTree; message?: string }>
+  createTree: (data: {
+    name: string
+    description?: string
+    isPublic?: boolean
+    treeType?: TreeType
+    orgLexiconPreset?: OrgLexiconPreset
+  }) => Promise<{ success: boolean; tree?: FamilyTree; message?: string }>
   updateTree: (treeId: string, data: Partial<FamilyTree>) => Promise<{ success: boolean; message?: string }>
   updateTreeBackground: (
     treeId: string,
@@ -49,6 +55,10 @@ interface FamilyTreeState {
       backgroundOverlay?: boolean
       backgroundTileSize?: number
     }
+  ) => Promise<{ success: boolean; message?: string }>
+  updateTreeLexicon: (
+    treeId: string,
+    data: { orgLexicon?: Partial<OrgLexiconConfig>; orgLexiconPreset?: OrgLexiconPreset }
   ) => Promise<{ success: boolean; message?: string }>
   deleteTree: (treeId: string) => Promise<{ success: boolean; message?: string }>
   addPerson: (treeId: string, personData: Record<string, unknown> & { position?: Position }) => Promise<{ success: boolean; person?: Person; message?: string }>
@@ -138,6 +148,23 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
       return { success: true }
     } catch (error: unknown) {
       const message = storeError(error, "tree:store.updateTreeBackgroundError")
+      return { success: false, message }
+    }
+  },
+
+  updateTreeLexicon: async (treeId, lexiconData) => {
+    try {
+      const { data } = await api.patch(`/family-trees/${treeId}/lexicon`, lexiconData)
+      set((state) => ({
+        trees: state.trees.map((t) => (t.id === treeId ? mergeTreePatch(t, data.tree) : t)),
+        currentTree:
+          state.currentTree?.id === treeId
+            ? mergeTreePatch(state.currentTree, data.tree)
+            : state.currentTree,
+      }))
+      return { success: true }
+    } catch (error: unknown) {
+      const message = storeError(error, "tree:store.updateTreeLexiconError")
       return { success: false, message }
     }
   },

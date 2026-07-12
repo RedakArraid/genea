@@ -209,6 +209,7 @@
     "createTreeError": "Error creating tree",
     "updateTreeError": "Error updating tree",
     "updateTreeBackgroundError": "Error updating background",
+    "updateTreeLexiconError": "Error updating terminology",
     "deleteTreeError": "Error deleting tree",
     "addPersonError": "Error adding person",
     "updatePersonError": "Error updating person",
@@ -221,7 +222,40 @@
     "canvas": {
       "levelPlaceholder": "Level",
       "allLevels": "All levels",
+      "allLevelsNamed": "All {{term}}",
       "levelLabel": "Level {{num}} (N{{num}})"
+    },
+    "lexicon": {
+      "title": "Terminology",
+      "hint": "Customize level names and subordination terms for your organization.",
+      "preset": "Template",
+      "presets": {
+        "enterprise": "Enterprise (Level, Manager, Team, Role)",
+        "school": "School (Level, Supervisor, Class)",
+        "promo": "Cohort (Wave, Lead, Group)",
+        "crew": "Crew (Rank, Chief, Crew)",
+        "custom": "Custom"
+      },
+      "presetHint": "Template « {{preset}} » applied. Edit a field to switch to custom.",
+      "levelTerm": "Level term",
+      "levelAbbrev": "Abbreviation (badge)",
+      "levelOrder": "Numbering",
+      "levelOrderTopHigh": "Top = highest number (N5 at top)",
+      "levelOrderTopLow": "Base = number 1 (N1 at bottom)",
+      "superiorLabel": "Superior(s)",
+      "subordinateLabel": "Subordinate(s)",
+      "roleLabel": "Role / position label",
+      "advanced": "Advanced labels",
+      "newSubordinate": "New subordinate",
+      "linkExistingSubordinate": "Link existing member",
+      "asSuperior": "As superior",
+      "asSubordinate": "As subordinate",
+      "superiorOf": "Superior of ({{name}})",
+      "subordinateOf": "Subordinate of ({{name}})",
+      "addTitle": "Add dialog title",
+      "save": "Save terminology",
+      "saved": "Terminology updated",
+      "saveError": "Could not save terminology"
     },
     "background": {
       "title": "Background",

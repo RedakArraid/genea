@@ -32,7 +32,7 @@
   "nameRequired": "Le nom est requis",
   "treeTypeBadge": {
     "genealogy": "Famille",
-    "organization": "Entreprise"
+    "organization": "Organisation"
   },
   "createDialog": {
     "title": "Nouvel arbre",
@@ -40,8 +40,15 @@
     "typeLabel": "Type d'arbre",
     "typeGenealogy": "Famille",
     "typeGenealogyHint": "Lignée familiale, ancêtres, GEDCOM",
-    "typeOrganization": "Entreprise",
-    "typeOrganizationHint": "Organigramme — Manager / Équipe",
+    "typeOrganization": "Organisation",
+    "typeOrganizationHint": "Organigramme — niveaux et subordination paramétrables",
+    "orgPresetLabel": "Modèle de terminologie",
+    "orgPresets": {
+      "enterprise": "Entreprise",
+      "school": "École",
+      "promo": "Promotion",
+      "crew": "Équipage"
+    },
     "nameLabel": "Nom *",
     "namePlaceholder": "Famille Dupont",
     "descLabel": "Description",

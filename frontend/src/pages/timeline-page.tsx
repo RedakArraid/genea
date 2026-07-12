@@ -5,6 +5,7 @@ import { useFamilyTreeStore } from "@/stores/family-tree-store"
 import { normalizePersons } from "@/utils/tree-layout"
 import { isOrganizationTree } from "@/lib/tree-type"
 import { formatGenerationBadge, getMaxGeneration } from "@/lib/generation-level"
+import { resolveOrgLexicon } from "@/lib/org-lexicon"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -36,6 +37,7 @@ export default function TimelinePage() {
 
   const normalized = normalizePersons(currentTree.Person || [], currentTree.Relationship)
   const isOrg = isOrganizationTree(currentTree)
+  const orgLexicon = resolveOrgLexicon(currentTree)
   const maxGeneration = getMaxGeneration(normalized)
   const sorted = [...normalized]
     .filter((p) => p.born !== null)
@@ -75,7 +77,7 @@ export default function TimelinePage() {
                 <div>
                   <p className="font-medium">{p.given} {p.sur !== "—" ? p.sur : ""}</p>
                   <p className="text-sm text-muted-foreground">
-                    {formatGenerationBadge(p.generation, { isOrg, maxGeneration })}
+                    {formatGenerationBadge(p.generation, { isOrg, maxGeneration, lexicon: orgLexicon })}
                     {p.died ? ` · ${p.born}–${p.died}` : ""}
                     {p.place ? ` · ${p.place}` : ""}
                   </p>

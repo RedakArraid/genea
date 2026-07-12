@@ -512,6 +512,21 @@ GEDEOF
     assert_status "PATCH background NONE" "200" "$code"
     assert_json "background effacé" "d.get('tree',{}).get('backgroundMode')=='NONE'" "$(cat /tmp/genea_org_bg_clear.json 2>/dev/null)"
 
+    assert_json "orgLexicon défaut entreprise" "d.get('tree',{}).get('orgLexicon',{}).get('preset')=='enterprise'" "$org_body"
+
+    code=$(curl -s -o /tmp/genea_org_lex_promo.json -w '%{http_code}' -X PATCH "$API/family-trees/$ORG_TREE_ID/lexicon" \
+      -H "Authorization: Bearer $FAM40_TOKEN" -H 'Content-Type: application/json' \
+      -d '{"orgLexiconPreset":"promo"}')
+    assert_status "PATCH lexicon preset promo" "200" "$code" "$(cat /tmp/genea_org_lex_promo.json 2>/dev/null)"
+    assert_json "orgLexicon promo" "d.get('tree',{}).get('orgLexicon',{}).get('levelAbbrev')=='V'" "$(cat /tmp/genea_org_lex_promo.json 2>/dev/null)"
+
+    if [ -n "$TOKEN" ] && [ -n "$PERSONAL_TREE_ID" ]; then
+      code=$(curl -s -o /tmp/genea_org_lex_gene.json -w '%{http_code}' -X PATCH "$API/family-trees/$PERSONAL_TREE_ID/lexicon" \
+        -H "$AUTH" -H 'Content-Type: application/json' \
+        -d '{"orgLexiconPreset":"school"}')
+      assert_status "PATCH lexicon arbre généalogique bloqué" "403" "$code" "$(cat /tmp/genea_org_lex_gene.json 2>/dev/null)"
+    fi
+
     code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$API/family-trees/$ORG_TREE_ID" \
       -H "Authorization: Bearer $FAM40_TOKEN")
     assert_status "DELETE arbre org test" "200" "$code"

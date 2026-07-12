@@ -516,7 +516,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         <TreeCanvas
           people={people}
           tweaks={tweaks}
-          treeType={currentTree.treeType}
+          treeMeta={currentTree}
           background={treeBackground}
           positions={positions}
           setPositions={setPositions}
@@ -598,7 +598,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         parentId={addPersonRelData.parentId}
         parent2Id={addPersonRelData.parent2Id}
         relationType={addPersonRelData.relType}
-        treeType={currentTree.treeType}
+        treeLexicon={currentTree}
       />
 
       <ShareDialog
@@ -625,7 +625,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           person={people.find((p: NormalizedPerson) => p.id === relationPersonData.id)!}
           people={people}
           onSubmit={handleAddRelationSubmit}
-          treeType={currentTree.treeType}
+          treeLexicon={currentTree}
         />
       )}
 

@@ -4,6 +4,28 @@ export type TreeBackgroundMode = "NONE" | "COVER" | "REPEAT"
 export type TreeVisibility = "PRIVATE" | "SHARED" | "PUBLIC"
 export type CollaboratorRole = "VIEWER" | "EDITOR"
 
+export type OrgLexiconPreset = "enterprise" | "school" | "promo" | "crew" | "custom"
+export type LevelOrder = "TOP_HIGH" | "TOP_LOW"
+
+export interface OrgLexiconConfig {
+  preset: OrgLexiconPreset
+  levelTerm: string
+  levelAbbrev: string
+  levelOrder: LevelOrder
+  superiorLabel: string
+  subordinateLabel: string
+  addSuperior: string
+  addSubordinate: string
+  newSubordinate: string
+  linkExistingSubordinate: string
+  asSuperior: string
+  asSubordinate: string
+  superiorOf: string
+  subordinateOf: string
+  roleLabel: string
+  addTitle: string
+}
+
 export interface User {
   id: string
   phone: string
@@ -99,6 +121,7 @@ export interface FamilyTree {
   backgroundOpacity?: number
   backgroundOverlay?: boolean
   backgroundTileSize?: number
+  orgLexicon?: OrgLexiconConfig | null
   ownerId: string
   createdAt?: string
   updatedAt?: string

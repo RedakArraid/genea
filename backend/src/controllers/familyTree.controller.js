@@ -8,6 +8,7 @@ const { assertPlanEntitlement, getEffectivePlanLimits } = require('../lib/planAc
 const { requireTreeRead } = require('../lib/treeAccess');
 const { loadTreeExportData, assertCanExportTree, assertCanExportGedcom, assertCanImportExportTree, slugifyFilename } = require('../lib/exportAccess');
 const { isOrganizationTree } = require('../lib/treeType');
+const { normalizeOrgLexicon, getOrgLexiconPreset } = require('../lib/orgLexicon');
 const { generateGedcom } = require('../lib/gedcom');
 const { generateTreePdf } = require('../lib/treePdf');
 const { importGedcomIntoTree } = require('../lib/gedcomImport');
@@ -99,7 +100,7 @@ exports.createTree = async (req, res, next) => {
       return res.status(400).json({ errors: errors.array() });
     }
     
-    const { name, description, isPublic, rootPerson, treeType: rawTreeType } = req.body;
+    const { name, description, isPublic, rootPerson, treeType: rawTreeType, orgLexiconPreset } = req.body;
     const treeType = rawTreeType === 'ORGANIZATION' ? 'ORGANIZATION' : 'GENEALOGY';
     const isOrg = treeType === 'ORGANIZATION';
     const userId = req.user.id;
@@ -131,6 +132,7 @@ exports.createTree = async (req, res, next) => {
           isPublic: isPublic || false,
           visibility,
           treeType,
+          orgLexicon: isOrg ? getOrgLexiconPreset(orgLexiconPreset) : null,
           ownerId: userId,
         },
       });
@@ -299,6 +301,47 @@ exports.updateTreeBackground = async (req, res, next) => {
 
     res.status(200).json({
       message: 'Arrière-plan mis à jour',
+      tree: updatedTree,
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'Arbre généalogique non trouvé' });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Terminologie organisation (niveaux, subordination, poste…)
+ */
+exports.updateOrgLexicon = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const tree = await prisma.familyTree.findUnique({ where: { id } });
+    if (!tree || tree.isDemo) {
+      return res.status(403).json({ message: 'Cet arbre ne peut pas être modifié' });
+    }
+    if (!isOrganizationTree(tree)) {
+      return res.status(403).json({ message: 'Lexique réservé aux arbres organisation' });
+    }
+
+    const { orgLexicon, orgLexiconPreset } = req.body;
+    let nextLexicon;
+    if (orgLexiconPreset && orgLexiconPreset !== 'custom') {
+      nextLexicon = getOrgLexiconPreset(orgLexiconPreset);
+    } else if (orgLexicon && typeof orgLexicon === 'object') {
+      nextLexicon = normalizeOrgLexicon({ ...orgLexicon, preset: orgLexicon.preset || 'custom' });
+    } else {
+      return res.status(400).json({ message: 'orgLexicon ou orgLexiconPreset requis' });
+    }
+
+    const updatedTree = await prisma.familyTree.update({
+      where: { id },
+      data: { orgLexicon: nextLexicon },
+    });
+
+    res.status(200).json({
+      message: 'Terminologie mise à jour',
       tree: updatedTree,
     });
   } catch (error) {

@@ -2,7 +2,8 @@
  * Tests unitaires du moteur de layout (frontend)
  */
 import { computeLayout, buildConnections, normalizePersons, layoutNeedsRecompute, layoutNeedsOrgRecompute, getCardDimensions } from '../frontend/src/utils/tree-layout.ts'
-import { formatGenerationBadge, getMaxGeneration, toOrgLevel } from '../frontend/src/lib/generation-level.ts'
+import { formatGenerationBadge, getMaxGeneration, toDisplayLevel, formatLevelFilterLabel } from '../frontend/src/lib/generation-level.ts'
+import { getPresetLexicon } from '../frontend/src/lib/org-lexicon.ts'
 import { isTreeBackgroundActive, getDefaultBackgroundOpacity, buildViewportBackgroundStyle } from '../frontend/src/lib/tree-background.ts'
 
 const people = [
@@ -128,7 +129,10 @@ ok(
 )
 ok('org — CEO au sommet = niveau max', formatGenerationBadge(1, { isOrg: true, maxGeneration: 4 }) === 'N4')
 ok('org — base = N1', formatGenerationBadge(4, { isOrg: true, maxGeneration: 4 }) === 'N1')
-ok('org — toOrgLevel cohérent', toOrgLevel(2, getMaxGeneration(orgPeople)) === 2)
+ok('org — toDisplayLevel cohérent', toDisplayLevel(2, getMaxGeneration(orgPeople)) === 2)
+const promoLex = getPresetLexicon('promo')
+ok('promo — badge V', formatGenerationBadge(1, { isOrg: true, maxGeneration: 3, lexicon: promoLex }) === 'V3')
+ok('promo — filtre niveau', formatLevelFilterLabel(2, 3, promoLex) === 'Vague 2 (V2)')
 
 console.log('\n--- Arrière-plan organigramme ---')
 const bgConfig = { imageUrl: 'https://example.com/logo.png', mode: 'REPEAT', opacity: 0.2, overlay: true, tileSize: 120 }

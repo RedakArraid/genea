@@ -209,6 +209,7 @@
     "createTreeError": "Erreur lors de la création",
     "updateTreeError": "Erreur lors de la mise à jour",
     "updateTreeBackgroundError": "Erreur lors de la mise à jour de l'arrière-plan",
+    "updateTreeLexiconError": "Erreur lors de la mise à jour de la terminologie",
     "deleteTreeError": "Erreur lors de la suppression",
     "addPersonError": "Erreur lors de l'ajout",
     "updatePersonError": "Erreur lors de la mise à jour",
@@ -221,7 +222,40 @@
     "canvas": {
       "levelPlaceholder": "Niveau",
       "allLevels": "Tous les niveaux",
+      "allLevelsNamed": "Tous les {{term}}",
       "levelLabel": "Niveau {{num}} (N{{num}})"
+    },
+    "lexicon": {
+      "title": "Terminologie",
+      "hint": "Adaptez les niveaux et les termes de subordination à votre organisation.",
+      "preset": "Modèle",
+      "presets": {
+        "enterprise": "Entreprise (Niveau, Manager, Équipe, Poste)",
+        "school": "École (Niveau, Encadrant, Classe)",
+        "promo": "Promotion (Vague, Responsable, Promotion)",
+        "crew": "Équipage (Rang, Chef, Équipage)",
+        "custom": "Personnalisé"
+      },
+      "presetHint": "Modèle « {{preset}} » appliqué. Modifiez un champ pour passer en personnalisé.",
+      "levelTerm": "Terme de niveau",
+      "levelAbbrev": "Abréviation (badge)",
+      "levelOrder": "Numérotation",
+      "levelOrderTopHigh": "Sommet = numéro le plus élevé (N5 en haut)",
+      "levelOrderTopLow": "Base = numéro 1 (N1 en bas)",
+      "superiorLabel": "Supérieur(s)",
+      "subordinateLabel": "Subordonné(s)",
+      "roleLabel": "Libellé du poste / rôle",
+      "advanced": "Libellés avancés",
+      "newSubordinate": "Nouveau subordonné",
+      "linkExistingSubordinate": "Lier un membre existant",
+      "asSuperior": "En tant que supérieur",
+      "asSubordinate": "En tant que subordonné",
+      "superiorOf": "Supérieur de ({{name}})",
+      "subordinateOf": "Subordonné de ({{name}})",
+      "addTitle": "Titre du dialogue d'ajout",
+      "save": "Enregistrer la terminologie",
+      "saved": "Terminologie mise à jour",
+      "saveError": "Impossible d'enregistrer la terminologie"
     },
     "background": {
       "title": "Arrière-plan",

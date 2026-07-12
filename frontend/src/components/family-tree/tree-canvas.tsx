@@ -3,7 +3,7 @@ import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2, MoreVertical, Us
 import { useTranslation } from "react-i18next"
 import { PersonCard } from "./person-card"
 import { buildConnections, computeLineage, getCardDimensions } from "@/utils/tree-layout"
-import type { NormalizedPerson, TreeTweaks, TreeType } from "@/types"
+import type { NormalizedPerson, TreeTweaks, FamilyTree } from "@/types"
 import type { TreeBackgroundConfig } from "@/lib/tree-background"
 import { isTreeBackgroundActive, buildViewportBackgroundStyle } from "@/lib/tree-background"
 import { useProtectedMediaUrl } from "@/hooks/use-protected-media-url"
@@ -26,7 +26,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { isOrganizationTree } from "@/lib/tree-type"
-import { getMaxGeneration, toOrgLevel } from "@/lib/generation-level"
+import { getMaxGeneration, formatLevelFilterLabel } from "@/lib/generation-level"
+import { resolveOrgLexicon } from "@/lib/org-lexicon"
 
 const TOOLBAR_H = 48
 const VIEW_PADDING = 40
@@ -156,7 +157,7 @@ function computeContentBounds(
 interface TreeCanvasProps {
   people: NormalizedPerson[]
   tweaks: TreeTweaks
-  treeType?: TreeType
+  treeMeta?: Pick<FamilyTree, "treeType" | "orgLexicon">
   background?: TreeBackgroundConfig | null
   positions: Record<string, { x: number; y: number }>
   setPositions: React.Dispatch<React.SetStateAction<Record<string, { x: number; y: number }>>>
@@ -193,7 +194,7 @@ interface TreeCanvasProps {
 export function TreeCanvas({
   people = [],
   tweaks,
-  treeType,
+  treeMeta,
   background,
   positions,
   setPositions,
@@ -248,7 +249,8 @@ export function TreeCanvas({
   const connStyle = tweaks.connStyle || "elbow"
   const genFilter = tweaks.generation || "all"
   const cardStyle = tweaks.cardStyle || "square"
-  const isOrg = isOrganizationTree({ treeType })
+  const isOrg = isOrganizationTree(treeMeta)
+  const orgLexicon = useMemo(() => (isOrg ? resolveOrgLexicon(treeMeta) : null), [isOrg, treeMeta])
   const sidePanelOpen = Boolean(selectedId)
   const { w: cardW, h: cardH } = useMemo(
     () => getCardDimensions(cardStyle, { organization: isOrg }),
@@ -581,22 +583,26 @@ export function TreeCanvas({
     () => [
       {
         value: "all",
-        label: isOrg ? t("org.canvas.allLevels") : t("canvas.allGenerations"),
+        label: isOrg && orgLexicon
+          ? t("org.canvas.allLevelsNamed", { term: orgLexicon.levelTerm.toLowerCase() })
+          : isOrg
+            ? t("org.canvas.allLevels")
+            : t("canvas.allGenerations"),
       },
       ...Array.from({ length: maxGens }, (_, i) => {
         const gen = i + 1
         return {
           value: String(gen),
-          label: isOrg
-            ? t("org.canvas.levelLabel", { num: toOrgLevel(gen, maxGens) })
+          label: isOrg && orgLexicon
+            ? formatLevelFilterLabel(gen, maxGens, orgLexicon)
             : t("canvas.generationLabel", { num: gen }),
         }
       }),
     ],
-    [maxGens, isOrg, t]
+    [maxGens, isOrg, orgLexicon, t]
   )
 
-  const generationPlaceholder = isOrg ? t("org.canvas.levelPlaceholder") : t("canvas.generationPlaceholder")
+  const generationPlaceholder = isOrg && orgLexicon ? orgLexicon.levelTerm : isOrg ? t("org.canvas.levelPlaceholder") : t("canvas.generationPlaceholder")
   const backgroundUrl = useProtectedMediaUrl(
     isTreeBackgroundActive(background) ? background?.imageUrl : null
   )
@@ -876,6 +882,7 @@ export function TreeCanvas({
               cardStyle={tweaks.cardStyle}
               isOrg={isOrg}
               maxGeneration={maxGens}
+              lexicon={orgLexicon}
               hidePhotos={tweaks.hidePhotos}
               hideDates={tweaks.hideDates}
               hidePlaces={tweaks.hidePlaces}
