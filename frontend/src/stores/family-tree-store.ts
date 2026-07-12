@@ -7,6 +7,12 @@ function storeError(error: unknown, fallbackKey: string) {
   return translateApiError(getApiErrorPayload(error), fallbackKey)
 }
 
+/** L'API renvoie souvent l'arbre sans Person/Relationship — on fusionne pour ne pas vider le canvas. */
+function mergeTreePatch(existing: FamilyTree | null, patch: FamilyTree): FamilyTree {
+  if (!existing || existing.id !== patch.id) return patch
+  return { ...existing, ...patch }
+}
+
 interface FamilyTreeState {
   trees: FamilyTree[]
   sharedTrees: FamilyTree[]
@@ -106,8 +112,11 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
     try {
       const { data } = await api.put(`/family-trees/${treeId}`, treeData)
       set((state) => ({
-        trees: state.trees.map((t) => (t.id === treeId ? data.tree : t)),
-        currentTree: state.currentTree?.id === treeId ? data.tree : state.currentTree,
+        trees: state.trees.map((t) => (t.id === treeId ? mergeTreePatch(t, data.tree) : t)),
+        currentTree:
+          state.currentTree?.id === treeId
+            ? mergeTreePatch(state.currentTree, data.tree)
+            : state.currentTree,
       }))
       return { success: true }
     } catch (error: unknown) {
@@ -120,8 +129,11 @@ export const useFamilyTreeStore = create<FamilyTreeState>((set, get) => ({
     try {
       const { data } = await api.patch(`/family-trees/${treeId}/background`, backgroundData)
       set((state) => ({
-        trees: state.trees.map((t) => (t.id === treeId ? data.tree : t)),
-        currentTree: state.currentTree?.id === treeId ? data.tree : state.currentTree,
+        trees: state.trees.map((t) => (t.id === treeId ? mergeTreePatch(t, data.tree) : t)),
+        currentTree:
+          state.currentTree?.id === treeId
+            ? mergeTreePatch(state.currentTree, data.tree)
+            : state.currentTree,
       }))
       return { success: true }
     } catch (error: unknown) {
