@@ -56,6 +56,7 @@ services:
       - SMTP_FROM=geneamap <noreply@geneamap.local>
     volumes:
       - ./backend:/app
+      - ./shared:/shared:ro
       - /app/node_modules
     ports:
       - "${GENEAMAP_BACKEND_HOST_PORT:-3001}:3001"
@@ -113,6 +114,7 @@ services:
       - VITE_API_URL=http://localhost:${GENEAMAP_BACKEND_HOST_PORT:-3001}/api
     volumes:
       - ./frontend:/app
+      - ./shared:/shared:ro
       - /app/node_modules
     ports:
       - "${GENEAMAP_FRONTEND_HOST_PORT:-5173}:5173"
