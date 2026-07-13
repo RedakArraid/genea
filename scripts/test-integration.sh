@@ -70,6 +70,14 @@ fi
 
 AUTH="Authorization: Bearer $TOKEN"
 
+# Arbre personnel test@example.com (upload média sans fork démo)
+solo_trees_json=$(curl -s "$API/family-trees" -H "$AUTH")
+SOLO_TREE_ID=$(echo "$solo_trees_json" | python3 -c "import sys,json; trees=json.load(sys.stdin).get('trees',[]); print(trees[0]['id'] if trees else '')" 2>/dev/null || echo "")
+if [ -n "$SOLO_TREE_ID" ]; then
+  solo_tree_body=$(curl -s "$API/family-trees/$SOLO_TREE_ID" -H "$AUTH")
+  SOLO_PERSON_ID=$(echo "$solo_tree_body" | python3 -c "import sys,json; ps=json.load(sys.stdin).get('tree',{}).get('Person',[]); print(ps[0]['id'] if ps else '')" 2>/dev/null || echo "")
+fi
+
 # Read demo with auth
 tree_auth=$(curl -s "$API/family-trees/$TREE_ID" -H "$AUTH")
 assert_json "canWrite=true connecté" "d.get('access',{}).get('canWrite') is True" "$tree_auth"
