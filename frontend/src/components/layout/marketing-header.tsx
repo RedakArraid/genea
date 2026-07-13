@@ -105,11 +105,11 @@ export function MarketingHeader({ variant = "default" }: MarketingHeaderProps) {
       </div>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="right" className="w-[min(100vw-2rem,320px)]">
-          <SheetHeader>
+        <SheetContent side="bottom" className="gap-0 overflow-y-auto px-6 pb-8 pt-4">
+          <SheetHeader className="border-b pb-4">
             <SheetTitle>geneamap</SheetTitle>
           </SheetHeader>
-          <nav className="mt-6 flex flex-col gap-4">
+          <nav className="flex flex-col gap-4 pt-4">
             {isHome ? (
               <a href={featuresHref} className={navLinkClass} onClick={closeMobile}>
                 {t("nav.features")}

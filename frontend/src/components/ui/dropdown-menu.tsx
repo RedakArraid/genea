@@ -61,6 +61,21 @@ function DropdownMenuGroup({ ...props }: MenuPrimitive.Group.Props) {
   return <MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
 }
 
+function DropdownMenuSection({
+  label,
+  children,
+}: {
+  label: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuLabel>{label}</DropdownMenuLabel>
+      {children}
+    </DropdownMenuGroup>
+  )
+}
+
 function DropdownMenuLabel({
   className,
   inset,
@@ -263,6 +278,7 @@ export {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuGroup,
+  DropdownMenuSection,
   DropdownMenuLabel,
   DropdownMenuItem,
   DropdownMenuCheckboxItem,

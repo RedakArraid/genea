@@ -20,10 +20,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { isOrganizationTree } from "@/lib/tree-type"
 import { getMaxGeneration, formatLevelFilterLabel } from "@/lib/generation-level"
@@ -248,6 +247,7 @@ export function TreeCanvas({
   scaleRef.current = scale
   const [panning, setPanning] = useState(false)
   const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false)
 
   const layout = tweaks.layout || "vertical"
   const connStyle = tweaks.connStyle || "elbow"
@@ -617,6 +617,17 @@ export function TreeCanvas({
   )
 
   const generationPlaceholder = isOrg && orgLexicon ? orgLexicon.levelTerm : isOrg ? t("org.canvas.levelPlaceholder") : t("canvas.generationPlaceholder")
+
+  const runMobileToolbarAction = useCallback((action: () => void) => {
+    setMobileToolbarOpen(false)
+    queueMicrotask(action)
+  }, [])
+
+  const layoutLabels: Record<"vertical" | "horizontal" | "radial", string> = {
+    vertical: t("canvas.layoutVertical", { defaultValue: "↓ Vertical" }),
+    horizontal: t("canvas.layoutHorizontal", { defaultValue: "→ Horizontal" }),
+    radial: t("canvas.layoutRadial", { defaultValue: "◎ Radial" }),
+  }
   const backgroundUrl = useProtectedMediaUrl(
     isTreeBackgroundActive(background) ? background?.imageUrl : null
   )
@@ -645,79 +656,140 @@ export function TreeCanvas({
               onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button size="sm" variant="outline" className="shrink-0" />}
-            >
-              <MoreVertical className="size-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>{generationPlaceholder}</DropdownMenuLabel>
-              {generationOptions.map((opt) => (
-                <DropdownMenuItem
-                  key={opt.value}
-                  onClick={() => onSetTweak("generation", opt.value)}
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0"
+            aria-label={t("canvas.toolbarMenu")}
+            onClick={() => setMobileToolbarOpen(true)}
+          >
+            <MoreVertical className="size-4" />
+          </Button>
+          <Sheet open={mobileToolbarOpen} onOpenChange={setMobileToolbarOpen}>
+            <SheetContent side="bottom" className="gap-0 overflow-y-auto p-0">
+              <SheetHeader className="border-b px-4 py-3">
+                <SheetTitle>{t("canvas.toolbarMenu")}</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-1 p-2">
+                <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">{generationPlaceholder}</p>
+                {generationOptions.map((opt) => (
+                  <Button
+                    key={opt.value}
+                    type="button"
+                    variant="ghost"
+                    className="h-10 justify-start px-2"
+                    onClick={() => runMobileToolbarAction(() => onSetTweak("generation", opt.value))}
+                  >
+                    {opt.label}
+                    {genFilter === opt.value ? " ✓" : ""}
+                  </Button>
+                ))}
+                <div className="my-1 h-px bg-border" />
+                <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  {t("canvas.layoutLabel")}
+                </p>
+                {(["vertical", "horizontal", "radial"] as const).map((l) => (
+                  <Button
+                    key={l}
+                    type="button"
+                    variant="ghost"
+                    className="h-10 justify-start px-2"
+                    onClick={() => runMobileToolbarAction(() => onSetTweak("layout", l))}
+                  >
+                    {layoutLabels[l]}
+                    {layout === l ? " ✓" : ""}
+                  </Button>
+                ))}
+                <div className="my-1 h-px bg-border" />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-10 justify-start px-2"
+                  disabled={!onReorganize || people.length === 0 || (readOnly && !isDemo)}
+                  onClick={() => runMobileToolbarAction(() => onReorganize?.())}
                 >
-                  {opt.label}
-                  {genFilter === opt.value ? " ✓" : ""}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>{t("canvas.layoutLabel", { defaultValue: "Layout" })}</DropdownMenuLabel>
-              {(["vertical", "horizontal", "radial"] as const).map((l) => (
-                <DropdownMenuItem key={l} onClick={() => onSetTweak("layout", l)}>
-                  {l === "vertical" ? "↓ Vertical" : l === "horizontal" ? "→ Horizontal" : "◎ Radial"}
-                  {layout === l ? " ✓" : ""}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={onReorganize}
-                disabled={!onReorganize || people.length === 0 || (readOnly && !isDemo)}
-              >
-                <LayoutGrid className="mr-2 size-4" />
-                {t("canvas.reorganize")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={fitToView}>
-                <Maximize2 className="mr-2 size-4" />
-                {t("canvas.center")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onOpenTweaks}>
-                <Settings className="mr-2 size-4" />
-                {t("canvas.settings", { defaultValue: "Paramètres" })}
-              </DropdownMenuItem>
-              {canImport && onImportGedcom && (
-                <DropdownMenuItem disabled={importBusy} onClick={() => importInputRef.current?.click()}>
-                  <Upload className="mr-2 size-4" />
-                  {t("canvas.importGedcom")}
-                </DropdownMenuItem>
-              )}
-              {canExport && canExportGedcom && onExportGedcom && onExportPdf && (
-                <>
-                  <DropdownMenuItem disabled={exportBusy} onClick={onExportGedcom}>
-                    <FileDown className="mr-2 size-4" />
-                    {t("canvas.exportGedcom")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled={exportBusy} onClick={onExportPdf}>
-                    <FileDown className="mr-2 size-4" />
-                    {t("canvas.exportPdf")}
-                  </DropdownMenuItem>
-                </>
-              )}
-              {!readOnly && canShare && (
-                <DropdownMenuItem onClick={onOpenShare}>
-                  <Share2 className="mr-2 size-4" />
-                  {t("canvas.share")}
-                </DropdownMenuItem>
-              )}
-              {!readOnly && (
-                <DropdownMenuItem onClick={() => onOpenAdd()}>
-                  <Plus className="mr-2 size-4" />
-                  {t("canvas.add")}
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  <LayoutGrid className="mr-2 size-4" />
+                  {t("canvas.reorganize")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-10 justify-start px-2"
+                  onClick={() => runMobileToolbarAction(fitToView)}
+                >
+                  <Maximize2 className="mr-2 size-4" />
+                  {t("canvas.center")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-10 justify-start px-2"
+                  onClick={() => runMobileToolbarAction(onOpenTweaks)}
+                >
+                  <Settings className="mr-2 size-4" />
+                  {t("canvas.settings")}
+                </Button>
+                {canImport && onImportGedcom && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10 justify-start px-2"
+                    disabled={importBusy}
+                    onClick={() => runMobileToolbarAction(() => importInputRef.current?.click())}
+                  >
+                    <Upload className="mr-2 size-4" />
+                    {t("canvas.importGedcom")}
+                  </Button>
+                )}
+                {canExport && canExportGedcom && onExportGedcom && onExportPdf && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-10 justify-start px-2"
+                      disabled={exportBusy}
+                      onClick={() => runMobileToolbarAction(onExportGedcom)}
+                    >
+                      <FileDown className="mr-2 size-4" />
+                      {t("canvas.exportGedcom")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-10 justify-start px-2"
+                      disabled={exportBusy}
+                      onClick={() => runMobileToolbarAction(onExportPdf)}
+                    >
+                      <FileDown className="mr-2 size-4" />
+                      {t("canvas.exportPdf")}
+                    </Button>
+                  </>
+                )}
+                {!readOnly && canShare && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10 justify-start px-2"
+                    onClick={() => runMobileToolbarAction(onOpenShare)}
+                  >
+                    <Share2 className="mr-2 size-4" />
+                    {t("canvas.share")}
+                  </Button>
+                )}
+                {!readOnly && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10 justify-start px-2"
+                    onClick={() => runMobileToolbarAction(() => onOpenAdd())}
+                  >
+                    <Plus className="mr-2 size-4" />
+                    {t("canvas.add")}
+                  </Button>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
 
         {/* Desktop toolbar */}
@@ -785,14 +857,14 @@ export function TreeCanvas({
           </Button>
         )}
         {canExport && canExportGedcom && onExportGedcom && onExportPdf && (
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger
               render={<Button size="sm" variant="outline" disabled={exportBusy} />}
             >
               <FileDown className="mr-1 size-4" />
               {t("canvas.export")}
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" positionMethod="fixed">
               <DropdownMenuItem disabled={exportBusy} onClick={onExportGedcom}>
                 {t("canvas.exportGedcom")}
               </DropdownMenuItem>
