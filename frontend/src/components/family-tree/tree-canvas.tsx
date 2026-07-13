@@ -1029,7 +1029,7 @@ export function TreeCanvas({
             ))}
       </div>
 
-      <div className="absolute bottom-4 right-4 flex flex-col gap-1 rounded-lg border bg-background p-1 shadow" data-no-pan>
+      <div className="absolute bottom-4 right-4 z-20 flex flex-col gap-1 rounded-lg border bg-background p-1 shadow pointer-events-auto" data-no-pan>
         <Button size="sm" variant="ghost" onClick={() => setScale((s) => Math.min(2.5, s * 1.15))}>+</Button>
         <span className="px-2 text-center text-xs">{Math.round(scale * 100)}%</span>
         <Button size="sm" variant="ghost" onClick={() => setScale((s) => Math.max(0.2, s / 1.15))}>−</Button>

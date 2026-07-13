@@ -23,12 +23,34 @@ export async function clearAuth(page: Page) {
   await page.evaluate(() => localStorage.clear())
 }
 
-/** Connexion par téléphone ou email + mot de passe */
+/** Connexion par téléphone ou email + mot de passe (UI ou API selon l'environnement) */
 export async function loginWithPassword(
   page: Page,
   creds: { phone?: string; email?: string; password: string }
 ) {
-  const loginId = creds.phone ?? creds.email ?? ""
+  const loginId = creds.email ?? creds.phone ?? ""
+  const apiBase = process.env.API_URL
+  if (apiBase) {
+    const response = await page.request.post(`${apiBase}/auth/login`, {
+      data: { login: loginId, password: creds.password },
+    })
+    if (!response.ok()) {
+      const body = await response.text()
+      throw new Error(`Login API failed (${response.status()}): ${body}`)
+    }
+    const payload = (await response.json()) as { token?: string }
+    if (!payload.token) throw new Error("Login API: token missing")
+
+    await page.goto("/")
+    await page.evaluate((token) => {
+      localStorage.setItem("token", token)
+    }, payload.token)
+    await page.reload()
+    await page.goto("/dashboard")
+    await page.locator('[data-sidebar="trigger"]').waitFor({ state: "visible", timeout: 15_000 })
+    return
+  }
+
   await page.goto("/login")
   await page.locator("#login").fill(loginId)
   await page.locator("#password").fill(creds.password)
@@ -38,8 +60,10 @@ export async function loginWithPassword(
 
 export async function getFirstTreeId(page: Page): Promise<string> {
   await page.goto("/dashboard")
+  await page.waitForLoadState("networkidle")
+  await page.locator('[data-sidebar="trigger"]').click()
   const href = await page
-    .getByRole("link", { name: /Famille|Diarrassouba|Ma Famille/i })
+    .getByRole("link", { name: /Famille|Diarrassouba|Ma Famille|My Family/i })
     .first()
     .getAttribute("href")
   const treeId = href?.split("/").pop()
@@ -49,8 +73,9 @@ export async function getFirstTreeId(page: Page): Promise<string> {
 
 export async function getPatrimonyTreeId(page: Page): Promise<string> {
   await page.goto("/dashboard")
+  await page.locator('[data-sidebar="trigger"]').click()
   const href = await page
-    .getByRole("link", { name: /Traoré|Famille Traoré/i })
+    .getByRole("link", { name: /Traoré|Traore|Famille Traoré/i })
     .first()
     .getAttribute("href")
   const treeId = href?.match(/family-tree\/([^/]+)/)?.[1]
