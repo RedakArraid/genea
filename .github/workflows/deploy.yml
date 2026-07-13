@@ -306,11 +306,23 @@ jobs:
 
     - name: Health check via Traefik
       run: |
-        sleep 10
-        curl -sf https://api-staging.geneamap.com/api/health | grep -q '"database":"ok"' \
-          && echo "API publique: OK" || { echo "API publique: FAILED"; exit 1; }
-        curl -sf https://staging.geneamap.com >/dev/null \
-          && echo "Frontend: OK" || { echo "Frontend: FAILED"; exit 1; }
+        for i in $(seq 1 30); do
+          if curl -sf https://api-staging.geneamap.com/api/health | grep -q '"database":"ok"'; then
+            echo "API publique: OK"
+            break
+          fi
+          if [ "$i" -eq 30 ]; then
+            echo "API publique: FAILED"
+            exit 1
+          fi
+          sleep 2
+        done
+        for i in $(seq 1 15); do
+          curl -sf https://staging.geneamap.com >/dev/null && echo "Frontend: OK" && exit 0
+          sleep 2
+        done
+        echo "Frontend: FAILED"
+        exit 1
 
   deploy-production:
     needs: [test, build]
@@ -393,8 +405,20 @@ jobs:
 
     - name: Health check via Traefik
       run: |
-        sleep 10
-        curl -sf https://api.geneamap.com/api/health | grep -q '"database":"ok"' \
-          && echo "API publique: OK" || { echo "API publique: FAILED"; exit 1; }
-        curl -sf https://geneamap.com >/dev/null \
-          && echo "Frontend: OK" || { echo "Frontend: FAILED"; exit 1; }
+        for i in $(seq 1 30); do
+          if curl -sf https://api.geneamap.com/api/health | grep -q '"database":"ok"'; then
+            echo "API publique: OK"
+            break
+          fi
+          if [ "$i" -eq 30 ]; then
+            echo "API publique: FAILED"
+            exit 1
+          fi
+          sleep 2
+        done
+        for i in $(seq 1 15); do
+          curl -sf https://geneamap.com >/dev/null && echo "Frontend: OK" && exit 0
+          sleep 2
+        done
+        echo "Frontend: FAILED"
+        exit 1
