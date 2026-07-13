@@ -7,6 +7,7 @@ const multer = require('multer');
 const { body } = require('express-validator');
 const familyTreeController = require('../controllers/familyTree.controller');
 const collaborationController = require('../controllers/collaboration.controller');
+const subtreeController = require('../controllers/subtree.controller');
 const { isAuth, optionalAuth } = require('../middleware/auth.middleware');
 const { canReadTree, canWriteTree } = require('../middleware/treeAccess.middleware');
 
@@ -39,6 +40,8 @@ router.put('/:id/visibility', isAuth, collaborationController.updateVisibility);
 router.get('/:id/export/gedcom', isAuth, canReadTree, familyTreeController.exportGedcom);
 router.get('/:id/export/pdf', isAuth, canReadTree, familyTreeController.exportPdf);
 router.post('/:id/import/gedcom', isAuth, canWriteTree, gedcomUpload.single('gedcom'), familyTreeController.importGedcom);
+router.post('/:id/subtrees/extract', isAuth, canReadTree, subtreeController.extractSubtree);
+router.post('/:id/subtrees/paste', isAuth, canWriteTree, subtreeController.pasteSubtree);
 router.get('/:id/matches', isAuth, canReadTree, familyTreeController.getTreeMatches);
 router.put('/:id/matching-opt-in', isAuth, familyTreeController.updateMatchingOptIn);
 

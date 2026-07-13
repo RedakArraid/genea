@@ -1,5 +1,9 @@
 const prisma = require('./prisma');
-const { getEffectivePlanLimits } = require('./planAccess');
+const {
+  getEffectivePlanLimits,
+  getOwnerMediaAccess,
+  getUserMediaAccess,
+} = require('./planAccess');
 const { isOwnerWriteAllowed } = require('./collaborationAccess');
 
 async function ownerCanImport(ownerId, isDemo) {
@@ -46,6 +50,8 @@ async function resolveTreeAccess(userId, treeId) {
       canExport: false,
       canImport: false,
       canVersioning: false,
+      canUploadPhotos: false,
+      canUploadDocuments: false,
       role: 'none',
       isDemo: false,
       planExpired: false,
@@ -57,6 +63,8 @@ async function resolveTreeAccess(userId, treeId) {
   const versionAllowed = userId ? await ownerCanVersion(tree.ownerId, tree.isDemo) : false;
   const ownerWriteAllowed = await isOwnerWriteAllowed(tree.ownerId);
   const planExpired = !ownerWriteAllowed && !tree.isDemo;
+  const ownerMedia = await getOwnerMediaAccess(tree.ownerId, tree.isDemo);
+  const userMedia = tree.isDemo ? await getUserMediaAccess(userId) : ownerMedia;
 
   if (userId && tree.ownerId === userId) {
     return {
@@ -67,6 +75,8 @@ async function resolveTreeAccess(userId, treeId) {
       canExport: exportAllowed,
       canImport: importAllowed,
       canVersioning: versionAllowed,
+      canUploadPhotos: ownerMedia.canUploadPhotos,
+      canUploadDocuments: ownerMedia.canUploadDocuments,
       role: 'owner',
       isDemo: false,
       planExpired,
@@ -87,6 +97,8 @@ async function resolveTreeAccess(userId, treeId) {
         canExport: exportAllowed,
         canImport: importAllowed,
         canVersioning: versionAllowed,
+        canUploadPhotos: ownerMedia.canUploadPhotos,
+        canUploadDocuments: ownerMedia.canUploadDocuments,
         role: 'admin',
         isDemo: false,
         planExpired: false,
@@ -103,6 +115,8 @@ async function resolveTreeAccess(userId, treeId) {
       canExport: false,
       canImport: false,
       canVersioning: false,
+      canUploadPhotos: userMedia.canUploadPhotos,
+      canUploadDocuments: userMedia.canUploadDocuments,
       role: userId ? 'demo' : 'viewer',
       isDemo: true,
       planExpired: false,
@@ -121,6 +135,8 @@ async function resolveTreeAccess(userId, treeId) {
       canExport: exportAllowed,
       canImport: importAllowed,
       canVersioning: versionAllowed,
+      canUploadPhotos: ownerMedia.canUploadPhotos,
+      canUploadDocuments: ownerMedia.canUploadDocuments,
       role: collab.role.toLowerCase(),
       isDemo: false,
       planExpired,
@@ -136,6 +152,8 @@ async function resolveTreeAccess(userId, treeId) {
       canExport: exportAllowed,
       canImport: importAllowed,
       canVersioning: versionAllowed,
+      canUploadPhotos: false,
+      canUploadDocuments: false,
       role: 'viewer',
       isDemo: false,
       planExpired: false,
@@ -151,6 +169,8 @@ async function resolveTreeAccess(userId, treeId) {
       canExport: false,
       canImport: false,
       canVersioning: false,
+      canUploadPhotos: false,
+      canUploadDocuments: false,
       role: 'none',
       isDemo: false,
       planExpired: false,
@@ -165,6 +185,8 @@ async function resolveTreeAccess(userId, treeId) {
     canExport: false,
     canImport: false,
     canVersioning: false,
+    canUploadPhotos: false,
+    canUploadDocuments: false,
     role: 'none',
     isDemo: false,
     planExpired: false,

@@ -189,6 +189,8 @@ interface TreeCanvasProps {
   onExportPdf?: () => void
   onImportGedcom?: (file: File) => void
   onCardDragStateChange?: (dragging: boolean, pending?: { id: string; x: number; y: number }) => void
+  pasteMode?: boolean
+  onPasteAtCanvas?: (anchor: { x: number; y: number }) => void
 }
 
 export function TreeCanvas({
@@ -224,6 +226,8 @@ export function TreeCanvas({
   onExportPdf,
   onImportGedcom,
   onCardDragStateChange,
+  pasteMode = false,
+  onPasteAtCanvas,
 }: TreeCanvasProps) {
   const { t } = useTranslation("tree")
   const importInputRef = useRef<HTMLInputElement>(null)
@@ -315,7 +319,6 @@ export function TreeCanvas({
 
   const onPointerDownBg = (e: React.PointerEvent) => {
     if (e.button !== 0 || isDraggingCardRef.current) return
-    // Touch/pen : géré par les listeners touch natifs (Safari iOS)
     if (e.pointerType === "touch" || e.pointerType === "pen") return
 
     const el = e.target as HTMLElement
@@ -329,6 +332,17 @@ export function TreeCanvas({
 
     const wrap = wrapRef.current
     if (!wrap) return
+
+    if (pasteMode && onPasteAtCanvas) {
+      e.preventDefault()
+      const rect = wrap.getBoundingClientRect()
+      const mx = e.clientX - rect.left
+      const my = e.clientY - rect.top
+      const wx = (mx - panRef.current.x) / scaleRef.current
+      const wy = (my - panRef.current.y) / scaleRef.current
+      onPasteAtCanvas({ x: wx, y: wy })
+      return
+    }
 
     e.preventDefault()
     wrap.setPointerCapture(e.pointerId)
@@ -614,7 +628,8 @@ export function TreeCanvas({
       className={cn(
         "relative size-full touch-none overscroll-none overflow-hidden",
         !showBackground && "bg-muted/20",
-        panning && "cursor-grabbing"
+        panning && "cursor-grabbing",
+        pasteMode && "cursor-crosshair"
       )}
       onPointerDown={onPointerDownBg}
     >

@@ -48,6 +48,8 @@ export interface TreeAccess {
   canExport?: boolean
   canImport?: boolean
   canVersioning?: boolean
+  canUploadPhotos?: boolean
+  canUploadDocuments?: boolean
   role: "owner" | "editor" | "viewer" | "demo" | "admin" | "none" | string
   isDemo: boolean
   planExpired?: boolean

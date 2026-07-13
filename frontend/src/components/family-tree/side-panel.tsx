@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
-import { X, Focus, Trash2, Camera, Save } from "lucide-react"
+import { X, Focus, Trash2, Camera, Save, Copy, ClipboardPaste } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { FamilyTree, NormalizedPerson, Person } from "@/types"
 import { todayIsoDate, validateBirthDate } from "@/lib/person-dates"
@@ -26,6 +26,7 @@ import { ChildAddMenu } from "@/components/family-tree/child-add-menu"
 import { useTreeLexicon } from "@/hooks/use-tree-lexicon"
 import { formatGenerationBadge, getMaxGeneration } from "@/lib/generation-level"
 import { useIsMobile } from "@/hooks/use-mobile"
+import type { SubtreeClipboardState } from "@/lib/subtree-clipboard"
 
 interface SidePanelProps {
   person: NormalizedPerson
@@ -45,6 +46,16 @@ interface SidePanelProps {
   canChangePhoto?: boolean
   canVersioning?: boolean
   onPersonRestored?: () => void
+  canUploadDocuments?: boolean
+  canCopySubtree?: boolean
+  canPasteSubtree?: boolean
+  subtreeClipboard?: SubtreeClipboardState | null
+  subtreeBusy?: boolean
+  onCopyBranch?: () => void
+  onCopyEntireTree?: () => void
+  onPasteAsChild?: () => void
+  onPasteAsSpouse?: () => void
+  onStartCanvasPaste?: () => void
 }
 
 function formatDate(dateStr: string | null) {
@@ -160,6 +171,16 @@ function SidePanelContent({
   canChangePhoto = false,
   canVersioning = false,
   onPersonRestored,
+  canUploadDocuments = true,
+  canCopySubtree = false,
+  canPasteSubtree = false,
+  subtreeClipboard = null,
+  subtreeBusy = false,
+  onCopyBranch,
+  onCopyEntireTree,
+  onPasteAsChild,
+  onPasteAsSpouse,
+  onStartCanvasPaste,
 }: SidePanelProps) {
   const { t } = useTranslation("tree")
   const lex = useTreeLexicon(currentTree)
@@ -494,11 +515,77 @@ function SidePanelContent({
             </>
           )}
 
-          <PersonDocuments personId={person.id} readOnly={readOnly} />
+          <PersonDocuments personId={person.id} readOnly={readOnly || !canUploadDocuments} />
+          {!readOnly && !canUploadDocuments && (
+            <p className="text-xs text-muted-foreground">{t("documents.planUpgradeHint")}</p>
+          )}
         </div>
       </div>
 
       <div className="flex flex-col gap-2 border-t p-4">
+        {(canCopySubtree || canPasteSubtree) && (
+          <div className="flex flex-col gap-2">
+            {subtreeClipboard && (
+              <p className="text-center text-xs text-muted-foreground">
+                {t("subtree.clipboardLabel", { count: subtreeClipboard.personCount })}
+              </p>
+            )}
+            {canCopySubtree && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={subtreeBusy}
+                  onClick={onCopyBranch}
+                >
+                  <Copy className="mr-1 size-4" />
+                  {t("subtree.copyBranch")}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={subtreeBusy}
+                  onClick={onCopyEntireTree}
+                >
+                  <Copy className="mr-1 size-4" />
+                  {t("subtree.copyEntire")}
+                </Button>
+              </div>
+            )}
+            {canPasteSubtree && subtreeClipboard && (
+              <>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    className="flex-1"
+                    disabled={subtreeBusy}
+                    onClick={onPasteAsChild}
+                  >
+                    <ClipboardPaste className="mr-1 size-4" />
+                    {t("subtree.pasteAsChild")}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="flex-1"
+                    disabled={subtreeBusy}
+                    onClick={onPasteAsSpouse}
+                  >
+                    <ClipboardPaste className="mr-1 size-4" />
+                    {t("subtree.pasteAsSpouse")}
+                  </Button>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={subtreeBusy}
+                  onClick={onStartCanvasPaste}
+                >
+                  {t("subtree.pasteOnCanvas")}
+                </Button>
+              </>
+            )}
+          </div>
+        )}
         <Button variant="outline" className="w-full" onClick={() => window.__focusOn?.(person.id)}>
           <Focus className="mr-1 size-4" />
           {t("relations.focus")}

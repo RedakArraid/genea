@@ -49,7 +49,7 @@ export const PLANS: PlanDefinition[] = [
     maxPersonsPerTree: 10,
     maxCollaborators: 2,
     maxFichesTotal: 0,
-    maxPhotosTotal: 0,
+    maxPhotosTotal: Infinity,
     canPublicMatching: false,
     canExport: false,
     canImport: false,
@@ -57,7 +57,8 @@ export const PLANS: PlanDefinition[] = [
     cta: "Commencer gratuitement",
     features: [
       "1 arbre, jusqu'à 10 personnes",
-      "Pas de photos ni fiches (documents)",
+      "Photos de profil incluses",
+      "Pas de fiches (documents)",
       "Partage privé (2 collaborateurs)",
       "Pas de correspondances avec les arbres publics",
     ],

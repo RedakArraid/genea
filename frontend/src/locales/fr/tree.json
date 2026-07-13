@@ -18,7 +18,24 @@
     "addChild": "Ajouter un enfant",
     "emptyTree": "Arbre vide",
     "emptyReadOnly": "Explorez les fiches en cliquant sur une personne",
-    "emptyEditable": "Cliquez sur Ajouter pour commencer"
+    "emptyEditable": "Cliquez sur Ajouter pour commencer",
+    "pasteOnCanvas": "Coller sur le canevas",
+    "pasteModeHint": "Cliquez sur le canevas pour placer la branche copiée",
+    "pasteModeCancel": "Annuler"
+  },
+  "subtree": {
+    "copyBranch": "Copier la branche",
+    "copyEntire": "Copier tout l'arbre",
+    "pasteAsChild": "Coller comme enfant",
+    "pasteAsSpouse": "Coller comme conjoint·e",
+    "pasteOnCanvas": "Coller ici (canevas)",
+    "clipboardLabel": "{{count}} personne(s) copiée(s)",
+    "copySuccess": "Branche copiée ({{count}} personne(s))",
+    "copyEntireSuccess": "Arbre copié ({{count}} personne(s))",
+    "pasteSuccess": "Branche collée ({{count}} personne(s))",
+    "pasteFailed": "Échec du collage",
+    "copyFailed": "Échec de la copie",
+    "emptyClipboard": "Aucune branche dans le presse-papiers"
   },
   "person": {
     "firstName": "Prénom",
@@ -329,7 +346,8 @@
     "titlePlaceholder": "Titre du document",
     "uploading": "Envoi…",
     "chooseFile": "Choisir un fichier",
-    "storageHint": "Stockage MinIO non disponible, configurez S3_* dans le backend."
+    "storageHint": "Stockage MinIO non disponible, configurez S3_* dans le backend.",
+    "planUpgradeHint": "Les fiches (documents) sont disponibles à partir du forfait Famille."
   },
   "onboarding": {
     "title": "Comment utiliser l'arbre",

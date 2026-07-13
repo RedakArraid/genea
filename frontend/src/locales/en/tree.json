@@ -18,7 +18,24 @@
     "addChild": "Add a child",
     "emptyTree": "Empty tree",
     "emptyReadOnly": "Explore profiles by clicking on a person",
-    "emptyEditable": "Click Add to get started"
+    "emptyEditable": "Click Add to get started",
+    "pasteOnCanvas": "Paste on canvas",
+    "pasteModeHint": "Click on the canvas to place the copied branch",
+    "pasteModeCancel": "Cancel"
+  },
+  "subtree": {
+    "copyBranch": "Copy branch",
+    "copyEntire": "Copy entire tree",
+    "pasteAsChild": "Paste as child",
+    "pasteAsSpouse": "Paste as spouse",
+    "pasteOnCanvas": "Paste here (canvas)",
+    "clipboardLabel": "{{count}} person(s) copied",
+    "copySuccess": "Branch copied ({{count}} person(s))",
+    "copyEntireSuccess": "Tree copied ({{count}} person(s))",
+    "pasteSuccess": "Branch pasted ({{count}} person(s))",
+    "pasteFailed": "Paste failed",
+    "copyFailed": "Copy failed",
+    "emptyClipboard": "No branch in clipboard"
   },
   "person": {
     "firstName": "First name",
@@ -329,7 +346,8 @@
     "titlePlaceholder": "Document title",
     "uploading": "Uploading…",
     "chooseFile": "Choose a file",
-    "storageHint": "MinIO storage unavailable, configure S3_* in the backend."
+    "storageHint": "MinIO storage unavailable, configure S3_* in the backend.",
+    "planUpgradeHint": "Profile sheets (documents) are available from the Family plan."
   },
   "onboarding": {
     "title": "How to use the tree",

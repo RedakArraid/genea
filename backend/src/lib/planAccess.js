@@ -158,6 +158,46 @@ function getEffectivePlanLimits(user) {
   return getPlanLimits(user.plan);
 }
 
+function planAllowsPhotos(limits) {
+  const max = limits.maxPhotosTotal;
+  return max == null || max === Infinity || max > 0;
+}
+
+function planAllowsFiches(limits) {
+  const max = limits.maxFichesTotal;
+  return max == null || max === Infinity || max > 0;
+}
+
+async function getOwnerMediaAccess(ownerId, isDemo) {
+  if (isDemo) {
+    return { canUploadPhotos: false, canUploadDocuments: false };
+  }
+  const owner = await prisma.user.findUnique({ where: { id: ownerId } });
+  if (!owner) {
+    return { canUploadPhotos: false, canUploadDocuments: false };
+  }
+  const limits = getEffectivePlanLimits(owner);
+  return {
+    canUploadPhotos: planAllowsPhotos(limits),
+    canUploadDocuments: planAllowsFiches(limits),
+  };
+}
+
+async function getUserMediaAccess(userId) {
+  if (!userId) {
+    return { canUploadPhotos: false, canUploadDocuments: false };
+  }
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    return { canUploadPhotos: false, canUploadDocuments: false };
+  }
+  const limits = getEffectivePlanLimits(user);
+  return {
+    canUploadPhotos: planAllowsPhotos(limits),
+    canUploadDocuments: planAllowsFiches(limits),
+  };
+}
+
 module.exports = {
   assertPlanEntitlement,
   getEffectivePlanLimits,
@@ -169,4 +209,8 @@ module.exports = {
   assertPersonCapacity,
   assertFicheLimit,
   assertPhotoLimit,
+  planAllowsPhotos,
+  planAllowsFiches,
+  getOwnerMediaAccess,
+  getUserMediaAccess,
 };

@@ -27,6 +27,13 @@ import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
 import { rememberLastTreeId } from "@/lib/post-login-destination"
 import { TreeOnboardingHint } from "@/components/family-tree/tree-onboarding-hint"
 import { consumePendingDemoFork } from "@/lib/demo-fork-signal"
+import { extractSubtree, pasteSubtree } from "@/lib/subtree-api"
+import {
+  loadSubtreeClipboard,
+  saveSubtreeClipboard,
+  type SubtreeClipboardMode,
+  type SubtreeClipboardState,
+} from "@/lib/subtree-clipboard"
 
 interface FamilyTreePageProps {
   treeIdOverride?: string
@@ -73,12 +80,18 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     deleteRelationship,
   } = useFamilyTreeStore()
 
+  const [exportBusy, setExportBusy] = useState(false)
+  const [importBusy, setImportBusy] = useState(false)
+  const [subtreeClipboard, setSubtreeClipboard] = useState<SubtreeClipboardState | null>(() => loadSubtreeClipboard())
+  const [subtreeBusy, setSubtreeBusy] = useState(false)
+  const [pasteMode, setPasteMode] = useState(false)
+
   const isDemo = publicDemo || treeAccess?.isDemo || currentTree?.isDemo
   const canWrite = treeAccess?.canWrite ?? false
   const canEditPerson = treeAccess?.canEditPerson ?? (canWrite && !isDemo)
   const canDrag = isDemo || canWrite
   const readOnly = !canWrite
-  const canChangePhoto = canWrite
+  const canChangePhoto = canWrite && (treeAccess?.canUploadPhotos ?? true)
   const canManageCollaborators = !isDemo && !!treeAccess?.canManageCollaborators
   const canManageVisibility = !isDemo && treeAccess?.role === "owner" && canWrite
   const canShare = canManageCollaborators || canManageVisibility
@@ -87,10 +100,9 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   const canImport = !!isAuthenticated && !!treeAccess?.canImport && canWrite && !isOrg
   const canExportGedcom = canExport && !isOrg
   const canVersioning = !!isAuthenticated && !!treeAccess?.canVersioning && !isDemo
+  const canCopySubtree = !!treeAccess?.canRead
+  const canPasteSubtree = canWrite && !!subtreeClipboard
   const pageHeight = publicDemo || isPublicRoute ? "flex min-h-0 flex-1 flex-col" : "h-full min-h-0"
-
-  const [exportBusy, setExportBusy] = useState(false)
-  const [importBusy, setImportBusy] = useState(false)
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hoverId, setHoverId] = useState<string | null>(null)
@@ -498,6 +510,65 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     }
   }
 
+  const persistSubtreeClipboard = (state: SubtreeClipboardState) => {
+    saveSubtreeClipboard(state)
+    setSubtreeClipboard(state)
+  }
+
+  const handleCopySubtree = async (mode: SubtreeClipboardMode) => {
+    if (!treeId || !selectedId) return
+    setSubtreeBusy(true)
+    try {
+      const data = await extractSubtree(treeId, selectedId, mode)
+      persistSubtreeClipboard({
+        sourceTreeId: data.sourceTreeId,
+        sourceTreeName: currentTree?.name,
+        rootPersonId: data.rootPersonId,
+        mode: data.mode,
+        personCount: data.personCount,
+        clipboard: data.clipboard,
+      })
+      toast.success(
+        t(mode === "entire" ? "subtree.copyEntireSuccess" : "subtree.copySuccess", {
+          count: data.personCount,
+        })
+      )
+    } catch (err) {
+      toast.error(translateApiError(getApiErrorPayload(err), "subtree.copyFailed"))
+    } finally {
+      setSubtreeBusy(false)
+    }
+  }
+
+  const runPasteSubtree = async (options: {
+    attachToPersonId?: string
+    attachAs?: "child" | "spouse"
+    anchor?: { x: number; y: number }
+  }) => {
+    if (!treeId || !subtreeClipboard) {
+      toast.error(t("subtree.emptyClipboard"))
+      return
+    }
+    setSubtreeBusy(true)
+    try {
+      const result = await pasteSubtree(treeId, {
+        clipboard: subtreeClipboard.clipboard,
+        rootPersonId: subtreeClipboard.rootPersonId,
+        sourceTreeId: subtreeClipboard.sourceTreeId,
+        ...options,
+      })
+      toast.success(t("subtree.pasteSuccess", { count: result.pastedPersonCount }))
+      setPasteMode(false)
+      if (result.pastedRootId) setSelectedId(result.pastedRootId)
+      refreshOrRedirectAfterWrite(treeId)
+      setFitRequestId((n) => n + 1)
+    } catch (err) {
+      toast.error(translateApiError(getApiErrorPayload(err), "subtree.pasteFailed"))
+    } finally {
+      setSubtreeBusy(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className={`flex ${pageHeight} items-center justify-center`}>
@@ -564,6 +635,16 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
       )}
       <div className="flex min-h-0 flex-1">
       <div className="relative min-w-0 flex-1">
+        {pasteMode && (
+          <div className="absolute inset-x-0 top-12 z-20 flex items-center justify-center gap-2 px-4">
+            <div className="flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-sm backdrop-blur">
+              <span>{t("canvas.pasteModeHint")}</span>
+              <Button size="sm" variant="outline" onClick={() => setPasteMode(false)}>
+                {t("canvas.pasteModeCancel")}
+              </Button>
+            </div>
+          </div>
+        )}
         <TreeCanvas
           people={people}
           tweaks={tweaks}
@@ -596,6 +677,8 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           onExportGedcom={() => void runExport("gedcom")}
           onExportPdf={() => void runExport("pdf")}
           onImportGedcom={(file) => void runImportGedcom(file)}
+          pasteMode={pasteMode}
+          onPasteAtCanvas={(anchor) => void runPasteSubtree({ anchor })}
           onCardDragStateChange={(dragging, pending) => {
             isDraggingCardRef.current = dragging
             if (dragging) {
@@ -635,7 +718,17 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
           canChangePhoto={canChangePhoto}
           canVersioning={canVersioning}
           onPersonRestored={() => treeId && void fetchTreeById(treeId)}
+          canUploadDocuments={treeAccess?.canUploadDocuments ?? true}
           onChangePhoto={handleChangePhoto}
+          canCopySubtree={canCopySubtree}
+          canPasteSubtree={canPasteSubtree}
+          subtreeClipboard={subtreeClipboard}
+          subtreeBusy={subtreeBusy}
+          onCopyBranch={() => void handleCopySubtree("branch")}
+          onCopyEntireTree={() => void handleCopySubtree("entire")}
+          onPasteAsChild={() => selectedId && void runPasteSubtree({ attachToPersonId: selectedId, attachAs: "child" })}
+          onPasteAsSpouse={() => selectedId && void runPasteSubtree({ attachToPersonId: selectedId, attachAs: "spouse" })}
+          onStartCanvasPaste={() => setPasteMode(true)}
         />
       )}
       </div>

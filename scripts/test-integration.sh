@@ -116,7 +116,7 @@ if [ -n "$TOKEN" ] && [ -n "$TREE_ID" ] && [ -n "$PERSON_ID" ]; then
   photo_code=$(curl -s -o /tmp/genea-photo.json -w '%{http_code}' -X POST -H "$AUTH" \
     -F "photo=@/tmp/genea-test.png;type=image/png" -F "treeId=$TREE_ID" -F "personId=$PERSON_ID" \
     "$API/uploads/photo")
-  assert_status "POST upload photo bloqué forfait Découverte" "403" "$photo_code" "$(cat /tmp/genea-photo.json 2>/dev/null)"
+  assert_status "POST upload photo forfait Découverte" "201" "$photo_code" "$(cat /tmp/genea-photo.json 2>/dev/null)"
 
   printf '%%PDF-1.4 test' > /tmp/genea-test.pdf
   doc_json=$(curl -s -w '\n%{http_code}' -X POST -H "$AUTH" \
@@ -443,6 +443,33 @@ GEDEOF
         -H "Authorization: Bearer $FAM40_TOKEN")
       assert_status "GET revisions Patrimoine" "200" "$code"
       assert_json "Au moins une révision" "len(d.get('revisions',[])) >= 1" "$(cat /tmp/genea_revisions.json 2>/dev/null)"
+
+      extract_json=$(curl -s -w '\n%{http_code}' -X POST "$API/family-trees/$FAM40_TREE_ID/subtrees/extract" \
+        -H "Authorization: Bearer $FAM40_TOKEN" -H 'Content-Type: application/json' \
+        -d "{\"rootPersonId\":\"$FAM40_PERSON\",\"mode\":\"branch\"}")
+      extract_body=$(echo "$extract_json" | sed '$d')
+      extract_code=$(echo "$extract_json" | tail -1)
+      assert_status "Extract subtree Patrimoine" "200" "$extract_code" "$extract_body"
+      assert_json "Extract personCount >= 1" "d.get('personCount',0) >= 1" "$extract_body"
+
+      echo "$extract_body" > /tmp/genea_extract.json
+      python3 -c "
+import json
+src=json.load(open('/tmp/genea_extract.json'))
+json.dump({
+  'clipboard': src['clipboard'],
+  'rootPersonId': src['rootPersonId'],
+  'sourceTreeId': src['sourceTreeId'],
+  'anchor': {'x': 900, 'y': 900},
+  'attachToPersonId': '$FAM40_PERSON',
+  'attachAs': 'child',
+}, open('/tmp/genea_paste.json','w'))
+"
+      paste_code=$(curl -s -o /tmp/genea_paste_result.json -w '%{http_code}' -X POST "$API/family-trees/$FAM40_TREE_ID/subtrees/paste" \
+        -H "Authorization: Bearer $FAM40_TOKEN" -H 'Content-Type: application/json' \
+        -d @/tmp/genea_paste.json)
+      assert_status "Paste subtree Patrimoine" "201" "$paste_code" "$(cat /tmp/genea_paste_result.json 2>/dev/null)"
+      assert_json "Paste pastedPersonCount" "d.get('pastedPersonCount',0) >= 1" "$(cat /tmp/genea_paste_result.json 2>/dev/null)"
 
       printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82' > /tmp/genea-test-fam40.png
       photo_code=$(curl -s -o /tmp/genea-photo-fam40.json -w '%{http_code}' -X POST \
