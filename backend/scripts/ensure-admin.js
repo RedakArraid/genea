@@ -13,6 +13,15 @@ async function main() {
 
   const phone = process.env.ADMIN_PHONE?.trim() || '+2250700000010';
   const rawPassword = process.env.ADMIN_PASSWORD;
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (!rawPassword && isProduction) {
+    console.warn(
+      'ADMIN_PASSWORD absent en production : compte admin non créé automatiquement (définissez ADMIN_PASSWORD sur le serveur).',
+    );
+    return;
+  }
+
   const hashedPassword = rawPassword ? await bcrypt.hash(rawPassword, 12) : null;
 
   const byEmail = await prisma.user.findUnique({ where: { email } });
@@ -46,7 +55,11 @@ async function main() {
     return;
   }
 
-  const password = hashedPassword || await bcrypt.hash('admin123', 12);
+  const password = hashedPassword || (isProduction ? null : await bcrypt.hash('admin123', 12));
+  if (!password) {
+    console.warn(`Impossible de créer l'admin ${email} sans ADMIN_PASSWORD en production.`);
+    return;
+  }
   await prisma.user.create({
     data: {
       name: 'Administrateur',

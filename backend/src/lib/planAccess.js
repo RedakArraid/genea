@@ -143,6 +143,34 @@ function assertPlanEntitlement(user) {
   }
 }
 
+async function countOwnerTrees(ownerId) {
+  return prisma.familyTree.count({
+    where: { ownerId, isDemo: false },
+  });
+}
+
+/** Vérifie le quota d'arbres (inclut les copies personnelles de la démo). */
+async function assertOwnerTreeCapacity(ownerId, { additional = 1 } = {}) {
+  const user = await prisma.user.findUnique({ where: { id: ownerId } });
+  if (!user) {
+    const err = new Error('Utilisateur introuvable');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  assertPlanEntitlement(user);
+  const limits = getEffectivePlanLimits(user);
+  const treeCount = await countOwnerTrees(ownerId);
+  if (treeCount + additional > limits.maxTrees) {
+    const err = new Error(
+      `Limite de ${limits.maxTrees} arbre(s) atteinte pour le forfait ${limits.name}`,
+    );
+    err.statusCode = 403;
+    err.code = 'PLAN_LIMIT_REACHED';
+    throw err;
+  }
+}
+
 function getEffectivePlanLimits(user) {
   if (!isPlanEntitlementActive(user)) {
     return {
@@ -200,6 +228,8 @@ async function getUserMediaAccess(userId) {
 
 module.exports = {
   assertPlanEntitlement,
+  assertOwnerTreeCapacity,
+  countOwnerTrees,
   getEffectivePlanLimits,
   isPlanEntitlementActive,
   countOwnerFiches,

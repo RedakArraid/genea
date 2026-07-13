@@ -34,8 +34,9 @@ echo "API: $API"
 echo
 
 # Health
-code=$(curl -s -o /dev/null -w '%{http_code}' "$API/health")
-assert_status "Health check" "200" "$code"
+code=$(curl -s -o /tmp/genea_health.json -w '%{http_code}' "$API/health")
+assert_status "Health check" "200" "$code" "$(cat /tmp/genea_health.json 2>/dev/null)"
+assert_json "Health database ok" "d.get('checks',{}).get('database')=='ok'" "$(cat /tmp/genea_health.json 2>/dev/null)"
 
 # Demo tree public
 demo_json=$(curl -s "$API/family-trees/demo")
@@ -89,14 +90,15 @@ add_code=$(echo "$add_json" | tail -1)
 assert_status "POST personne bloqué (quota Découverte 10/arbre)" "403" "$add_code" "$add_body"
 assert_json "POST personne code PLAN_LIMIT_REACHED" "d.get('code')=='PLAN_LIMIT_REACHED'" "$add_body"
 
-# Node positions
+# Node positions (fork démo bloqué si quota arbres atteint)
 pos_json=$(curl -s "$API/node-positions/tree/$TREE_ID" -H "$AUTH")
 POS_ID=$(echo "$pos_json" | python3 -c "import sys,json; ps=json.load(sys.stdin).get('nodePositions',[]); print(ps[0]['id'] if ps else '')" 2>/dev/null || echo "")
 if [ -n "$POS_ID" ]; then
-  code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API/node-positions/$POS_ID" \
+  code=$(curl -s -o /tmp/genea_put_pos.json -w '%{http_code}' -X PUT "$API/node-positions/$POS_ID" \
     -H "$AUTH" -H 'Content-Type: application/json' \
     -d '{"x":120,"y":80}')
-  assert_status "PUT position autorisé en démo" "200" "$code"
+  assert_status "PUT position démo bloqué si quota arbres plein" "403" "$code" "$(cat /tmp/genea_put_pos.json 2>/dev/null)"
+  assert_json "PUT position code PLAN_LIMIT_REACHED" "d.get('code')=='PLAN_LIMIT_REACHED'" "$(cat /tmp/genea_put_pos.json 2>/dev/null)"
 else
   echo "  ✗ Positions nœuds introuvables"
   FAIL=$((FAIL + 1))

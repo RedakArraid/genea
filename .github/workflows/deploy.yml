@@ -112,7 +112,9 @@ jobs:
         node src/index.js &
         echo $! > /tmp/geneamap-api.pid
         for i in $(seq 1 30); do
-          curl -sf http://localhost:3001/api/health && exit 0
+          if curl -sf http://localhost:3001/api/health | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if d.get('status')=='ok' else 1)"; then
+            exit 0
+          fi
           sleep 2
         done
         echo "API failed to start"
@@ -137,9 +139,37 @@ jobs:
       env:
         API_URL: http://localhost:3001/api
 
+    - name: Build Frontend for E2E
+      run: |
+        cd frontend
+        npm run build
+      env:
+        VITE_API_URL: http://localhost:3001/api
+
+    - name: Start frontend preview for E2E
+      run: |
+        cd frontend
+        npm run preview -- --host 127.0.0.1 --port 5173 &
+        echo $! > /tmp/geneamap-fe.pid
+        for i in $(seq 1 30); do
+          curl -sf http://127.0.0.1:5173/ >/dev/null && exit 0
+          sleep 1
+        done
+        echo "Frontend preview failed to start"
+        exit 1
+      env:
+        VITE_API_URL: http://localhost:3001/api
+
+    - name: E2E mobile smoke
+      run: |
+        npm ci
+        npx playwright install chromium
+        FRONTEND_URL=http://127.0.0.1:5173 npx playwright test e2e/mobile-responsive.spec.ts --project=chromium
+
     - name: Stop API and MinIO
       if: always()
       run: |
+        kill "$(cat /tmp/geneamap-fe.pid 2>/dev/null)" 2>/dev/null || true
         kill "$(cat /tmp/geneamap-api.pid 2>/dev/null)" 2>/dev/null || true
         docker rm -f geneamap-minio-ci 2>/dev/null || true
 
@@ -258,9 +288,17 @@ jobs:
           docker exec geneamap-backend-staging npx prisma migrate deploy
 
           echo "Health checks..."
-          sleep 10
-          docker exec geneamap-backend-staging curl -sf http://localhost:3001/api/health >/dev/null \
-            && echo "Backend: OK" || { echo "Backend: FAILED"; exit 1; }
+          for i in $(seq 1 30); do
+            if docker exec geneamap-backend-staging curl -sf http://localhost:3001/api/health | grep -q '"database":"ok"'; then
+              echo "Backend: OK"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "Backend: FAILED"
+              exit 1
+            fi
+            sleep 2
+          done
 
           docker image prune -f || true
           echo "Déploiement staging terminé, https://staging.geneamap.com"
@@ -269,7 +307,10 @@ jobs:
     - name: Health check via Traefik
       run: |
         sleep 10
-        curl -sf https://api-staging.geneamap.com/api/health && echo "API publique: OK" || echo "API publique pas encore joignable (DNS/Traefik ?)"
+        curl -sf https://api-staging.geneamap.com/api/health | grep -q '"database":"ok"' \
+          && echo "API publique: OK" || { echo "API publique: FAILED"; exit 1; }
+        curl -sf https://staging.geneamap.com >/dev/null \
+          && echo "Frontend: OK" || { echo "Frontend: FAILED"; exit 1; }
 
   deploy-production:
     needs: [test, build]
@@ -333,9 +374,17 @@ jobs:
           docker exec geneamap-backend-prod npx prisma migrate deploy
 
           echo "Health checks..."
-          sleep 10
-          docker exec geneamap-backend-prod curl -sf http://localhost:3001/api/health >/dev/null \
-            && echo "Backend: OK" || { echo "Backend: FAILED"; exit 1; }
+          for i in $(seq 1 30); do
+            if docker exec geneamap-backend-prod curl -sf http://localhost:3001/api/health | grep -q '"database":"ok"'; then
+              echo "Backend: OK"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "Backend: FAILED"
+              exit 1
+            fi
+            sleep 2
+          done
 
           docker image prune -f || true
           echo "Déploiement production terminé, https://geneamap.com"
@@ -345,5 +394,7 @@ jobs:
     - name: Health check via Traefik
       run: |
         sleep 10
-        curl -sf https://api.geneamap.com/api/health && echo "API publique: OK" || echo "API publique pas encore joignable (DNS/Traefik ?)"
-        curl -sf https://geneamap.com >/dev/null && echo "Frontend: OK" || echo "Frontend pas encore joignable"
+        curl -sf https://api.geneamap.com/api/health | grep -q '"database":"ok"' \
+          && echo "API publique: OK" || { echo "API publique: FAILED"; exit 1; }
+        curl -sf https://geneamap.com >/dev/null \
+          && echo "Frontend: OK" || { echo "Frontend: FAILED"; exit 1; }

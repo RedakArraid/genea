@@ -27,6 +27,7 @@ const billingWebhookRoutes = require('./routes/billing-webhook.routes');
 const adminRoutes = require('./routes/admin.routes');
 const { initStorage } = require('./lib/storage');
 const { ensureDemoTree } = require('./lib/demoTree');
+const { collectHealthChecks } = require('./lib/health');
 
 // Configuration des variables d'environnement
 dotenv.config();
@@ -78,8 +79,21 @@ app.get('/', (req, res) => {
   res.json({ message: 'Bienvenue sur l\'API geneamap' });
 });
 
-const healthResponse = (req, res) => {
-  res.json({ status: 'ok', service: 'geneamap-backend' });
+const healthResponse = async (req, res) => {
+  try {
+    const { ok, checks } = await collectHealthChecks();
+    res.status(ok ? 200 : 503).json({
+      status: ok ? 'ok' : 'degraded',
+      service: 'geneamap-backend',
+      checks,
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'error',
+      service: 'geneamap-backend',
+      message: err.message,
+    });
+  }
 };
 
 app.get('/health', healthResponse);

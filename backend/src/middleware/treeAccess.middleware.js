@@ -1,6 +1,7 @@
 const prisma = require('../lib/prisma');
 const { resolveTreeAccess, requireTreeRead, requireTreeWrite } = require('../lib/treeAccess');
 const { getOrCreateDemoFork, translateDemoEntityId } = require('../lib/demoFork');
+const { sendStatusError } = require('../lib/apiErrors');
 
 const OWNER_ACCESS = { canRead: true, canWrite: true, canEditPerson: true, canExport: false, canVersioning: false, role: 'owner', isDemo: false };
 
@@ -63,7 +64,7 @@ const canReadTree = async (req, res, next) => {
     req.treeAccess = access;
     next();
   } catch (error) {
-    res.status(error.statusCode || 403).json({ message: error.message });
+    sendStatusError(res, error);
   }
 };
 
@@ -110,7 +111,7 @@ const canWriteTree = async (req, res, next) => {
     req.treeAccess = access;
     next();
   } catch (error) {
-    res.status(error.statusCode || 403).json({ message: error.message });
+    sendStatusError(res, error);
   }
 };
 
@@ -157,7 +158,7 @@ const canWritePerson = async (req, res, next) => {
     req.treeAccess = access;
     next();
   } catch (error) {
-    res.status(error.statusCode || 403).json({ message: error.message });
+    sendStatusError(res, error);
   }
 };
 
@@ -187,7 +188,7 @@ const canEditPersonInfo = async (req, res, next) => {
     req.treeAccess = access;
     next();
   } catch (error) {
-    res.status(error.statusCode || 403).json({ message: error.message });
+    sendStatusError(res, error);
   }
 };
 
@@ -207,7 +208,7 @@ const canWriteEdge = async (req, res, next) => {
     req.params.treeId = treeId;
     return canWriteTree(req, res, next);
   } catch (error) {
-    res.status(error.statusCode || 403).json({ message: error.message });
+    sendStatusError(res, error);
   }
 };
 

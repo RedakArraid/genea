@@ -6,6 +6,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const authController = require('../controllers/auth.controller');
 const { isAuth } = require('../middleware/auth.middleware');
+const { loginRateLimit, otpRequestRateLimit } = require('../middleware/rateLimit');
 const { looksLikePhone, DEFAULT_COUNTRY } = require('../lib/phone');
 
 const phoneValidator = body('phone')
@@ -57,6 +58,7 @@ router.post(
 
 router.post(
   '/login',
+  loginRateLimit,
   [
     loginValidator,
     body('password').notEmpty().withMessage('Le mot de passe est requis'),
@@ -68,7 +70,7 @@ router.get('/me', isAuth, authController.getMe);
 
 router.get('/otp/status', authController.otpStatus);
 
-router.post('/otp/request', [phoneValidator], authController.requestOtp);
+router.post('/otp/request', otpRequestRateLimit, [phoneValidator], authController.requestOtp);
 
 router.post(
   '/otp/verify',

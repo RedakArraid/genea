@@ -4,7 +4,7 @@
 
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
-const { assertPlanEntitlement, evaluatePersonCapacity, getEffectivePlanLimits } = require('../lib/planAccess');
+const { assertPlanEntitlement, evaluatePersonCapacity, getEffectivePlanLimits, countOwnerTrees } = require('../lib/planAccess');
 const { requireTreeRead } = require('../lib/treeAccess');
 const { loadTreeExportData, assertCanExportTree, assertCanExportGedcom, assertCanImportExportTree, slugifyFilename } = require('../lib/exportAccess');
 const { isOrganizationTree } = require('../lib/treeType');
@@ -108,9 +108,7 @@ exports.createTree = async (req, res, next) => {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     assertPlanEntitlement(user);
     const limits = getEffectivePlanLimits(user);
-    const treeCount = await prisma.familyTree.count({
-      where: { ownerId: userId, isDemo: false },
-    });
+    const treeCount = await countOwnerTrees(userId);
     if (treeCount >= limits.maxTrees) {
       return res.status(403).json({
         message: `Limite de ${limits.maxTrees} arbre(s) atteinte pour le forfait ${limits.name}`,

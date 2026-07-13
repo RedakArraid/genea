@@ -4,6 +4,7 @@
  */
 
 const prisma = require('./prisma');
+const { assertOwnerTreeCapacity } = require('./planAccess');
 
 async function cloneDemoIntoFork(tx, demoTree, forkTreeId) {
   const [persons, positions, relationships] = await Promise.all([
@@ -71,6 +72,8 @@ async function getOrCreateDemoFork(userId) {
     err.statusCode = 404;
     throw err;
   }
+
+  await assertOwnerTreeCapacity(userId, { additional: 1 });
 
   return prisma.$transaction(
     async (tx) => {

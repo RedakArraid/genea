@@ -10,6 +10,7 @@ const { canReadTree, canWriteTree } = require('../middleware/treeAccess.middlewa
 const { resolveTreeAccess } = require('../lib/treeAccess');
 const { getOrCreateDemoFork, translateDemoEntityId } = require('../lib/demoFork');
 const prisma = require('../lib/prisma');
+const { sendStatusError } = require('../lib/apiErrors');
 
 const canWriteNodePosition = async (req, res, next) => {
   try {
@@ -42,7 +43,7 @@ const canWriteNodePosition = async (req, res, next) => {
     req.params.treeId = pos.treeId;
     return canWriteTree(req, res, next);
   } catch (error) {
-    res.status(error.statusCode || 403).json({ message: error.message });
+    sendStatusError(res, error);
   }
 };
 
@@ -55,7 +56,7 @@ const canWriteTreeFromBody = async (req, res, next) => {
     req.params.treeId = treeId;
     return canWriteTree(req, res, next);
   } catch (error) {
-    res.status(error.statusCode || 403).json({ message: error.message });
+    sendStatusError(res, error);
   }
 };
 

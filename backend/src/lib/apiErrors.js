@@ -21,4 +21,11 @@ function sendValidationErrors(res, errors) {
   return sendError(res, 400, code, first?.msg || 'Validation error');
 }
 
-module.exports = { sendError, sendValidationErrors, validationCode };
+function sendStatusError(res, error, fallbackStatus = 403) {
+  const status = error.statusCode || fallbackStatus;
+  const body = { message: error.message };
+  if (error.code) body.code = error.code;
+  return res.status(status).json(body);
+}
+
+module.exports = { sendError, sendValidationErrors, validationCode, sendStatusError };
