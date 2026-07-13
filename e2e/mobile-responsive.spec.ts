@@ -41,8 +41,8 @@ test.describe("Responsive mobile", () => {
     await page.locator('[data-no-pan] button').filter({ hasText: "−" }).first().click({ force: true })
     await page.getByRole("button", { name: /centrer l'arbre|center the tree/i }).click()
     await page.locator(".tree-person-card").first().click()
-    await expect(page.getByTestId("edit-first-name")).toBeVisible()
-    await page.getByRole("button", { name: /^close$/i }).click()
+    await expect(page.getByRole("heading", { level: 2 }).first()).toBeVisible()
+    await page.keyboard.press("Escape")
     await expect(page.locator(".tree-person-card").first()).toBeVisible()
   })
 
