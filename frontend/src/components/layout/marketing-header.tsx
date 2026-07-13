@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 
@@ -67,6 +68,7 @@ export function MarketingHeader({ variant = "default" }: MarketingHeaderProps) {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle className="hidden sm:inline-flex" />
           <div className="hidden sm:block">
             <LanguageSwitcher />
           </div>
@@ -133,6 +135,10 @@ export function MarketingHeader({ variant = "default" }: MarketingHeaderProps) {
             )}
             <div className="border-t pt-4">
               <LanguageSwitcher />
+            </div>
+            <div className="flex items-center gap-2 border-t pt-4">
+              <ThemeToggle />
+              <span className="text-sm text-muted-foreground">{t("theme.label")}</span>
             </div>
             {isAuthenticated ? (
               <>

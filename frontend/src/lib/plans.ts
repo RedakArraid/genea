@@ -212,6 +212,15 @@ export function formatDualPriceFromUsd(amountUsd: number) {
   return formatAmountDual(amountUsd)
 }
 
+export function getAnnualSavingsPercent(planId: PlanId): number | null {
+  if (isFreePlan(planId)) return null
+  const plan = getPlanById(planId)
+  if (plan.priceMonthlyUsd == null) return null
+  const yearlyIfMonthly = plan.priceMonthlyUsd * 12
+  if (yearlyIfMonthly <= plan.priceUsd) return null
+  return Math.round(((yearlyIfMonthly - plan.priceUsd) / yearlyIfMonthly) * 100)
+}
+
 export function isMonthlyPlanDisplay(planId: PlanId, interval: BillingInterval = "yearly") {
   return normalizeBillingInterval(planId, interval) === "monthly"
 }

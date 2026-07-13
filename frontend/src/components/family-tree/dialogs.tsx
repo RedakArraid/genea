@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { useTheme } from "next-themes"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { todayIsoDate, validateBirthDate } from "@/lib/person-dates"
@@ -639,6 +640,7 @@ const CONN_STYLE_KEYS: Record<TreeTweaks["connStyle"], string> = {
 
 export function TreeSettingsSheet({ open, onClose, tweaks, onSetTweak, tree, canEditBackground = false }: TreeSettingsSheetProps) {
   const { t } = useTranslation("tree")
+  const { resolvedTheme, setTheme } = useTheme()
   const showOrgBackground = Boolean(tree && isOrganizationTree(tree))
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -649,7 +651,11 @@ export function TreeSettingsSheet({ open, onClose, tweaks, onSetTweak, tree, can
         <div className="flex flex-col gap-5">
           <div className="flex items-center justify-between gap-4">
             <Label className="min-w-0 flex-1">{t("dialogs.darkTheme")}</Label>
-            <Switch className="shrink-0" checked={tweaks.theme === "dark"} onCheckedChange={(v) => onSetTweak("theme", v ? "dark" : "light")} />
+            <Switch
+              className="shrink-0"
+              checked={resolvedTheme === "dark"}
+              onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
+            />
           </div>
           <div className="flex items-center justify-between gap-4">
             <Label className="min-w-0 flex-1">{t("dialogs.hideDates")}</Label>

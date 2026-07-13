@@ -22,6 +22,8 @@
     "checkoutError": "Could not initialize payment",
     "yearly": "Yearly",
     "monthly": "Monthly",
+    "yearlySave": "−{{percent}}%",
+    "annualSavings": "Save {{percent}}% vs monthly",
     "oneTime": "One-time payment",
     "perYear": "Per year",
     "perMonth": "Per month",

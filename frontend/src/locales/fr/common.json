@@ -36,6 +36,11 @@
     "fr": "Français",
     "en": "English"
   },
+  "theme": {
+    "label": "Thème",
+    "dark": "Mode nuit",
+    "light": "Mode clair"
+  },
   "notFound": {
     "title": "404",
     "message": "Cette page n'existe pas",

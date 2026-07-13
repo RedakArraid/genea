@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 import { isOrganizationTree } from "@/lib/tree-type"
 
@@ -178,6 +179,7 @@ export function AppShell() {
               {currentTree?.name || "geneamap"}
             </div>
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <LanguageSwitcher />
               <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={handleLogout}>
                 <LogOut className="mr-1.5 size-4" />

@@ -162,7 +162,6 @@ export interface NormalizedPerson {
 }
 
 export interface TreeTweaks {
-  theme: "light" | "dark"
   layout: "vertical" | "horizontal" | "radial"
   density: "spacious" | "compact"
   cardStyle: "square" | "round" | "horizontal" | "minimal"

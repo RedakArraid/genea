@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { ThemeToggle } from "@/components/theme-toggle"
 import {
   Sidebar,
   SidebarContent,
@@ -123,6 +124,7 @@ export function AdminShell() {
           <div className="flex flex-1 items-center justify-between gap-2">
             <span className="truncate text-sm text-muted-foreground">{t("shell.header")}</span>
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <LanguageSwitcher />
               <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
             </div>

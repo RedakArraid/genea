@@ -22,6 +22,8 @@
     "checkoutError": "Impossible d'initialiser le paiement",
     "yearly": "Annuel",
     "monthly": "Mensuel",
+    "yearlySave": "−{{percent}}%",
+    "annualSavings": "Économisez {{percent}}% vs mensuel",
     "oneTime": "Paiement unique",
     "perYear": "Par an",
     "perMonth": "Par mois",

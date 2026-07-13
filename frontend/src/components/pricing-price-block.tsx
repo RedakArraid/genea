@@ -4,6 +4,7 @@ import type { PlanId } from "@/lib/plans"
 import {
   formatAmountDual,
   formatDualPrice,
+  getAnnualSavingsPercent,
   getPlanIntervals,
   getPlanPrice,
   getPlanById,
@@ -81,6 +82,11 @@ export function PlanPriceBlock({
               ? t("pricing.perMonth")
               : t("pricing.perYear")}
           </p>
+          {!isFree && resolvedInterval === "yearly" && getAnnualSavingsPercent(planId) != null && (
+            <p className="text-xs font-medium text-primary">
+              {t("pricing.annualSavings", { percent: getAnnualSavingsPercent(planId) })}
+            </p>
+          )}
           {priceNote ? (
             <p className="text-xs text-muted-foreground">{priceNote}</p>
           ) : null}

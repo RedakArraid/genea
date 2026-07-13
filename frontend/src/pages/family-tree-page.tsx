@@ -128,7 +128,6 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   const [addPersonRelData, setAddPersonRelData] = useState({ parentId: null as string | null, parent2Id: null as string | null, relType: null as string | null })
 
   const [tweaks, setTweaks] = useState<TreeTweaks>({
-    theme: "light",
     layout: "vertical",
     density: "spacious",
     cardStyle: "square",
@@ -248,10 +247,6 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     positionsDirtyRef.current = false
     lastRelsHashRef.current = currentRelsHash
   }, [currentTree, tweaks.layout, tweaks.density, canWrite, updateNodePositions])
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", tweaks.theme === "dark")
-  }, [tweaks.theme])
 
   useEffect(() => {
     const selectParam = new URLSearchParams(location.search).get("select")

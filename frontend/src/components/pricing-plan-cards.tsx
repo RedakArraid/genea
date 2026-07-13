@@ -8,6 +8,7 @@ import {
   getPlanById,
   getPlanIntervals,
   getPlanPrice,
+  getAnnualSavingsPercent,
   isFreePlan,
   planPreviewKey,
   type PlanId,
@@ -54,6 +55,7 @@ export function PricingPlanCards({
         const basePrice = getPlanPrice(plan, interval)
         const finalAmount = previews?.[planPreviewKey(plan.id, interval)] ?? basePrice
         const features = t(`plans.${plan.id}.features`, { returnObjects: true }) as string[]
+        const annualSavings = getAnnualSavingsPercent(plan.id)
 
         return (
           <Card
@@ -93,6 +95,11 @@ export function PricingPlanCards({
                     }}
                   >
                     {t("pricing.yearly")}
+                    {annualSavings != null && (
+                      <span className="ml-1 font-semibold text-primary">
+                        {t("pricing.yearlySave", { percent: annualSavings })}
+                      </span>
+                    )}
                   </Button>
                   <Button
                     type="button"
