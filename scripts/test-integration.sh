@@ -121,17 +121,17 @@ storage_json=$(curl -s "$API/uploads/status")
 assert_json "Stockage MinIO ready" "d.get('ready') is True" "$storage_json"
 assert_json "Limites photo définies" "d.get('limits',{}).get('photoMaxMb',0) > 0" "$storage_json"
 
-if [ -n "$TOKEN" ] && [ -n "$TREE_ID" ] && [ -n "$PERSON_ID" ]; then
+if [ -n "$TOKEN" ] && [ -n "$SOLO_TREE_ID" ] && [ -n "$SOLO_PERSON_ID" ]; then
   printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82' > /tmp/genea-test.png
   photo_code=$(curl -s -o /tmp/genea-photo.json -w '%{http_code}' -X POST -H "$AUTH" \
-    -F "photo=@/tmp/genea-test.png;type=image/png" -F "treeId=$TREE_ID" -F "personId=$PERSON_ID" \
+    -F "photo=@/tmp/genea-test.png;type=image/png" -F "treeId=$SOLO_TREE_ID" -F "personId=$SOLO_PERSON_ID" \
     "$API/uploads/photo")
   assert_status "POST upload photo forfait Découverte" "201" "$photo_code" "$(cat /tmp/genea-photo.json 2>/dev/null)"
 
   printf '%%PDF-1.4 test' > /tmp/genea-test.pdf
   doc_json=$(curl -s -w '\n%{http_code}' -X POST -H "$AUTH" \
     -F "file=@/tmp/genea-test.pdf;type=application/pdf" -F "title=Acte test" -F "category=birth" \
-    "$API/persons/$PERSON_ID/documents")
+    "$API/persons/$SOLO_PERSON_ID/documents")
   doc_body=$(echo "$doc_json" | sed '$d')
   doc_code=$(echo "$doc_json" | tail -1)
   assert_status "POST upload document bloqué forfait Découverte" "403" "$doc_code" "$doc_body"
