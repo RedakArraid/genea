@@ -35,7 +35,15 @@
     "pasteSuccess": "Branch pasted ({{count}} person(s))",
     "pasteFailed": "Paste failed",
     "copyFailed": "Copy failed",
-    "emptyClipboard": "No branch in clipboard"
+    "emptyClipboard": "No branch in clipboard",
+    "shortcuts": {
+      "copyBranch": "Copy branch",
+      "copyEntire": "Copy entire tree",
+      "pasteChild": "Paste as child",
+      "pasteSpouse": "Paste as spouse",
+      "pasteCanvas": "Paste on canvas",
+      "cancel": "Cancel (Esc)"
+    }
   },
   "person": {
     "firstName": "First name",

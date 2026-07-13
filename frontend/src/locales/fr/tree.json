@@ -35,7 +35,15 @@
     "pasteSuccess": "Branche collée ({{count}} personne(s))",
     "pasteFailed": "Échec du collage",
     "copyFailed": "Échec de la copie",
-    "emptyClipboard": "Aucune branche dans le presse-papiers"
+    "emptyClipboard": "Aucune branche dans le presse-papiers",
+    "shortcuts": {
+      "copyBranch": "Copier la branche",
+      "copyEntire": "Copier tout l'arbre",
+      "pasteChild": "Coller comme enfant",
+      "pasteSpouse": "Coller comme conjoint·e",
+      "pasteCanvas": "Coller sur le canevas",
+      "cancel": "Annuler (Échap)"
+    }
   },
   "person": {
     "firstName": "Prénom",

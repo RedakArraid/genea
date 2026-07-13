@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
@@ -34,6 +34,7 @@ import {
   type SubtreeClipboardMode,
   type SubtreeClipboardState,
 } from "@/lib/subtree-clipboard"
+import { useTreeKeyboardShortcuts } from "@/hooks/use-tree-keyboard-shortcuts"
 
 interface FamilyTreePageProps {
   treeIdOverride?: string
@@ -515,7 +516,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     setSubtreeClipboard(state)
   }
 
-  const handleCopySubtree = async (mode: SubtreeClipboardMode) => {
+  const handleCopySubtree = useCallback(async (mode: SubtreeClipboardMode) => {
     if (!treeId || !selectedId) return
     setSubtreeBusy(true)
     try {
@@ -538,9 +539,9 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     } finally {
       setSubtreeBusy(false)
     }
-  }
+  }, [treeId, selectedId, currentTree?.name, t])
 
-  const runPasteSubtree = async (options: {
+  const runPasteSubtree = useCallback(async (options: {
     attachToPersonId?: string
     attachAs?: "child" | "spouse"
     anchor?: { x: number; y: number }
@@ -567,7 +568,29 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     } finally {
       setSubtreeBusy(false)
     }
-  }
+  }, [treeId, subtreeClipboard, t])
+
+  const modalOpen = isAddOpen || isShareOpen || isTweaksOpen || isRelationOpen || isLinkChildOpen
+
+  useTreeKeyboardShortcuts({
+    enabled: !!currentTree && !isLoading,
+    blocked: modalOpen || subtreeBusy,
+    pasteMode,
+    canCopy: canCopySubtree && !!selectedId,
+    canPaste: canPasteSubtree,
+    hasSelection: !!selectedId,
+    onCopyBranch: () => void handleCopySubtree("branch"),
+    onCopyEntire: () => void handleCopySubtree("entire"),
+    onPasteAsChild: () => {
+      if (selectedId) void runPasteSubtree({ attachToPersonId: selectedId, attachAs: "child" })
+    },
+    onPasteAsSpouse: () => {
+      if (selectedId) void runPasteSubtree({ attachToPersonId: selectedId, attachAs: "spouse" })
+    },
+    onStartCanvasPaste: () => setPasteMode(true),
+    onCancelPasteMode: () => setPasteMode(false),
+    onDeselect: () => setSelectedId(null),
+  })
 
   if (isLoading) {
     return (
@@ -638,7 +661,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         {pasteMode && (
           <div className="absolute inset-x-0 top-12 z-20 flex items-center justify-center gap-2 px-4">
             <div className="flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-sm backdrop-blur">
-              <span>{t("canvas.pasteModeHint")}</span>
+              <span>{t("canvas.pasteModeHint")} · {t("subtree.shortcuts.cancel")}</span>
               <Button size="sm" variant="outline" onClick={() => setPasteMode(false)}>
                 {t("canvas.pasteModeCancel")}
               </Button>

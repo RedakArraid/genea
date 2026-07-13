@@ -27,6 +27,7 @@ import { useTreeLexicon } from "@/hooks/use-tree-lexicon"
 import { formatGenerationBadge, getMaxGeneration } from "@/lib/generation-level"
 import { useIsMobile } from "@/hooks/use-mobile"
 import type { SubtreeClipboardState } from "@/lib/subtree-clipboard"
+import { modShortcutLabel } from "@/lib/keyboard"
 
 interface SidePanelProps {
   person: NormalizedPerson
@@ -184,6 +185,7 @@ function SidePanelContent({
 }: SidePanelProps) {
   const { t } = useTranslation("tree")
   const lex = useTreeLexicon(currentTree)
+  const shortcutHint = (label: string, combo: string) => `${label} (${combo})`
   const maxGeneration = useMemo(() => getMaxGeneration(people), [people])
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState(() => {
@@ -536,6 +538,7 @@ function SidePanelContent({
                   variant="outline"
                   className="flex-1"
                   disabled={subtreeBusy}
+                  title={shortcutHint(t("subtree.shortcuts.copyBranch"), modShortcutLabel("c"))}
                   onClick={onCopyBranch}
                 >
                   <Copy className="mr-1 size-4" />
@@ -545,6 +548,7 @@ function SidePanelContent({
                   variant="outline"
                   className="flex-1"
                   disabled={subtreeBusy}
+                  title={shortcutHint(t("subtree.shortcuts.copyEntire"), modShortcutLabel("c", { shift: true }))}
                   onClick={onCopyEntireTree}
                 >
                   <Copy className="mr-1 size-4" />
@@ -559,6 +563,7 @@ function SidePanelContent({
                     variant="secondary"
                     className="flex-1"
                     disabled={subtreeBusy}
+                    title={shortcutHint(t("subtree.shortcuts.pasteChild"), modShortcutLabel("v"))}
                     onClick={onPasteAsChild}
                   >
                     <ClipboardPaste className="mr-1 size-4" />
@@ -568,6 +573,7 @@ function SidePanelContent({
                     variant="secondary"
                     className="flex-1"
                     disabled={subtreeBusy}
+                    title={shortcutHint(t("subtree.shortcuts.pasteSpouse"), modShortcutLabel("v", { alt: true }))}
                     onClick={onPasteAsSpouse}
                   >
                     <ClipboardPaste className="mr-1 size-4" />
@@ -578,6 +584,7 @@ function SidePanelContent({
                   variant="outline"
                   className="w-full"
                   disabled={subtreeBusy}
+                  title={shortcutHint(t("subtree.shortcuts.pasteCanvas"), modShortcutLabel("v", { shift: true }))}
                   onClick={onStartCanvasPaste}
                 >
                   {t("subtree.pasteOnCanvas")}
