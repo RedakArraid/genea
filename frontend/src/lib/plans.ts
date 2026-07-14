@@ -35,6 +35,10 @@ export const PRICE_XOF: Record<PlanId, number> & { FAMILY_MONTHLY: number; PATRI
   PATRIMONY_MONTHLY: 2925,
 }
 
+/** Essai gratuit Découverte (jours) — sync backend */
+export const SOLO_TRIAL_DAYS = 30
+export const SOLO_SOFT_WALL_PERSONS = 18
+
 const MONTHLY_BILLING_PLANS: PlanId[] = ["FAMILY", "PATRIMONY"]
 
 export const PLANS: PlanDefinition[] = [
@@ -46,7 +50,7 @@ export const PLANS: PlanDefinition[] = [
     billingPeriod: "free",
     durationDays: null,
     maxTrees: 1,
-    maxPersonsPerTree: 10,
+    maxPersonsPerTree: 20,
     maxCollaborators: 2,
     maxFichesTotal: 0,
     maxPhotosTotal: Infinity,
@@ -56,7 +60,7 @@ export const PLANS: PlanDefinition[] = [
     canVersioning: false,
     cta: "Commencer gratuitement",
     features: [
-      "1 arbre, jusqu'à 10 personnes",
+      "1 arbre, jusqu'à 20 personnes (essai 30 jours)",
       "Photos de profil incluses",
       "Partage privé (2 collaborateurs)",
       "Pas de correspondances avec les arbres publics",
@@ -193,22 +197,26 @@ export function getPlanPriceXof(planId: PlanId, interval: BillingInterval = "yea
   return PRICE_XOF[planId]
 }
 
-export function formatAmountDual(amountUsd: number, amountXof?: number) {
+export function formatAmountDual(amountUsd: number, amountXof?: number, locale?: string) {
   const xof = amountXof ?? Math.round(amountUsd * FX_USD_XOF)
-  return `${formatXof(xof)} (${formatPrice(amountUsd)})`
+  const xofFirst = !locale || locale.startsWith("fr")
+  if (amountUsd === 0) return formatXof(0)
+  return xofFirst
+    ? `${formatXof(xof)} (${formatPrice(amountUsd)})`
+    : `${formatPrice(amountUsd)} (${formatXof(xof)})`
 }
 
-export function formatDualPrice(planId: PlanId, interval: BillingInterval = "yearly") {
+export function formatDualPrice(planId: PlanId, interval: BillingInterval = "yearly", locale?: string) {
   const plan = getPlanById(planId)
-  if (isFreePlan(planId)) return formatAmountDual(0, 0)
+  if (isFreePlan(planId)) return formatAmountDual(0, 0, locale)
   const resolved = normalizeBillingInterval(planId, interval)
   const usd = getPlanPrice(plan, resolved)
   const xof = getPlanPriceXof(planId, resolved)
-  return formatAmountDual(usd, xof)
+  return formatAmountDual(usd, xof, locale)
 }
 
-export function formatDualPriceFromUsd(amountUsd: number) {
-  return formatAmountDual(amountUsd)
+export function formatDualPriceFromUsd(amountUsd: number, locale?: string) {
+  return formatAmountDual(amountUsd, undefined, locale)
 }
 
 export function getAnnualSavingsPercent(planId: PlanId): number | null {

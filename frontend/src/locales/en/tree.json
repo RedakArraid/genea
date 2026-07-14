@@ -231,6 +231,7 @@
     "authReadOnly": "Read-only mode, you can explore but not edit this tree.",
     "trialExpired": "30-day trial ended. Read-only viewing — upgrade to a paid plan to edit.",
     "upgradePlan": "See pricing",
+    "soloSoftWall": "You're nearing the Discovery limit: {{count}}/{{max}} people. Upgrade to Family to keep growing your tree.",
     "guestReadOnly": "Read-only mode, create an account to edit this tree.",
     "login": "Log in",
     "createAccount": "Create an account",

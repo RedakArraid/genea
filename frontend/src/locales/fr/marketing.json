@@ -61,6 +61,7 @@
   "footer": {
     "links": {
       "demo": "Démo",
+      "organisation": "Organisation",
       "pricing": "Tarifs",
       "login": "Connexion",
       "register": "S'inscrire",
@@ -75,5 +76,41 @@
     "unavailable": "Arbre démo indisponible",
     "loadError": "Impossible de charger la démo",
     "backHome": "Retour à l'accueil"
+  },
+  "organisation": {
+    "badge": "Organigrammes & équipes",
+    "title": "Organisez votre entreprise sur un canvas vivant",
+    "subtitle": "Créez un organigramme interactif : managers, équipes, postes et photos. Partagez en lecture ou co-édition avec vos collaborateurs.",
+    "bullets": [
+      "Lexique personnalisable (entreprise, école, promotion…)",
+      "Arrière-plan logo ou visuel d'entreprise",
+      "Export PDF (forfaits Famille et Patrimoine)",
+      "Même canvas intuitif que la généalogie"
+    ],
+    "ctaPrimary": "Créer un organigramme",
+    "ctaPricing": "Voir les tarifs",
+    "previewTitle": "Exemple d'organigramme",
+    "previewBody": "Hiérarchie claire, cartes déplaçables, niveaux filtrables — idéal pour RH, onboarding ou présentation interne.",
+    "featuresTitle": "Pensé pour les équipes",
+    "features": {
+      "hierarchy": {
+        "title": "Hiérarchie flexible",
+        "description": "Managers, subordonnés, niveaux numérotés — adaptez la structure à votre organisation."
+      },
+      "collab": {
+        "title": "Collaboration",
+        "description": "Invitez lecteurs ou éditeurs, comme pour un arbre familial."
+      },
+      "share": {
+        "title": "Partage contrôlé",
+        "description": "Privé, partagé ou lien public en lecture seule."
+      },
+      "export": {
+        "title": "Export PDF",
+        "description": "Téléchargez votre organigramme pour vos présentations (forfaits payants)."
+      }
+    },
+    "finalTitle": "Prêt à cartographier votre organisation ?",
+    "finalSubtitle": "Créez votre premier organigramme en quelques minutes — essai Découverte gratuit (20 personnes, 30 jours)."
   }
 }

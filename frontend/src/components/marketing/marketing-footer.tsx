@@ -16,6 +16,9 @@ export function MarketingFooter() {
           <Link to="/demo" className="hover:text-foreground">
             {t("footer.links.demo")}
           </Link>
+          <Link to="/organisation" className="hover:text-foreground">
+            {t("footer.links.organisation")}
+          </Link>
           <Link to="/pricing" className="hover:text-foreground">
             {t("footer.links.pricing")}
           </Link>

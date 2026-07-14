@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Plus, Trash2, Users, GitBranch, Share2, CreditCard, Link2, Building2, TreePine } from "lucide-react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
@@ -37,6 +37,7 @@ import {
 export default function DashboardPage() {
   const { t } = useTranslation("dashboard")
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuthStore()
   const planActive = user?.planActive ?? false
   const canWrite = isPlanWriteAllowed(user)
@@ -61,6 +62,15 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchTrees()
   }, [fetchTrees])
+
+  useEffect(() => {
+    if (searchParams.get("create") !== "organization") return
+    setForm((prev) => ({ ...prev, treeType: "ORGANIZATION" }))
+    setOpen(true)
+    const next = new URLSearchParams(searchParams)
+    next.delete("create")
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
 
   const handleCreate = async () => {
     if (!form.name.trim()) {

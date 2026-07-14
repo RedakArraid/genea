@@ -25,16 +25,17 @@ interface PlanPriceBlockProps {
 }
 
 function DualIntervalPrices({ planId, className }: { planId: PlanId; className?: string }) {
-  const { t } = useTranslation("billing")
+  const { t, i18n } = useTranslation("billing")
+  const locale = i18n.language
 
   return (
     <div className={cn("space-y-2", className)}>
       <div>
-        <p className="text-2xl font-semibold text-foreground">{formatDualPrice(planId, "yearly")}</p>
+        <p className="text-2xl font-semibold text-foreground">{formatDualPrice(planId, "yearly", locale)}</p>
         <p className="text-xs text-muted-foreground">{t("pricing.perYear")}</p>
       </div>
       <div>
-        <p className="text-lg font-semibold text-foreground">{formatDualPrice(planId, "monthly")}</p>
+        <p className="text-lg font-semibold text-foreground">{formatDualPrice(planId, "monthly", locale)}</p>
         <p className="text-xs text-muted-foreground">{t("pricing.perMonth")}</p>
       </div>
     </div>
@@ -49,7 +50,8 @@ export function PlanPriceBlock({
   className,
   showBothIntervals = false,
 }: PlanPriceBlockProps) {
-  const { t } = useTranslation("billing")
+  const { t, i18n } = useTranslation("billing")
+  const locale = i18n.language
   const plan = getPlanById(planId)
   const isFree = isFreePlan(planId)
   const resolvedInterval = normalizeBillingInterval(planId, interval)
@@ -70,10 +72,10 @@ export function PlanPriceBlock({
       ) : (
         <>
           <p className="text-2xl font-semibold text-foreground">
-            {formatAmountDual(resolvedAmount, getPlanPriceXof(planId, resolvedInterval))}
+            {formatAmountDual(resolvedAmount, getPlanPriceXof(planId, resolvedInterval), locale)}
             {strikethroughUsd != null && strikethroughUsd > resolvedAmount && (
               <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
-                {formatDualPrice(planId, resolvedInterval)}
+                {formatDualPrice(planId, resolvedInterval, locale)}
               </span>
             )}
           </p>
@@ -97,7 +99,8 @@ export function PlanPriceBlock({
 }
 
 export function PricingTariffSummary({ className }: { className?: string }) {
-  const { t } = useTranslation("billing")
+  const { t, i18n } = useTranslation("billing")
+  const locale = i18n.language
 
   return (
     <div className={cn("rounded-lg border bg-muted/25 p-4 text-sm", className)}>
@@ -112,16 +115,16 @@ export function PricingTariffSummary({ className }: { className?: string }) {
           <span className="font-medium text-foreground">{t("plans.FAMILY.name")}</span>
           {" : "}
           {t("pricing.tariffFamily", {
-            yearlyPrice: formatDualPrice("FAMILY", "yearly"),
-            monthlyPrice: formatDualPrice("FAMILY", "monthly"),
+            yearlyPrice: formatDualPrice("FAMILY", "yearly", locale),
+            monthlyPrice: formatDualPrice("FAMILY", "monthly", locale),
           })}
         </li>
         <li>
           <span className="font-medium text-foreground">{t("plans.PATRIMONY.name")}</span>
           {" : "}
           {t("pricing.tariffPatrimony", {
-            yearlyPrice: formatDualPrice("PATRIMONY", "yearly"),
-            monthlyPrice: formatDualPrice("PATRIMONY", "monthly"),
+            yearlyPrice: formatDualPrice("PATRIMONY", "yearly", locale),
+            monthlyPrice: formatDualPrice("PATRIMONY", "monthly", locale),
           })}
         </li>
       </ul>

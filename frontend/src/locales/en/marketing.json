@@ -61,6 +61,7 @@
   "footer": {
     "links": {
       "demo": "Demo",
+      "organisation": "Organization",
       "pricing": "Pricing",
       "login": "Log in",
       "register": "Sign up",
@@ -75,5 +76,41 @@
     "unavailable": "Demo tree unavailable",
     "loadError": "Could not load the demo",
     "backHome": "Back to home"
+  },
+  "organisation": {
+    "badge": "Org charts & teams",
+    "title": "Map your organization on a living canvas",
+    "subtitle": "Build an interactive org chart: managers, teams, roles and photos. Share read-only or co-edit with colleagues.",
+    "bullets": [
+      "Custom lexicon (company, school, cohort…)",
+      "Logo or brand background on the canvas",
+      "PDF export (Family & Heritage plans)",
+      "Same intuitive canvas as genealogy"
+    ],
+    "ctaPrimary": "Create an org chart",
+    "ctaPricing": "View pricing",
+    "previewTitle": "Sample org chart",
+    "previewBody": "Clear hierarchy, draggable cards, filterable levels — ideal for HR, onboarding or internal presentations.",
+    "featuresTitle": "Built for teams",
+    "features": {
+      "hierarchy": {
+        "title": "Flexible hierarchy",
+        "description": "Managers, reports, numbered levels — adapt the structure to your organization."
+      },
+      "collab": {
+        "title": "Collaboration",
+        "description": "Invite viewers or editors, just like a family tree."
+      },
+      "share": {
+        "title": "Controlled sharing",
+        "description": "Private, shared or public read-only link."
+      },
+      "export": {
+        "title": "PDF export",
+        "description": "Download your org chart for presentations (paid plans)."
+      }
+    },
+    "finalTitle": "Ready to map your organization?",
+    "finalSubtitle": "Create your first org chart in minutes — free Discovery trial (20 people, 30 days)."
   }
 }

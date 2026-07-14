@@ -6,6 +6,7 @@ import { ProtectedRoute } from "@/components/protected-route"
 import { PublicLayout } from "@/components/layout/public-layout"
 import { AppShell } from "@/components/layout/app-shell"
 import HomePage from "@/pages/home-page"
+import OrganisationPage from "@/pages/organisation-page"
 import LoginPage from "@/pages/login-page"
 import RegisterPage from "@/pages/register-page"
 import PricingPage from "@/pages/pricing-page"
@@ -70,6 +71,7 @@ export default function App() {
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/organisation" element={<OrganisationPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/demo" element={<DemoPage />} />
           <Route path="/invite/:token" element={<InvitePage />} />

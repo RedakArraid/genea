@@ -19,7 +19,7 @@ import {
 } from "@/components/family-tree/dialogs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Eye } from "lucide-react"
+import { Eye, Info } from "lucide-react"
 import { uploadPersonPhoto, setPersonPhoto } from "@/lib/upload"
 import { exportTreeGedcom, exportTreePdf } from "@/lib/export-api"
 import { importTreeGedcom } from "@/lib/import-api"
@@ -27,6 +27,7 @@ import { getApiErrorPayload, translateApiError } from "@/lib/translate-error"
 import { rememberLastTreeId } from "@/lib/post-login-destination"
 import { TreeOnboardingHint } from "@/components/family-tree/tree-onboarding-hint"
 import { consumePendingDemoFork } from "@/lib/demo-fork-signal"
+import { SOLO_SOFT_WALL_PERSONS, getPlanById } from "@/lib/plans"
 import { extractSubtree, pasteSubtree } from "@/lib/subtree-api"
 import {
   loadSubtreeClipboard,
@@ -63,7 +64,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   const treeId = treeIdOverride ?? paramTreeId
   const navigate = useNavigate()
   const location = useLocation()
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore()
   const isPublicRoute = location.pathname.startsWith("/tree/")
 
   const {
@@ -278,6 +279,15 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     if (!currentTree?.Person) return []
     return normalizePersons(currentTree.Person, currentTree.Relationship)
   }, [currentTree])
+
+  const soloSoftWall = useMemo(() => {
+    if (publicDemo || isPublicRoute || isDemo || isOrg || !canWrite) return false
+    if (treeAccess?.role !== "owner") return false
+    if ((user?.plan ?? "SOLO") !== "SOLO") return false
+    const count = people.length
+    const max = getPlanById("SOLO").maxPersonsPerTree
+    return count >= SOLO_SOFT_WALL_PERSONS && count < max
+  }, [publicDemo, isPublicRoute, isDemo, isOrg, canWrite, treeAccess?.role, user?.plan, people.length])
 
   const selectedPerson = useMemo(
     () => (selectedId ? people.find((p: NormalizedPerson) => p.id === selectedId) ?? null : null),
@@ -642,6 +652,15 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
               {t("page.createMyTree")}
             </Button>
           )}
+        </div>
+      )}
+      {soloSoftWall && (
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-b bg-sky-50 px-4 py-2 text-sm text-sky-950 dark:bg-sky-950/40 dark:text-sky-100">
+          <Info className="size-4 shrink-0" />
+          <span>{t("page.soloSoftWall", { count: people.length, max: getPlanById("SOLO").maxPersonsPerTree })}</span>
+          <Link to="/pricing" className={buttonVariants({ variant: "outline", size: "sm", className: "h-7 border-sky-300 bg-background" })}>
+            {t("page.upgradePlan")}
+          </Link>
         </div>
       )}
       {!publicDemo && !isPublicRoute && (

@@ -231,6 +231,7 @@
     "authReadOnly": "Mode lecture seule, vous pouvez explorer l'arbre mais pas le modifier.",
     "trialExpired": "Essai de 30 jours terminé. Consultation en lecture seule — passez à un forfait payant pour modifier.",
     "upgradePlan": "Voir les tarifs",
+    "soloSoftWall": "Vous approchez de la limite Découverte : {{count}}/{{max}} personnes. Passez au forfait Famille pour continuer à enrichir votre arbre.",
     "guestReadOnly": "Mode lecture seule, créez un compte pour modifier cet arbre.",
     "login": "Se connecter",
     "createAccount": "Créer un compte",

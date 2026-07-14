@@ -56,6 +56,9 @@ export function MarketingHeader({ variant = "default" }: MarketingHeaderProps) {
           <Link to="/demo" className="text-muted-foreground transition-colors hover:text-foreground">
             {t("nav.demo")}
           </Link>
+          <Link to="/organisation" className="text-muted-foreground transition-colors hover:text-foreground">
+            {t("nav.organisation")}
+          </Link>
           {isHome ? (
             <a href="#prix" className="text-muted-foreground transition-colors hover:text-foreground">
               {t("nav.pricing")}
@@ -123,6 +126,9 @@ export function MarketingHeader({ variant = "default" }: MarketingHeaderProps) {
             )}
             <Link to="/demo" className={navLinkClass} onClick={closeMobile}>
               {t("nav.demo")}
+            </Link>
+            <Link to="/organisation" className={navLinkClass} onClick={closeMobile}>
+              {t("nav.organisation")}
             </Link>
             {isHome ? (
               <a href={pricingHref} className={navLinkClass} onClick={closeMobile}>

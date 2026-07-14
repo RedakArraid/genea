@@ -3,7 +3,25 @@
 > Source de vérité partagée entre toutes les IA et développeurs.
 > À lire en début de session, à mettre à jour en fin de tâche (voir [AGENTS.md](../AGENTS.md)).
 
-Dernière mise à jour : **2026-07-11** (rebrand geneamap)
+Dernière mise à jour : **2026-07-14** (pivot photos-only, quotas Découverte 20, landing Organisation)
+
+---
+
+## 0. Positionnement produit (Phase 1 — juillet 2026)
+
+| Priorité | Périmètre |
+|---|---|
+| **Cœur** | Arbres généalogiques + **photos de profil** + collaboration + export (forfaits payants) |
+| **B2B** | Arbres **ORGANIZATION** (organigrammes) — page marketing `/organisation`, création via dashboard `?create=organization` |
+| **Reporté** | Documents / fiches (feature flag `FEATURE_DOCUMENTS_ENABLED` / `VITE_FEATURE_DOCUMENTS_ENABLED`, **off** par défaut) |
+| **Tarifs affichage** | **FCFA en premier** pour locale `fr`, USD entre parenthèses ; paiement Paystack en USD |
+| **Forfait Découverte** | **20 personnes/arbre**, alerte douce à **18** (`SOLO_SOFT_WALL_PERSONS`), essai **30 jours** |
+
+| Forfait | Prix (indicatif) | Arbres | Pers./arbre | Collaborateurs |
+|---|---|---|---|---|
+| Découverte | Gratuit (30 j) | 1 | 20 | 2 |
+| Famille | 15 600 FCFA ($24)/an ou 1 625 FCFA/mois | 3 | 50 | 10 |
+| Patrimoine | 27 300 FCFA ($42)/an ou 2 925 FCFA/mois | 5 | 200 | 20 |
 
 ---
 
@@ -117,6 +135,7 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 
 ## 8. Journal
 
+- **2026-07-14 (stratégie Phase 1)** — Pivot **photos-only** (documents derrière feature flag off) ; quota Découverte **10→20** personnes + bannière soft wall à 18 ; tarifs **FCFA first** (locale fr) ; page marketing **`/organisation`** + lien nav ; dashboard ouvre création ORGANIZATION via `?create=organization` ; MEMOIRE §0 positionnement.
 - **2026-07-05 (nuit, fix menu ajouter enfant v2)** — Panneau latéral : `modal={false}` sur le dropdown (évite le blocage pointer-events / scroll lock dans le aside scrollable), état `open` contrôlé, callbacks stabilisés (`useCallback`/`useMemo`), z-index positioner `z-[300]`, menu ouvert vers la gauche.
 - **2026-07-05 (nuit, fix menu ajouter enfant)** — Fix menu « + Ajouter » (nouvel enfant / lier existant) : extraction `ChildAddMenu`, `RelSection` et `RelChip` hors du render de `SidePanelContent` (évite remontage React qui fermait le dropdown) ; `queueMicrotask` sur les actions menu ; arête mariage canvas wrappée en `absolute` + z-index.
 - **2026-07-05 (soir, lier enfant existant)** — Menu « Nouvel enfant / Lier existant » (panneau latéral, icône bébé conjoint, arête mariage) ; dialogue `LinkExistingChildDialog` ; fix direction parent/enfant dans « Lier ».

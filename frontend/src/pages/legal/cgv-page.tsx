@@ -24,7 +24,7 @@ export default function CgvPage() {
         <h2>2. Forfaits et tarifs</h2>
         <p>Trois forfaits sont proposés à la date des présentes CGV (détail à jour sur la page Tarifs) :</p>
         <ul>
-          <li><strong>Découverte</strong> — gratuit, avec période d'essai de 30 jours ; 1 arbre, jusqu'à 10 personnes.</li>
+          <li><strong>Découverte</strong> — gratuit, avec période d'essai de 30 jours ; 1 arbre, jusqu'à 20 personnes.</li>
           <li><strong>Famille</strong> — 24 $ US / an (ou 2,50 $ US / mois) ; 3 arbres, 50 personnes par arbre, export GEDCOM/PDF.</li>
           <li><strong>Patrimoine</strong> — 42 $ US / an (ou 4,50 $ US / mois) ; 5 arbres, 200 personnes par arbre, import/export GEDCOM, historique des modifications.</li>
         </ul>

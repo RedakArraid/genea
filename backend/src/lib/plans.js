@@ -23,6 +23,9 @@ const MONTHLY_BILLING_PLANS = ['FAMILY', 'PATRIMONY'];
 /** Essai gratuit Découverte (jours) */
 const SOLO_TRIAL_DAYS = 30;
 
+/** Alerte douce avant le plafond Découverte (personnes par arbre) */
+const SOLO_SOFT_WALL_PERSONS = 18;
+
 function normalizeBillingInterval(planId, billingInterval = 'yearly') {
   return billingInterval;
 }
@@ -37,7 +40,7 @@ const PLANS = {
     durationDays: null,
     trialDays: SOLO_TRIAL_DAYS,
     maxTrees: 1,
-    maxPersonsPerTree: 10,
+    maxPersonsPerTree: 20,
     maxCollaborators: 2,
     maxFichesTotal: 0,
     maxPhotosTotal: Infinity,
@@ -46,7 +49,7 @@ const PLANS = {
     canImport: false,
     canVersioning: false,
     features: [
-      '1 arbre, jusqu\'à 10 personnes',
+      '1 arbre, jusqu\'à 20 personnes (essai 30 jours)',
       'Photos de profil incluses',
       'Partage privé (2 collaborateurs)',
       'Pas de correspondances avec les arbres publics',
@@ -201,6 +204,7 @@ module.exports = {
   normalizeBillingInterval,
   MONTHLY_BILLING_PLANS,
   SOLO_TRIAL_DAYS,
+  SOLO_SOFT_WALL_PERSONS,
   isFreePlan,
   isPaidPlan,
   computeDiscountedAmount,
