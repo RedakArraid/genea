@@ -133,9 +133,9 @@ export default function CguPage() {
       <section>
         <h2>9. Suspension et résiliation</h2>
         <p>
-          L'utilisateur peut cesser d'utiliser le Service à tout moment. En l'absence, à ce jour, de
-          fonction de suppression de compte en libre-service, toute demande de suppression de compte et
-          des données associées doit être adressée à{" "}
+          L'utilisateur peut cesser d'utiliser le Service à tout moment et supprimer définitivement son
+          compte depuis la page « Mon profil » (suppression immédiate du compte, des arbres dont il est
+          propriétaire et de leur contenu). Il peut aussi adresser sa demande à{" "}
           <a href="mailto:contact@geneamap.com">contact@geneamap.com</a> (voir également la{" "}
           <a href="/legal/confidentialite">Politique de confidentialité</a>).
         </p>

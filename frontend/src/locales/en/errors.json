@@ -36,5 +36,7 @@
   "otpSendError": "Could not send the code",
   "otpVerifyError": "Invalid code",
   "updateError": "Update error",
-  "planChangeError": "Error changing plan"
+  "planChangeError": "Error changing plan",
+  "deleteAccountError": "Could not delete the account",
+  "LAST_ADMIN": "Cannot delete the last administrator account"
 }

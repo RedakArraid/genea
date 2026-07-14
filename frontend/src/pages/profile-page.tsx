@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
@@ -16,10 +16,19 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 
 export default function ProfilePage() {
   const { t } = useTranslation(["dashboard", "billing", "common"])
-  const { user, updateProfile } = useAuthStore()
+  const { user, updateProfile, deleteAccount } = useAuthStore()
+  const navigate = useNavigate()
   const [name, setName] = useState(user?.name || "")
   const [phoneCountry, setPhoneCountry] = useState<CountryCode>(DEFAULT_COUNTRY)
   const [phone, setPhone] = useState(formatPhoneDisplay(user?.phone))
@@ -27,6 +36,9 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [deletePassword, setDeletePassword] = useState("")
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const currentPlan = getPlanById(user?.plan || "SOLO")
 
@@ -49,6 +61,19 @@ export default function ProfilePage() {
       toast.success(result.message || t("profile.updated"))
       setCurrentPassword("")
       setNewPassword("")
+    } else {
+      toast.error(result.message)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) return
+    setDeleteLoading(true)
+    const result = await deleteAccount(deletePassword)
+    setDeleteLoading(false)
+    if (result.success) {
+      toast.success(result.message || t("profile.deleteAccount.success"))
+      navigate("/")
     } else {
       toast.error(result.message)
     }
@@ -133,6 +158,55 @@ export default function ProfilePage() {
           </Link>
         </CardContent>
       </Card>
+
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle className="text-destructive">{t("profile.deleteAccount.title")}</CardTitle>
+          <CardDescription>{t("profile.deleteAccount.description")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" onClick={() => setIsDeleteOpen(true)}>
+            {t("profile.deleteAccount.cta")}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog
+        open={isDeleteOpen}
+        onOpenChange={(open) => {
+          setIsDeleteOpen(open)
+          if (!open) setDeletePassword("")
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("profile.deleteAccount.confirmTitle")}</DialogTitle>
+            <DialogDescription>{t("profile.deleteAccount.confirmDescription")}</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="delete-password">{t("profile.deleteAccount.passwordLabel")}</Label>
+            <Input
+              id="delete-password"
+              type="password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+              {t("common:actions.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!deletePassword || deleteLoading}
+              onClick={handleDeleteAccount}
+            >
+              {deleteLoading ? t("profile.deleteAccount.deleting") : t("profile.deleteAccount.confirmCta")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

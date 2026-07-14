@@ -90,7 +90,18 @@
     "currentPlan": "Votre forfait actuel",
     "comparePlans": "Comparez les forfaits et changez d'offre depuis la page publique Tarifs.",
     "managePlan": "Gérer mon forfait",
-    "language": "Langue de l'interface"
+    "language": "Langue de l'interface",
+    "deleteAccount": {
+      "title": "Supprimer mon compte",
+      "description": "Suppression définitive de votre compte, de vos arbres et de leur contenu (photos, documents, historique). Cette action est irréversible.",
+      "cta": "Supprimer mon compte",
+      "confirmTitle": "Confirmer la suppression",
+      "confirmDescription": "Cette action est définitive : vos arbres, fiches, photos et documents seront supprimés. Saisissez votre mot de passe pour confirmer.",
+      "passwordLabel": "Mot de passe",
+      "confirmCta": "Supprimer définitivement",
+      "deleting": "Suppression...",
+      "success": "Compte supprimé"
+    }
   },
   "welcome": {
     "defaultName": "vous",

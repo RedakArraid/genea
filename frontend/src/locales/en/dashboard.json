@@ -90,7 +90,18 @@
     "currentPlan": "Your current plan",
     "comparePlans": "Compare plans and switch from the public Pricing page.",
     "managePlan": "Manage my plan",
-    "language": "Interface language"
+    "language": "Interface language",
+    "deleteAccount": {
+      "title": "Delete my account",
+      "description": "Permanently deletes your account, your trees and their content (photos, documents, history). This action cannot be undone.",
+      "cta": "Delete my account",
+      "confirmTitle": "Confirm deletion",
+      "confirmDescription": "This action is permanent: your trees, records, photos and documents will be deleted. Enter your password to confirm.",
+      "passwordLabel": "Password",
+      "confirmCta": "Delete permanently",
+      "deleting": "Deleting...",
+      "success": "Account deleted"
+    }
   },
   "welcome": {
     "defaultName": "there",

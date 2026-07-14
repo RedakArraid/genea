@@ -56,4 +56,16 @@ router.put(
   userController.updateUserProfile
 );
 
+/**
+ * @route DELETE /api/users/profile
+ * @desc Supprimer définitivement le compte de l'utilisateur connecté et son contenu
+ * @access Private
+ */
+router.delete(
+  '/profile',
+  isAuth,
+  [body('password').notEmpty().withMessage('Mot de passe requis')],
+  userController.deleteAccount
+);
+
 module.exports = router;

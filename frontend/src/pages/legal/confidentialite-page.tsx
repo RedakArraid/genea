@@ -111,9 +111,11 @@ export default function ConfidentialitePage() {
         <p>
           Ces droits s'exercent en écrivant à{" "}
           <a href="mailto:contact@geneamap.com">contact@geneamap.com</a>, en précisant votre demande et,
-          si nécessaire, l'arbre et la fiche concernés. En l'absence à ce jour de suppression de compte en
-          libre-service, toute demande d'effacement complet d'un compte est traitée manuellement dans un
-          délai raisonnable après vérification d'identité.
+          si nécessaire, l'arbre et la fiche concernés. Vous pouvez également supprimer vous-même votre
+          compte à tout moment depuis la page « Mon profil » : cette action efface immédiatement et
+          définitivement votre compte, les arbres dont vous êtes propriétaire ainsi que les fiches,
+          photos et documents associés. Les arbres où vous n'êtes que collaborateur ne sont pas
+          supprimés ; votre accès à ceux-ci est simplement retiré.
         </p>
         <p>
           Vous disposez également du droit d'introduire une réclamation auprès de l'autorité ivoirienne

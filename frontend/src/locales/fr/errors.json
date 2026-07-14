@@ -36,5 +36,7 @@
   "otpSendError": "Impossible d'envoyer le code",
   "otpVerifyError": "Code invalide",
   "updateError": "Erreur de mise à jour",
-  "planChangeError": "Erreur lors du changement de forfait"
+  "planChangeError": "Erreur lors du changement de forfait",
+  "deleteAccountError": "Impossible de supprimer le compte",
+  "LAST_ADMIN": "Impossible de supprimer le dernier compte administrateur"
 }

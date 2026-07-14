@@ -5,6 +5,7 @@
 const bcrypt = require('bcryptjs');
 const { validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
+const storage = require('../lib/storage');
 const { normalizePhone, isValidPhone } = require('../lib/phone');
 const { sendError, sendValidationErrors } = require('../lib/apiErrors');
 
@@ -113,6 +114,76 @@ exports.updateUserProfile = async (req, res, next) => {
       message: 'Profil mis à jour avec succès',
       user: updatedUser,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Suppression définitive du compte de l'utilisateur connecté : ses arbres
+ * possédés (et leur contenu, en cascade), ses accès collaborateur/invitations
+ * sur d'autres arbres, ses paiements, puis le compte lui-même. Best-effort de
+ * nettoyage des fichiers (photos/documents) sur le stockage objet.
+ */
+exports.deleteAccount = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return sendValidationErrors(res, errors);
+    }
+
+    const userId = req.user.id;
+    const { password } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Mot de passe incorrect' });
+    }
+
+    if (user.role === 'ADMIN') {
+      const otherAdmins = await prisma.user.count({ where: { role: 'ADMIN', id: { not: userId } } });
+      if (otherAdmins === 0) {
+        return res.status(409).json({
+          message: 'Impossible de supprimer le dernier compte administrateur',
+          code: 'LAST_ADMIN',
+        });
+      }
+    }
+
+    const ownedTrees = await prisma.familyTree.findMany({
+      where: { ownerId: userId },
+      select: { id: true },
+    });
+    const ownedTreeIds = ownedTrees.map((t) => t.id);
+
+    const [persons, documents] = await Promise.all([
+      ownedTreeIds.length
+        ? prisma.person.findMany({ where: { treeId: { in: ownedTreeIds } }, select: { photoUrl: true } })
+        : [],
+      ownedTreeIds.length
+        ? prisma.personDocument.findMany({ where: { treeId: { in: ownedTreeIds } }, select: { fileKey: true } })
+        : [],
+    ]);
+
+    await prisma.$transaction(async (tx) => {
+      if (ownedTreeIds.length) {
+        await tx.familyTree.deleteMany({ where: { id: { in: ownedTreeIds } } });
+      }
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    // Nettoyage best-effort du stockage objet — ne bloque pas la réponse en cas d'échec.
+    Promise.all([
+      ...persons.filter((p) => p.photoUrl).map((p) => storage.deleteByUrl(p.photoUrl)),
+      ...documents.filter((d) => d.fileKey).map((d) => storage.deleteByKey(d.fileKey)),
+    ]).catch((err) => console.warn('Nettoyage stockage après suppression de compte:', err.message));
+
+    res.status(200).json({ message: 'Compte supprimé avec succès' });
   } catch (error) {
     next(error);
   }

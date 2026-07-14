@@ -26,6 +26,7 @@ interface AuthState {
   logout: () => void
   updateProfile: (data: Record<string, unknown>) => Promise<{ success: boolean; message?: string }>
   upgradePlan: (plan: import("@/types").PlanId) => Promise<{ success: boolean; message?: string }>
+  deleteAccount: (password: string) => Promise<{ success: boolean; message?: string; code?: string }>
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -133,6 +134,22 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem("token")
     set({ user: null, isAuthenticated: false, isAdmin: false, isLoading: false })
+  },
+
+  deleteAccount: async (password) => {
+    try {
+      const { data } = await api.delete("/users/profile", { data: { password } })
+      localStorage.removeItem("token")
+      set({ user: null, isAuthenticated: false, isAdmin: false, isLoading: false })
+      return { success: true, message: data.message }
+    } catch (error: unknown) {
+      const payload = getApiErrorPayload(error)
+      return {
+        success: false,
+        message: translateApiError(payload, "errors:deleteAccountError"),
+        code: payload?.code,
+      }
+    }
   },
 
   updateProfile: async (profileData) => {
