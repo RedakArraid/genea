@@ -66,6 +66,46 @@ function shiftGenerationX(
   }
 }
 
+/** Écarte les cartes qui se chevauchent sur une même ligne (après centrage managers). */
+function resolveOrgRowOverlaps(
+  positions: Record<string, { x: number; y: number }>,
+  people: Array<{ id: string; generation?: number }>,
+  cardW: number,
+  hGap: number
+) {
+  const byGen = groupByGeneration(people)
+  const minStep = cardW + hGap
+
+  for (const row of byGen.values()) {
+    const ids = row
+      .map((p) => p.id)
+      .filter((id) => positions[id])
+      .sort((a, b) => positions[a].x - positions[b].x)
+
+    for (let i = 1; i < ids.length; i++) {
+      const prevId = ids[i - 1]
+      const curId = ids[i]
+      const minX = positions[prevId].x + minStep
+      if (positions[curId].x < minX) {
+        const delta = minX - positions[curId].x
+        for (let j = i; j < ids.length; j++) {
+          positions[ids[j]].x += delta
+        }
+      }
+    }
+  }
+}
+
+function normalizeOrgLayoutOrigin(positions: Record<string, { x: number; y: number }>) {
+  const xs = Object.values(positions).map((p) => p.x)
+  if (!xs.length) return
+  const shift = LAYOUT_ORIGIN_X - Math.min(...xs)
+  if (shift === 0) return
+  for (const pos of Object.values(positions)) {
+    pos.x += shift
+  }
+}
+
 export function computeVerticalOrg(
   people: Array<{ id: string; generation?: number; parentIds?: string[] }>,
   density: "spacious" | "compact" = "spacious"
@@ -83,7 +123,7 @@ export function computeVerticalOrg(
     return n * cardW + Math.max(0, n - 1) * hGap
   })
   const maxRowW = Math.max(...rowWidths, cardW)
-  const canvasW = maxRowW + LAYOUT_PADDING
+  let canvasW = maxRowW + LAYOUT_PADDING
 
   let y = LAYOUT_ORIGIN_Y
   for (const g of gens) {
@@ -114,6 +154,12 @@ export function computeVerticalOrg(
       positions[p.id].x = targetX
     }
   }
+
+  resolveOrgRowOverlaps(positions, people, cardW, hGap)
+  normalizeOrgLayoutOrigin(positions)
+
+  const maxX = Math.max(...Object.values(positions).map((pos) => pos.x)) + cardW
+  canvasW = Math.max(maxRowW, maxX - LAYOUT_ORIGIN_X) + LAYOUT_PADDING
 
   return { positions, canvasW, canvasH: y + LAYOUT_PADDING / 2 }
 }
