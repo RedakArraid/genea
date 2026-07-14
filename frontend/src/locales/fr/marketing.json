@@ -63,7 +63,12 @@
       "demo": "Démo",
       "pricing": "Tarifs",
       "login": "Connexion",
-      "register": "S'inscrire"
+      "register": "S'inscrire",
+      "legalNotice": "Mentions légales",
+      "terms": "CGU",
+      "sales": "CGV",
+      "privacy": "Confidentialité",
+      "cookies": "Cookies"
     }
   },
   "demo": {

@@ -27,6 +27,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirm, setConfirm] = useState("")
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,6 +38,10 @@ export default function RegisterPage() {
     }
     if (password !== confirm) {
       toast.error(t("register.passwordMismatch"))
+      return
+    }
+    if (!acceptedTerms) {
+      toast.error(t("register.acceptTermsRequired"))
       return
     }
     setLoading(true)
@@ -114,6 +119,25 @@ export default function RegisterPage() {
                 required
               />
             </div>
+            <label className="flex items-start gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 size-4 shrink-0 accent-primary"
+                required
+              />
+              <span>
+                {t("register.acceptTermsPrefix")}{" "}
+                <Link to="/legal/cgu" target="_blank" className="text-primary underline-offset-4 hover:underline">
+                  {t("register.acceptTermsLinkCgu")}
+                </Link>{" "}
+                {t("register.acceptTermsAnd")}{" "}
+                <Link to="/legal/confidentialite" target="_blank" className="text-primary underline-offset-4 hover:underline">
+                  {t("register.acceptTermsLinkPrivacy")}
+                </Link>
+              </span>
+            </label>
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? t("register.submitting") : t("register.submit")}
             </Button>

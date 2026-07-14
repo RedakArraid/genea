@@ -63,7 +63,12 @@
       "demo": "Demo",
       "pricing": "Pricing",
       "login": "Log in",
-      "register": "Sign up"
+      "register": "Sign up",
+      "legalNotice": "Legal notice",
+      "terms": "Terms of use",
+      "sales": "Terms of sale",
+      "privacy": "Privacy",
+      "cookies": "Cookies"
     }
   },
   "demo": {

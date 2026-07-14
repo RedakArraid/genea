@@ -30,6 +30,11 @@ import AdminPromoPage from "@/pages/admin/admin-promo-page"
 import AdminSmtpPage from "@/pages/admin/admin-smtp-page"
 import AdminOpenWaPage from "@/pages/admin/admin-openwa-page"
 import NotFoundPage from "@/pages/not-found-page"
+import MentionsLegalesPage from "@/pages/legal/mentions-legales-page"
+import CguPage from "@/pages/legal/cgu-page"
+import CgvPage from "@/pages/legal/cgv-page"
+import ConfidentialitePage from "@/pages/legal/confidentialite-page"
+import CookiesPage from "@/pages/legal/cookies-page"
 import { Skeleton } from "@/components/ui/skeleton"
 
 function AuthRedirect({ children }: { children: React.ReactNode }) {
@@ -72,6 +77,11 @@ export default function App() {
           <Route path="/tree/:id" element={<FamilyTreePage />} />
           <Route path="/login" element={<AuthRedirect><LoginPage /></AuthRedirect>} />
           <Route path="/register" element={<AuthRedirect><RegisterPage /></AuthRedirect>} />
+          <Route path="/legal/mentions-legales" element={<MentionsLegalesPage />} />
+          <Route path="/legal/cgu" element={<CguPage />} />
+          <Route path="/legal/cgv" element={<CgvPage />} />
+          <Route path="/legal/confidentialite" element={<ConfidentialitePage />} />
+          <Route path="/legal/cookies" element={<CookiesPage />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>
