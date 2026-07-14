@@ -145,7 +145,7 @@ export function PricingPlanCards({
               ) : (
                 <Link
                   to={isAuthenticated ? "/pricing" : "/register"}
-                  className={cn(buttonVariants({ variant: plan.featured ? "default" : "outline" }), "w-full")}
+                  className={cn(buttonVariants({ variant: "default" }), "w-full")}
                 >
                   {isAuthenticated
                     ? interval === "monthly" && getPlanById(plan.id).ctaMonthly
