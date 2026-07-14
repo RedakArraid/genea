@@ -89,8 +89,9 @@
     ],
     "ctaPrimary": "Créer un organigramme",
     "ctaPricing": "Voir les tarifs",
-    "previewTitle": "Exemple d'organigramme",
-    "previewBody": "Hiérarchie claire, cartes déplaçables, niveaux filtrables — idéal pour RH, onboarding ou présentation interne.",
+    "previewTitle": "Kora Digital — 15 collaborateurs",
+    "previewBody": "Organigramme réel : direction, tech (dev & produit), RH et commercial — postes, niveaux et liens hiérarchiques.",
+    "previewCaption": "Exemple interactif : startup tech ouest-africaine, 15 fiches avec postes et managers.",
     "featuresTitle": "Pensé pour les équipes",
     "features": {
       "hierarchy": {

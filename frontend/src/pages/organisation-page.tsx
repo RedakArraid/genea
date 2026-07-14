@@ -3,6 +3,7 @@ import { ArrowRight, Building2, Check, Share2, FileDown, Users } from "lucide-re
 import { useTranslation } from "react-i18next"
 import { useAuthStore } from "@/stores/auth-store"
 import { MarketingFooter } from "@/components/marketing/marketing-footer"
+import { AnimatedOrgHero } from "@/components/marketing/animated-org-hero"
 import { PricingSection } from "@/components/pricing-section"
 import { buttonVariants } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -56,28 +57,10 @@ export default function OrganisationPage() {
               </Link>
             </div>
           </div>
-          <Card className="border-primary/20 bg-background shadow-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Building2 className="size-5 text-primary" />
-                {t("organisation.previewTitle")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p>{t("organisation.previewBody")}</p>
-              <div className="rounded-lg border bg-muted/30 p-4 font-mono text-xs leading-relaxed text-foreground">
-                CEO
-                <br />
-                ├─ Directeur·rice
-                <br />
-                │&nbsp;&nbsp;├─ Manager A
-                <br />
-                │&nbsp;&nbsp;└─ Manager B
-                <br />
-                └─ RH
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-3">
+            <AnimatedOrgHero />
+            <p className="text-center text-xs text-muted-foreground">{t("organisation.previewCaption")}</p>
+          </div>
         </div>
       </section>
 

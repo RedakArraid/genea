@@ -89,8 +89,9 @@
     ],
     "ctaPrimary": "Create an org chart",
     "ctaPricing": "View pricing",
-    "previewTitle": "Sample org chart",
-    "previewBody": "Clear hierarchy, draggable cards, filterable levels — ideal for HR, onboarding or internal presentations.",
+    "previewTitle": "Kora Digital — 15 team members",
+    "previewBody": "Real org chart: leadership, engineering (dev & product), HR and sales — roles, levels and reporting lines.",
+    "previewCaption": "Interactive example: West African tech startup with 15 profiles, roles and managers.",
     "featuresTitle": "Built for teams",
     "features": {
       "hierarchy": {
