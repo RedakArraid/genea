@@ -58,7 +58,6 @@ export const PLANS: PlanDefinition[] = [
     features: [
       "1 arbre, jusqu'à 10 personnes",
       "Photos de profil incluses",
-      "Pas de fiches (documents)",
       "Partage privé (2 collaborateurs)",
       "Pas de correspondances avec les arbres publics",
     ],
@@ -85,7 +84,7 @@ export const PLANS: PlanDefinition[] = [
     ctaMonthly: "Choisir mensuel",
     features: [
       "3 arbres, 50 personnes max par arbre",
-      "100 fiches (documents) au total",
+      "Photos de profil illimitées",
       "Organigrammes & lexique personnalisé",
       "10 collaborateurs par arbre",
       "Export GEDCOM & PDF",
@@ -114,7 +113,7 @@ export const PLANS: PlanDefinition[] = [
       "5 arbres, 200 personnes max par arbre",
       "30 collaborateurs par arbre",
       "Grands organigrammes & arrière-plans",
-      "Photos & fiches (documents) illimités",
+      "Photos illimitées",
       "Export & import GEDCOM, PDF",
       "Historique des modifications",
       "Support prioritaire",

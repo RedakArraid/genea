@@ -10,8 +10,19 @@ const { canWritePerson } = require('../middleware/treeAccess.middleware');
 const { storageConfig } = require('../config/storage.config');
 const prisma = require('../lib/prisma');
 const { resolveTreeAccess } = require('../lib/treeAccess');
+const { isDocumentsEnabled } = require('../lib/features');
 
 const router = express.Router({ mergeParams: true });
+
+const requireDocumentsFeature = (_req, res, next) => {
+  if (!isDocumentsEnabled()) {
+    return res.status(403).json({
+      code: 'FEATURE_DISABLED',
+      message: 'Les documents seront disponibles prochainement',
+    });
+  }
+  next();
+};
 
 const documentUpload = multer({
   storage: multer.memoryStorage(),
@@ -60,6 +71,7 @@ router.get('/', optionalAuth, canReadPersonDocuments, documentController.listDoc
 router.post(
   '/',
   isAuth,
+  requireDocumentsFeature,
   documentUpload.single('file'),
   canWritePersonDocuments,
   documentController.uploadDocument
@@ -68,6 +80,7 @@ router.post(
 router.delete(
   '/:docId',
   isAuth,
+  requireDocumentsFeature,
   async (req, res, next) => {
     try {
       const { docId } = req.params;

@@ -50,7 +50,6 @@
       "features": [
         "1 tree, up to 10 people",
         "Profile photos included",
-        "No profile sheets (documents)",
         "Private sharing (2 collaborators)",
         "No matching with public trees"
       ]
@@ -64,7 +63,7 @@
       "ctaMonthly": "Choose monthly",
       "features": [
         "3 trees, 50 people max per tree",
-        "100 profile sheets (documents) total",
+        "Unlimited profile photos",
         "Org charts & custom lexicon",
         "10 collaborators per tree",
         "GEDCOM & PDF export"
@@ -81,7 +80,7 @@
         "5 trees, 200 people max per tree",
         "30 collaborators per tree",
         "Large org charts & backgrounds",
-        "Unlimited photos & profile sheets (documents)",
+        "Unlimited photos",
         "GEDCOM & PDF import/export",
         "Edit history",
         "Priority support"

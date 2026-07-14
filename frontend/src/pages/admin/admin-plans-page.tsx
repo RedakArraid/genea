@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import { Check } from "lucide-react"
 import { toast } from "sonner"
 import { fetchAdminPlans } from "@/lib/admin-api"
+import { FEATURES } from "@/lib/features"
 import { getPlanById } from "@/lib/plans"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -80,7 +81,9 @@ export default function AdminPlansPage() {
                     <ul className="space-y-1 text-sm text-muted-foreground">
                       <li>{t("plans.limits.trees", { value: formatLimit(plan.maxTrees) })}</li>
                       <li>{t("plans.limits.personsPerTree", { value: formatLimit(plan.maxPersonsPerTree) })}</li>
-                      <li>{t("plans.limits.fichesTotal", { value: formatLimit(plan.maxFichesTotal) ?? t("common.dash") })}</li>
+                      {FEATURES.documentsEnabled && (
+                        <li>{t("plans.limits.fichesTotal", { value: formatLimit(plan.maxFichesTotal) ?? t("common.dash") })}</li>
+                      )}
                       <li>{t("plans.limits.photosTotal", { value: formatLimit(plan.maxPhotosTotal) ?? t("common.dash") })}</li>
                       <li>{t("plans.limits.collaborators", { value: formatLimit(plan.maxCollaborators) })}</li>
                     </ul>

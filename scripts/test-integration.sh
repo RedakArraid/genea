@@ -134,7 +134,8 @@ if [ -n "$TOKEN" ] && [ -n "$SOLO_TREE_ID" ] && [ -n "$SOLO_PERSON_ID" ]; then
     "$API/persons/$SOLO_PERSON_ID/documents")
   doc_body=$(echo "$doc_json" | sed '$d')
   doc_code=$(echo "$doc_json" | tail -1)
-  assert_status "POST upload document bloqué forfait Découverte" "403" "$doc_code" "$doc_body"
+  assert_status "POST upload document désactivé (produit photos only)" "403" "$doc_code" "$doc_body"
+  assert_json "POST document code FEATURE_DISABLED" "d.get('code')=='FEATURE_DISABLED'" "$doc_body"
 fi
 
 # Pricing / plans endpoint if exists
@@ -495,15 +496,8 @@ json.dump({
         "$API/persons/$FAM40_PERSON/documents")
       doc_body=$(echo "$doc_json" | sed '$d')
       doc_code=$(echo "$doc_json" | tail -1)
-      assert_status "POST upload document Patrimoine" "201" "$doc_code" "$doc_body"
-      DOC_ID=$(echo "$doc_body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('document',{}).get('id',''))" 2>/dev/null || echo "")
-      list_json=$(curl -s "$API/persons/$FAM40_PERSON/documents" -H "Authorization: Bearer $FAM40_TOKEN")
-      assert_json "GET documents liste Patrimoine" "len(d.get('documents',[])) >= 1" "$list_json"
-      if [ -n "$DOC_ID" ]; then
-        code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE \
-          -H "Authorization: Bearer $FAM40_TOKEN" "$API/persons/$FAM40_PERSON/documents/$DOC_ID")
-        assert_status "DELETE document Patrimoine" "200" "$code"
-      fi
+      assert_status "POST upload document désactivé Patrimoine" "403" "$doc_code" "$doc_body"
+      assert_json "POST document Patrimoine FEATURE_DISABLED" "d.get('code')=='FEATURE_DISABLED'" "$doc_body"
     fi
   fi
 fi

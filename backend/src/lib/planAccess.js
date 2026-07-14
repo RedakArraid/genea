@@ -1,6 +1,7 @@
 const prisma = require('./prisma');
 const { isPlanEntitlementActive } = require('./payments/fulfill');
 const { getPlanLimits } = require('./plans');
+const { isDocumentsEnabled } = require('./features');
 
 async function getOwnerTreeIds(ownerId) {
   const trees = await prisma.familyTree.findMany({
@@ -77,6 +78,13 @@ async function assertPersonCapacity(ownerId, treeId, { additional = 1, isDemo = 
 }
 
 async function assertFicheLimit(ownerUserId) {
+  if (!isDocumentsEnabled()) {
+    const err = new Error('Les documents seront disponibles prochainement');
+    err.statusCode = 403;
+    err.code = 'FEATURE_DISABLED';
+    throw err;
+  }
+
   const user = await prisma.user.findUnique({ where: { id: ownerUserId } });
   if (!user) {
     const err = new Error('Utilisateur introuvable');
@@ -192,6 +200,7 @@ function planAllowsPhotos(limits) {
 }
 
 function planAllowsFiches(limits) {
+  if (!isDocumentsEnabled()) return false;
   const max = limits.maxFichesTotal;
   return max == null || max === Infinity || max > 0;
 }

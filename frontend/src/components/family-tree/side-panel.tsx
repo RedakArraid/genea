@@ -26,6 +26,7 @@ import { ChildAddMenu } from "@/components/family-tree/child-add-menu"
 import { useTreeLexicon } from "@/hooks/use-tree-lexicon"
 import { formatGenerationBadge, getMaxGeneration } from "@/lib/generation-level"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { FEATURES } from "@/lib/features"
 import type { SubtreeClipboardState } from "@/lib/subtree-clipboard"
 import { modShortcutLabel } from "@/lib/keyboard"
 
@@ -517,9 +518,13 @@ function SidePanelContent({
             </>
           )}
 
-          <PersonDocuments personId={person.id} readOnly={readOnly || !canUploadDocuments} />
-          {!readOnly && !canUploadDocuments && (
-            <p className="text-xs text-muted-foreground">{t("documents.planUpgradeHint")}</p>
+          {FEATURES.documentsEnabled && (
+            <>
+              <PersonDocuments personId={person.id} readOnly={readOnly || !canUploadDocuments} />
+              {!readOnly && !canUploadDocuments && (
+                <p className="text-xs text-muted-foreground">{t("documents.planUpgradeHint")}</p>
+              )}
+            </>
           )}
         </div>
       </div>
