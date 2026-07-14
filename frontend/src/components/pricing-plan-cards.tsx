@@ -96,7 +96,7 @@ export function PricingPlanCards({
                   >
                     {t("pricing.yearly")}
                     {annualSavings != null && (
-                      <span className="ml-1 font-semibold text-primary">
+                      <span className="ml-1 font-semibold">
                         {t("pricing.yearlySave", { percent: annualSavings })}
                       </span>
                     )}
