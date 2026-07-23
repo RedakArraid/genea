@@ -166,10 +166,10 @@ export function PersonCard({
   return (
     <div
       className={cn(
-        "tree-person-card absolute z-[2] flex flex-col cursor-grab select-none rounded-lg border bg-card shadow-sm transition-opacity active:cursor-grabbing",
+        "tree-person-card absolute z-[2] flex flex-col overflow-visible cursor-grab select-none rounded-lg border bg-card shadow-sm transition-opacity active:cursor-grabbing",
         dragging && "z-[30]",
         cardStyle !== "round" && cardStyle !== "minimal" && !isOrg && "w-[120px]",
-        isOrg && cardStyle !== "round" && cardStyle !== "minimal" && "w-[168px]",
+        isOrg && cardStyle !== "round" && cardStyle !== "minimal" && "w-[200px]",
         selected && "ring-2 ring-primary",
         highlight && "ring-2 ring-primary/50",
         dim && "opacity-30",
@@ -180,7 +180,9 @@ export function PersonCard({
         top: pos.y,
         width: cardW,
         // Org cards grow with long role titles; genealogy keeps a fixed card box.
-        ...(isOrg ? { minHeight: cardH, height: "auto" } : { height: cardH }),
+        ...(isOrg
+          ? { minHeight: cardH, height: "auto", overflow: "visible" }
+          : { height: cardH }),
       }}
       onPointerDown={onPointerDown}
       onDragStart={onDragStartPrevent}
@@ -212,7 +214,7 @@ export function PersonCard({
           )}
         </div>
       )}
-      <div className={cn("p-2", isOrg ? "flex min-h-0 flex-1 flex-col gap-0.5" : "mt-auto")}>
+      <div className={cn("p-2", isOrg ? "flex flex-col gap-0.5" : "mt-auto")}>
         <p
           className={cn(
             "text-xs font-semibold",
@@ -227,6 +229,7 @@ export function PersonCard({
             <p
               className="break-words whitespace-normal text-[10px] leading-snug text-muted-foreground"
               title={role}
+              style={{ overflow: "visible", textOverflow: "clip", whiteSpace: "normal" }}
             >
               {role}
             </p>
