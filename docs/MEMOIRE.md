@@ -3,7 +3,7 @@
 > Source de vérité partagée entre toutes les IA et développeurs.
 > À lire en début de session, à mettre à jour en fin de tâche (voir [AGENTS.md](../AGENTS.md)).
 
-Dernière mise à jour : **2026-07-14** (pivot photos-only, quotas Découverte 20, landing Organisation)
+Dernière mise à jour : **2026-07-23** (poste/rôle multi-lignes sur cartes organigramme)
 
 ---
 
@@ -135,6 +135,7 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 
 ## 8. Journal
 
+- **2026-07-23 (org, poste visible)** — Cartes organigramme : le poste / rôle n’est plus tronqué (`truncate`) ; texte multi-lignes (`break-words`) et hauteur de carte auto (`minHeight`). Cartes élargies (168×196) et gaps verticaux/horizontaux un peu plus larges pour éviter les chevauchements.
 - **2026-07-14 (stratégie Phase 1)** — Pivot **photos-only** (documents derrière feature flag off) ; quota Découverte **10→20** personnes + bannière soft wall à 18 ; tarifs **FCFA first** (locale fr) ; page marketing **`/organisation`** + lien nav ; dashboard ouvre création ORGANIZATION via `?create=organization` ; MEMOIRE §0 positionnement.
 - **2026-07-05 (nuit, fix menu ajouter enfant v2)** — Panneau latéral : `modal={false}` sur le dropdown (évite le blocage pointer-events / scroll lock dans le aside scrollable), état `open` contrôlé, callbacks stabilisés (`useCallback`/`useMemo`), z-index positioner `z-[300]`, menu ouvert vers la gauche.
 - **2026-07-05 (nuit, fix menu ajouter enfant)** — Fix menu « + Ajouter » (nouvel enfant / lier existant) : extraction `ChildAddMenu`, `RelSection` et `RelChip` hors du render de `SidePanelContent` (évite remontage React qui fermait le dropdown) ; `queueMicrotask` sur les actions menu ; arête mariage canvas wrappée en `absolute` + z-index.

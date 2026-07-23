@@ -169,20 +169,26 @@ export function PersonCard({
         "tree-person-card absolute z-[2] flex flex-col cursor-grab select-none rounded-lg border bg-card shadow-sm transition-opacity active:cursor-grabbing",
         dragging && "z-[30]",
         cardStyle !== "round" && cardStyle !== "minimal" && !isOrg && "w-[120px]",
-        isOrg && cardStyle !== "round" && cardStyle !== "minimal" && "w-[140px]",
+        isOrg && cardStyle !== "round" && cardStyle !== "minimal" && "w-[168px]",
         selected && "ring-2 ring-primary",
         highlight && "ring-2 ring-primary/50",
         dim && "opacity-30",
         cardStyle === "round" && "w-[90px] items-center rounded-full p-2"
       )}
-      style={{ left: pos.x, top: pos.y, width: cardW, height: cardH }}
+      style={{
+        left: pos.x,
+        top: pos.y,
+        width: cardW,
+        // Org cards grow with long role titles; genealogy keeps a fixed card box.
+        ...(isOrg ? { minHeight: cardH, height: "auto" } : { height: cardH }),
+      }}
       onPointerDown={onPointerDown}
       onDragStart={onDragStartPrevent}
       onMouseEnter={() => onHover?.(person.id)}
       onMouseLeave={() => onHover?.(null)}
     >
       {cardStyle !== "minimal" && (
-        <div className={cn("relative h-20 overflow-hidden rounded-t-lg", tone.bg, cardStyle === "round" && "size-14 rounded-full")}>
+        <div className={cn("relative h-20 shrink-0 overflow-hidden rounded-t-lg", tone.bg, cardStyle === "round" && "size-14 rounded-full")}>
           <span className="absolute left-1 top-1 rounded bg-background/80 px-1 text-[10px] font-medium">
             {formatGenerationBadge(person.generation, { isOrg, maxGeneration, lexicon })}
           </span>
@@ -206,13 +212,22 @@ export function PersonCard({
           )}
         </div>
       )}
-      <div className="mt-auto p-2">
-        <p className="truncate text-xs font-semibold" title={fullName}>
+      <div className={cn("p-2", isOrg ? "flex min-h-0 flex-1 flex-col gap-0.5" : "mt-auto")}>
+        <p
+          className={cn(
+            "text-xs font-semibold",
+            isOrg ? "break-words whitespace-normal leading-snug" : "truncate"
+          )}
+          title={fullName}
+        >
           {fullName}
         </p>
         {isOrg ? (
           role ? (
-            <p className="truncate text-[10px] text-muted-foreground" title={role}>
+            <p
+              className="break-words whitespace-normal text-[10px] leading-snug text-muted-foreground"
+              title={role}
+            >
               {role}
             </p>
           ) : (

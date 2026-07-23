@@ -2,12 +2,12 @@
  * Moteur de layout organigramme (ESM) - miroir de shared/org-layout.js pour le navigateur.
  */
 
-export const ORG_CARD_W = 140
-export const ORG_CARD_H = 168
-export const H_GAP_ORG_SPACIOUS = 56
-export const H_GAP_ORG_COMPACT = 36
-export const V_GAP_ORG_SPACIOUS = 110
-export const V_GAP_ORG_COMPACT = 70
+export const ORG_CARD_W = 168
+export const ORG_CARD_H = 196
+export const H_GAP_ORG_SPACIOUS = 64
+export const H_GAP_ORG_COMPACT = 40
+export const V_GAP_ORG_SPACIOUS = 128
+export const V_GAP_ORG_COMPACT = 84
 export const LAYOUT_ORIGIN_X = 40
 export const LAYOUT_ORIGIN_Y = 40
 export const STALE_LAYOUT_TOLERANCE = 12

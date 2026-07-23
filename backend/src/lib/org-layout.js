@@ -2,12 +2,12 @@
  * Moteur de layout organigramme (CJS) - miroir de shared/org-layout.js pour Node/Docker.
  */
 
-const ORG_CARD_W = 140;
-const ORG_CARD_H = 168;
-const H_GAP_ORG_SPACIOUS = 56;
-const H_GAP_ORG_COMPACT = 36;
-const V_GAP_ORG_SPACIOUS = 110;
-const V_GAP_ORG_COMPACT = 70;
+const ORG_CARD_W = 168;
+const ORG_CARD_H = 196;
+const H_GAP_ORG_SPACIOUS = 64;
+const H_GAP_ORG_COMPACT = 40;
+const V_GAP_ORG_SPACIOUS = 128;
+const V_GAP_ORG_COMPACT = 84;
 const LAYOUT_ORIGIN_X = 40;
 const LAYOUT_ORIGIN_Y = 40;
 const LAYOUT_PADDING = 80;
