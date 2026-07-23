@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
 import {
   Select,
   SelectContent,
@@ -52,9 +53,17 @@ export function OrgLexiconSettings({ tree, canEdit }: OrgLexiconSettingsProps) {
       setDraft((prev) => ({ ...prev, preset: "custom" }))
       return
     }
-    const next = getPresetLexicon(preset)
+    const next = { ...getPresetLexicon(preset), showLevelOnCard: draft.showLevelOnCard }
     setDraft(next)
     const ok = await persist({ orgLexiconPreset: preset })
+    if (ok) toast.success(t("org.lexicon.saved"))
+  }
+
+  const handleShowLevelOnCard = async (checked: boolean) => {
+    const next = { ...draft, showLevelOnCard: checked }
+    setDraft(next)
+    if (!canEdit) return
+    const ok = await persist({ orgLexicon: next })
     if (ok) toast.success(t("org.lexicon.saved"))
   }
 
@@ -116,6 +125,21 @@ export function OrgLexiconSettings({ tree, canEdit }: OrgLexiconSettingsProps) {
             onChange={(e) => setField("levelAbbrev", e.target.value.toUpperCase())}
           />
         </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
+        <div className="min-w-0">
+          <Label htmlFor="lex-show-level" className="text-sm font-medium">
+            {t("org.lexicon.showLevelOnCard")}
+          </Label>
+          <p className="text-xs text-muted-foreground">{t("org.lexicon.showLevelOnCardHint")}</p>
+        </div>
+        <Switch
+          id="lex-show-level"
+          checked={draft.showLevelOnCard}
+          disabled={!canEdit || busy}
+          onCheckedChange={(v) => void handleShowLevelOnCard(v)}
+        />
       </div>
 
       <div className="flex flex-col gap-2">

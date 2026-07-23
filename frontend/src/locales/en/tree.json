@@ -278,6 +278,8 @@
       "presetHint": "Template « {{preset}} » applied. Edit a field to switch to custom.",
       "levelTerm": "Level term",
       "levelAbbrev": "Abbreviation (badge)",
+      "showLevelOnCard": "Show level on card",
+      "showLevelOnCardHint": "N1, N2… badge at the top-left of each card.",
       "levelOrder": "Numbering",
       "levelOrderTopHigh": "Top = highest number (N5 at top)",
       "levelOrderTopLow": "Base = number 1 (N1 at bottom)",

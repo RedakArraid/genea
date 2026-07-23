@@ -326,7 +326,11 @@ exports.updateOrgLexicon = async (req, res, next) => {
     const { orgLexicon, orgLexiconPreset } = req.body;
     let nextLexicon;
     if (orgLexiconPreset && orgLexiconPreset !== 'custom') {
-      nextLexicon = getOrgLexiconPreset(orgLexiconPreset);
+      const current = normalizeOrgLexicon(tree.orgLexicon);
+      nextLexicon = {
+        ...getOrgLexiconPreset(orgLexiconPreset),
+        showLevelOnCard: current.showLevelOnCard,
+      };
     } else if (orgLexicon && typeof orgLexicon === 'object') {
       nextLexicon = normalizeOrgLexicon({ ...orgLexicon, preset: orgLexicon.preset || 'custom' });
     } else {

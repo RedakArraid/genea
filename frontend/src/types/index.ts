@@ -11,6 +11,8 @@ export interface OrgLexiconConfig {
   preset: OrgLexiconPreset
   levelTerm: string
   levelAbbrev: string
+  /** Afficher le badge de niveau (N1, N2…) sur les cartes du canvas */
+  showLevelOnCard: boolean
   levelOrder: LevelOrder
   superiorLabel: string
   subordinateLabel: string

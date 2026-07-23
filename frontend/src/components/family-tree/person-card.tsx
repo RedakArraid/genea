@@ -198,9 +198,11 @@ export function PersonCard({
             cardStyle !== "round" && (isOrg ? "h-[128px]" : "h-20")
           )}
         >
-          <span className="absolute left-1 top-1 rounded bg-background/80 px-1 text-[10px] font-medium">
-            {formatGenerationBadge(person.generation, { isOrg, maxGeneration, lexicon })}
-          </span>
+          {(!isOrg || lexicon?.showLevelOnCard !== false) && (
+            <span className="absolute left-1 top-1 rounded bg-background/80 px-1 text-[10px] font-medium">
+              {formatGenerationBadge(person.generation, { isOrg, maxGeneration, lexicon })}
+            </span>
+          )}
           {showPhoto ? (
             <AuthenticatedImage
               src={person.photoUrl}
