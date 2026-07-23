@@ -240,7 +240,13 @@ function SidePanelContent({
     }
     setSaving(true)
     try {
-      await onSave(person.id, form)
+      await onSave(person.id, {
+        ...form,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim() || "-",
+        gender: form.gender || "",
+        occupation: form.occupation || "",
+      })
       toast.success(t("person.updated"))
       setHistoryRefresh((n) => n + 1)
     } catch {

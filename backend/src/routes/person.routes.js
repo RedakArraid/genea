@@ -65,8 +65,9 @@ router.put(
   isAuth,
   canEditPersonInfo,
   [
-    body('firstName').optional().trim().notEmpty().withMessage('Le prénom ne peut pas être vide'),
-    body('lastName').optional().trim().notEmpty().withMessage('Le nom de famille ne peut pas être vide'),
+    body('firstName').optional({ checkFalsy: true }).trim().notEmpty().withMessage('Le prénom ne peut pas être vide'),
+    // Nom optionnel (souvent vide / "-" sur les cartes organisation)
+    body('lastName').optional({ checkFalsy: true }).trim(),
     birthDateValidator,
     body('birthPlace').optional(),
     body('deathDate').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Format de date de décès invalide'),

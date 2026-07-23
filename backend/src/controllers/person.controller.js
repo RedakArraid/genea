@@ -140,7 +140,7 @@ exports.updatePerson = async (req, res, next) => {
     const updateData = {};
     
     if (firstName !== undefined) updateData.firstName = firstName;
-    if (lastName !== undefined) updateData.lastName = lastName;
+    if (lastName !== undefined) updateData.lastName = lastName?.trim() ? lastName.trim() : '-';
     if (birthDate !== undefined) updateData.birthDate = birthDate ? new Date(birthDate) : null;
     if (birthPlace !== undefined) updateData.birthPlace = birthPlace;
     if (deathDate !== undefined) updateData.deathDate = deathDate ? new Date(deathDate) : null;
