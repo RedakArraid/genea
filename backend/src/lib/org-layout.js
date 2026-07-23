@@ -111,7 +111,7 @@ function computeVerticalOrg(people, density = 'spacious') {
     return n * cardW + Math.max(0, n - 1) * hGap;
   });
   const maxRowW = Math.max(...rowWidths, cardW);
-  const canvasW = maxRowW + LAYOUT_PADDING;
+  let canvasW = maxRowW + LAYOUT_PADDING;
 
   let y = LAYOUT_ORIGIN_Y;
   for (const g of gens) {
@@ -151,7 +151,7 @@ function computeVerticalOrg(people, density = 'spacious') {
   normalizeOrgLayoutOrigin(positions);
 
   const maxX = Math.max(...Object.values(positions).map((pos) => pos.x)) + cardW;
-  const canvasW = Math.max(maxRowW, maxX - LAYOUT_ORIGIN_X) + LAYOUT_PADDING;
+  canvasW = Math.max(maxRowW, maxX - LAYOUT_ORIGIN_X) + LAYOUT_PADDING;
 
   return { positions, canvasW, canvasH: y + LAYOUT_PADDING / 2 };
 }
