@@ -436,11 +436,12 @@ function SidePanelContent({
               {lex.isOrg && (
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="side-occupation" className="text-xs">{lex.role}</Label>
-                  <Input
+                  <Textarea
                     id="side-occupation"
                     value={form.occupation}
                     onChange={(e) => setForm({ ...form, occupation: e.target.value })}
                     placeholder="Directeur commercial"
+                    className="min-h-10"
                   />
                 </div>
               )}
@@ -450,7 +451,7 @@ function SidePanelContent({
                   id="side-biography"
                   value={form.biography}
                   onChange={(e) => setForm({ ...form, biography: e.target.value })}
-                  rows={2}
+                  className="min-h-16"
                 />
               </div>
             </div>

@@ -165,12 +165,21 @@ export function AddPersonDialog({
           {lex.isOrg && (
             <div className="flex flex-col gap-1.5">
               <Label>{lex.role}</Label>
-              <Input value={form.occupation} onChange={(e) => setForm({ ...form, occupation: e.target.value })} placeholder="Directeur commercial" />
+              <Textarea
+                value={form.occupation}
+                onChange={(e) => setForm({ ...form, occupation: e.target.value })}
+                placeholder="Directeur commercial"
+                className="min-h-10"
+              />
             </div>
           )}
           <div className="flex flex-col gap-1.5">
             <Label>{lex.biography}</Label>
-            <Textarea value={form.biography} onChange={(e) => setForm({ ...form, biography: e.target.value })} rows={2} />
+            <Textarea
+              value={form.biography}
+              onChange={(e) => setForm({ ...form, biography: e.target.value })}
+              className="min-h-16"
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>{t("person.photo")}</Label>
