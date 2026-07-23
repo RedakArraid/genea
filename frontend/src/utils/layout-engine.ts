@@ -636,33 +636,37 @@ function spousesShareCol(a, b, personA, personB, cardW) {
   return Math.abs(a.x - b.x) < cardW * ROW_ALIGN_RATIO;
 }
 
-function coupleLineCenter(pa, pb, cardW, cardH, layout) {
+function coupleLineCenter(pa, pb, cardW, cardH, layout, hA = cardH, hB = cardH) {
   if (layout === 'horizontal') {
     const [top, bottom] = orderByY(pa, pb);
+    const topH = pa === top ? hA : hB;
+    const bottomH = pa === bottom ? hA : hB;
     if (spousesShareCol(pa, pb, null, null, cardW)) {
-      const from = cardPoint(top, 'bottom', cardW, cardH);
-      const to = cardPoint(bottom, 'top', cardW, cardH);
+      const from = cardPoint(top, 'bottom', cardW, topH);
+      const to = cardPoint(bottom, 'top', cardW, bottomH);
       return { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
     }
     const rightX = Math.max(top.x + cardW, bottom.x + cardW);
-    return { x: rightX, y: (top.y + cardH + bottom.y) / 2 };
+    return { x: rightX, y: (top.y + topH + bottom.y) / 2 };
   }
   const [left, right] = orderByX(pa, pb);
-  if (spousesShareRow(pa, pb, null, null, cardH)) {
-    const from = cardPoint(left, 'right', cardW, cardH);
-    const to = cardPoint(right, 'left', cardW, cardH);
+  const leftH = pa === left ? hA : hB;
+  const rightH = pb === right ? hB : hA;
+  if (spousesShareRow(pa, pb, null, null, Math.max(leftH, rightH))) {
+    const from = cardPoint(left, 'right', cardW, leftH);
+    const to = cardPoint(right, 'left', cardW, rightH);
     return { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
   }
-  const bottomY = Math.max(left.y + cardH, right.y + cardH);
+  const bottomY = Math.max(left.y + leftH, right.y + rightH);
   return { x: (left.x + cardW + right.x) / 2, y: bottomY };
 }
 
-function coupleUnionCenter(pa, pb, cardW, cardH, layout) {
-  return coupleLineCenter(pa, pb, cardW, cardH, layout);
+function coupleUnionCenter(pa, pb, cardW, cardH, layout, hA = cardH, hB = cardH) {
+  return coupleLineCenter(pa, pb, cardW, cardH, layout, hA, hB);
 }
 
-function coupleRightAnchor(pa, pb, cardW, cardH, layout = 'horizontal') {
-  return coupleLineCenter(pa, pb, cardW, cardH, layout);
+function coupleRightAnchor(pa, pb, cardW, cardH, layout = 'horizontal', hA = cardH, hB = cardH) {
+  return coupleLineCenter(pa, pb, cardW, cardH, layout, hA, hB);
 }
 
 function orderByX(a, b) {
@@ -673,9 +677,11 @@ function orderByY(a, b) {
   return a.y < b.y ? [a, b] : [b, a];
 }
 
-export function buildConnections(people, positions, connStyle = 'elbow', layout = 'vertical', cardW = CARD_W, cardH = CARD_H) {
+export function buildConnections(people, positions, connStyle = 'elbow', layout = 'vertical', cardW = CARD_W, cardH = CARD_H, cardHeights = null) {
   const out = [];
   const byId = Object.fromEntries(people.map(p => [p.id, p]));
+  const hOf = (id) =>
+    cardHeights && Number.isFinite(cardHeights[id]) ? cardHeights[id] : cardH;
 
   // Connexions conjoint·e (déduplication)
   const done = new Set();
@@ -692,22 +698,28 @@ export function buildConnections(people, positions, connStyle = 'elbow', layout 
 
       const personA = byId[p.id];
       const personB = byId[sId];
-      const sameRow = layout !== 'horizontal' && spousesShareRow(a, b, personA, personB, cardH);
+      const hA = hOf(p.id);
+      const hB = hOf(sId);
+      const sameRow = layout !== 'horizontal' && spousesShareRow(a, b, personA, personB, Math.max(hA, hB));
       const sameCol = layout === 'horizontal' && spousesShareCol(a, b, personA, personB, cardW);
       let from;
       let to;
 
       if (sameRow) {
         const [left, right] = orderByX(a, b);
-        from = cardPoint(left, 'right', cardW, cardH);
-        to = cardPoint(right, 'left', cardW, cardH);
+        const leftH = a === left ? hA : hB;
+        const rightH = b === right ? hB : hA;
+        from = cardPoint(left, 'right', cardW, leftH);
+        to = cardPoint(right, 'left', cardW, rightH);
       } else if (sameCol) {
         const [top, bottom] = orderByY(a, b);
-        from = cardPoint(top, 'bottom', cardW, cardH);
-        to = cardPoint(bottom, 'top', cardW, cardH);
+        const topH = a === top ? hA : hB;
+        const bottomH = a === bottom ? hA : hB;
+        from = cardPoint(top, 'bottom', cardW, topH);
+        to = cardPoint(bottom, 'top', cardW, bottomH);
       } else {
-        from = cardPoint(a, 'bottom', cardW, cardH);
-        to = cardPoint(b, 'top', cardW, cardH);
+        from = cardPoint(a, 'bottom', cardW, hA);
+        to = cardPoint(b, 'top', cardW, hB);
       }
 
       const path = `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
@@ -744,16 +756,19 @@ export function buildConnections(people, positions, connStyle = 'elbow', layout 
     if (parentIds.length >= 2 && positions[parentIds[0]] && positions[parentIds[1]]) {
       const pa = positions[parentIds[0]];
       const pb = positions[parentIds[1]];
+      const hA = hOf(parentIds[0]);
+      const hB = hOf(parentIds[1]);
       anchor = layout === 'horizontal'
-        ? coupleRightAnchor(pa, pb, cardW, cardH, layout)
-        : coupleUnionCenter(pa, pb, cardW, cardH, layout);
+        ? coupleRightAnchor(pa, pb, cardW, cardH, layout, hA, hB)
+        : coupleUnionCenter(pa, pb, cardW, cardH, layout, hA, hB);
     } else if (positions[parentIds[0]]) {
       const parentPos = positions[parentIds[0]];
+      const parentH = hOf(parentIds[0]);
       anchor = layout === 'horizontal'
-        ? cardPoint(parentPos, 'right', cardW, cardH)
+        ? cardPoint(parentPos, 'right', cardW, parentH)
         : layout === 'radial'
-          ? cardPointToward(parentPos, positions[sortedChildren[0]], cardW, cardH)
-          : cardPoint(parentPos, 'bottom', cardW, cardH);
+          ? cardPointToward(parentPos, positions[sortedChildren[0]], cardW, parentH)
+          : cardPoint(parentPos, 'bottom', cardW, parentH);
     } else {
       return;
     }
@@ -761,16 +776,17 @@ export function buildConnections(people, positions, connStyle = 'elbow', layout 
     const childAnchors = sortedChildren.map((cid) => {
       const cpos = positions[cid];
       if (!cpos) return null;
-      if (layout === 'radial') return cardPointToward(cpos, anchor, cardW, cardH);
-      if (layout === 'horizontal') return cardPoint(cpos, 'left', cardW, cardH);
-      return cardPoint(cpos, 'top', cardW, cardH);
+      const childH = hOf(cid);
+      if (layout === 'radial') return cardPointToward(cpos, anchor, cardW, childH);
+      if (layout === 'horizontal') return cardPoint(cpos, 'left', cardW, childH);
+      return cardPoint(cpos, 'top', cardW, childH);
     }).filter(Boolean);
 
     if (childAnchors.length === 0) return;
 
     const parentBottom = layout === 'horizontal'
       ? Math.max(...parentIds.map((id) => (positions[id] ? positions[id].x + cardW : anchor.x)), anchor.x)
-      : Math.max(...parentIds.map((id) => (positions[id] ? positions[id].y + cardH : anchor.y)), anchor.y);
+      : Math.max(...parentIds.map((id) => (positions[id] ? positions[id].y + hOf(id) : anchor.y)), anchor.y);
 
     const childEdge = layout === 'horizontal'
       ? Math.min(...childAnchors.map((c) => c.x))

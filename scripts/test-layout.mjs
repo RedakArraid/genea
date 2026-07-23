@@ -135,6 +135,47 @@ const promoLex = getPresetLexicon('promo')
 ok('promo, badge V', formatGenerationBadge(1, { isOrg: true, maxGeneration: 3, lexicon: promoLex }) === 'V3')
 ok('promo, filtre niveau', formatLevelFilterLabel(2, 3, promoLex) === 'Vague 2 (V2)')
 
+const longRole =
+  'Sites vitrines & e-commerce • Identité de marque & UI/UX • Automatisations & outils internes • Stratégie de contenu & SEO local • Maintenance & hébergement Salles de jeux PS5 / Xbox Tournois & soirées gaming Location courte durée (24h+) Événementiel & activations Coin streaming & merchandising Gestion temps réel des sessions Caisse & paiement mobile Fidélité & CRM joueurs Reporting & analytics'
+const tallOrgPeople = [
+  { id: 'boss', generation: 1, parentIds: [], spouseIds: [], given: 'Souba', sur: 'Digital', occupation: longRole },
+  { id: 'c1', generation: 2, parentIds: ['boss'], spouseIds: [], given: 'A', sur: 'One', occupation: 'Dev' },
+  { id: 'c2', generation: 2, parentIds: ['boss'], spouseIds: [], given: 'B', sur: 'Two', occupation: 'Ops' },
+  { id: 'c3', generation: 2, parentIds: ['boss'], spouseIds: [], given: 'C', sur: 'Three', occupation: 'Sales' },
+]
+const tallLayout = orgLayout.computeVerticalOrg(tallOrgPeople, 'spacious')
+const shortLayout = orgLayout.computeVerticalOrg(
+  tallOrgPeople.map((p) => (p.id === 'boss' ? { ...p, occupation: 'CEO' } : p)),
+  'spacious'
+)
+ok(
+  'org, poste long → carte plus haute que le défaut',
+  tallLayout.cardHeights.boss > orgCard.h
+)
+ok(
+  'org, poste long → enfants plus bas (pas de chevauchement)',
+  tallLayout.positions.c1.y > shortLayout.positions.c1.y &&
+    tallLayout.positions.c1.y >= tallLayout.positions.boss.y + tallLayout.cardHeights.boss
+)
+const tallConns = buildConnections(
+  tallOrgPeople,
+  tallLayout.positions,
+  'elbow',
+  'vertical',
+  orgCard.w,
+  orgCard.h,
+  tallLayout.cardHeights
+)
+const branchY = tallConns
+  .filter((c) => c.kind === 'child')
+  .flatMap((c) => (c.path.match(/[\d.]+/g) || []).map(Number))
+const parentBottom = tallLayout.positions.boss.y + tallLayout.cardHeights.boss
+ok(
+  'org, branches sous le bas de la carte parent',
+  tallConns.some((c) => c.kind === 'child') &&
+    Math.min(...branchY.filter((_, i) => i % 2 === 1)) >= parentBottom - 1
+)
+
 console.log('\n--- Challenge Family (source + 7 par promo) ---')
 const promoRows = []
 let pid = 0

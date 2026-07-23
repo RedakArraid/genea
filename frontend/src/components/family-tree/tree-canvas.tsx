@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useMemo, useCallback } from "react"
 import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2, MoreVertical, UserPlus, Link2, FileDown, Upload } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { PersonCard } from "./person-card"
-import { buildConnections, computeLineage, getCardDimensions } from "@/utils/tree-layout"
+import { buildConnections, computeLineage, getCardDimensions, buildOrgCardHeights } from "@/utils/tree-layout"
 import type { NormalizedPerson, TreeTweaks, FamilyTree } from "@/types"
 import type { TreeBackgroundConfig } from "@/lib/tree-background"
 import { isTreeBackgroundActive, buildViewportBackgroundStyle } from "@/lib/tree-background"
@@ -80,7 +80,8 @@ function computeConnectionBounds(
   positions: Record<string, { x: number; y: number }>,
   cardW: number,
   cardH: number,
-  connections: ReturnType<typeof buildConnections>
+  connections: ReturnType<typeof buildConnections>,
+  cardHeights?: Record<string, number> | null
 ) {
   let minX = Infinity
   let minY = Infinity
@@ -97,8 +98,9 @@ function computeConnectionBounds(
   for (const p of people) {
     const pos = positions[p.id]
     if (!pos) continue
+    const h = cardHeights?.[p.id] ?? cardH
     include(pos.x, pos.y)
-    include(pos.x + cardW, pos.y + cardH)
+    include(pos.x + cardW, pos.y + h)
   }
 
   for (const c of connections) {
@@ -126,7 +128,8 @@ function computeContentBounds(
   positions: Record<string, { x: number; y: number }>,
   personIds: Set<string>,
   cardW: number,
-  cardH: number
+  cardH: number,
+  cardHeights?: Record<string, number> | null
 ) {
   const entries = Object.entries(positions).filter(([id]) => personIds.has(id))
   if (entries.length === 0) return null
@@ -135,11 +138,12 @@ function computeContentBounds(
   let minY = Infinity
   let maxX = -Infinity
   let maxY = -Infinity
-  for (const [, pos] of entries) {
+  for (const [id, pos] of entries) {
+    const h = cardHeights?.[id] ?? cardH
     minX = Math.min(minX, pos.x)
     minY = Math.min(minY, pos.y)
     maxX = Math.max(maxX, pos.x + cardW)
-    maxY = Math.max(maxY, pos.y + cardH)
+    maxY = Math.max(maxY, pos.y + h)
   }
   return {
     minX,
@@ -272,14 +276,19 @@ export function TreeCanvas({
     return computeLineage(hoverId, people)
   }, [hoverId, people])
 
+  const cardHeights = useMemo(
+    () => (isOrg ? buildOrgCardHeights(people) : null),
+    [isOrg, people]
+  )
+
   const connections = useMemo(
-    () => buildConnections(people, positions, connStyle, layout, cardW, cardH),
-    [people, positions, connStyle, layout, cardW, cardH]
+    () => buildConnections(people, positions, connStyle, layout, cardW, cardH, cardHeights),
+    [people, positions, connStyle, layout, cardW, cardH, cardHeights]
   )
 
   const connectionBounds = useMemo(
-    () => computeConnectionBounds(people, positions, cardW, cardH, connections),
-    [people, positions, cardW, cardH, connections]
+    () => computeConnectionBounds(people, positions, cardW, cardH, connections, cardHeights),
+    [people, positions, cardW, cardH, connections, cardHeights]
   )
 
   const onCardDrag = useCallback(
@@ -519,7 +528,7 @@ export function TreeCanvas({
     if (!r || people.length === 0) return
 
     const personIds = new Set(people.map((p) => p.id))
-    let bounds = computeContentBounds(positionsRef.current, personIds, cardW, cardH)
+    let bounds = computeContentBounds(positionsRef.current, personIds, cardW, cardH, cardHeights)
     if (!bounds || bounds.width === 0 || bounds.height === 0) return
 
     const isMobile = r.width < MOBILE_BREAKPOINT
@@ -529,7 +538,8 @@ export function TreeCanvas({
         positionsRef.current,
         computeFocusPersonIds(people),
         cardW,
-        cardH
+        cardH,
+        cardHeights
       )
       if (focusBounds) bounds = focusBounds
     }
@@ -552,7 +562,7 @@ export function TreeCanvas({
 
     setScale(newScale)
     setPan({ x: panX, y: panY })
-  }, [people, cardW, cardH, sidePanelOpen, isOrg])
+  }, [people, cardW, cardH, cardHeights, sidePanelOpen, isOrg])
 
   useEffect(() => {
     if (fitRequestId === 0) return

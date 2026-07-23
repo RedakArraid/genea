@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils"
 import { formatGenerationBadge } from "@/lib/generation-level"
 import { AuthenticatedImage } from "@/components/ui/authenticated-image"
 import { getCardDimensions } from "@/utils/tree-layout"
+import { estimateOrgCardHeight } from "@/lib/org-layout"
 import type { NormalizedPerson, PersonTone, OrgLexiconConfig } from "@/types"
 import { useState, useEffect } from "react"
 
@@ -70,6 +71,7 @@ export function PersonCard({
 }: PersonCardProps) {
   const tone = TONE_STYLES[person.tone] || TONE_STYLES.stone
   const { w: cardW, h: cardH } = getCardDimensions(cardStyle, { organization: isOrg })
+  const orgCardH = isOrg ? estimateOrgCardHeight(person) : cardH
   const initials = getInitials(person.given, person.sur)
   const lifespan = getLifespan(person.born, person.died)
   const role = person.occupation?.trim() || ""
@@ -179,9 +181,9 @@ export function PersonCard({
         left: pos.x,
         top: pos.y,
         width: cardW,
-        // Org cards grow with long role titles; genealogy keeps a fixed card box.
+        // Org cards: height matches layout estimate so branches attach below the card.
         ...(isOrg
-          ? { minHeight: cardH, height: "auto", overflow: "visible" }
+          ? { minHeight: orgCardH, height: orgCardH, overflow: "visible" }
           : { height: cardH }),
       }}
       onPointerDown={onPointerDown}

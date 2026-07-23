@@ -12,8 +12,9 @@ import {
   CARD_H,
   getCardDimensions as rawGetCardDimensions,
 } from "./layout-engine"
+import { buildOrgCardHeights, estimateOrgCardHeight } from "../lib/org-layout"
 
-export { CARD_W, CARD_H }
+export { CARD_W, CARD_H, buildOrgCardHeights, estimateOrgCardHeight }
 
 export function getCardDimensions(cardStyle = "square", options?: { organization?: boolean }) {
   return rawGetCardDimensions(cardStyle, options) as { w: number; h: number }
@@ -45,9 +46,10 @@ export function buildConnections(
   connStyle = "elbow",
   layout = "vertical",
   cardW = CARD_W,
-  cardH = CARD_H
+  cardH = CARD_H,
+  cardHeights?: Record<string, number> | null
 ) {
-  return rawBuildConnections(people, positions, connStyle, layout, cardW, cardH)
+  return rawBuildConnections(people, positions, connStyle, layout, cardW, cardH, cardHeights)
 }
 
 export function computeLineage(rootId: string, people: NormalizedPerson[]) {
