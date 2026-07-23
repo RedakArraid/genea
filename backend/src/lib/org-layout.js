@@ -3,11 +3,11 @@
  */
 
 const ORG_CARD_W = 200;
-const ORG_CARD_H = 210;
+const ORG_CARD_H = 248;
 const H_GAP_ORG_SPACIOUS = 72;
 const H_GAP_ORG_COMPACT = 48;
-const V_GAP_ORG_SPACIOUS = 140;
-const V_GAP_ORG_COMPACT = 96;
+const V_GAP_ORG_SPACIOUS = 148;
+const V_GAP_ORG_COMPACT = 104;
 const LAYOUT_ORIGIN_X = 40;
 const LAYOUT_ORIGIN_Y = 40;
 const LAYOUT_PADDING = 80;

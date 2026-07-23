@@ -3,11 +3,11 @@
  */
 
 export const ORG_CARD_W = 200
-export const ORG_CARD_H = 210
+export const ORG_CARD_H = 248
 export const H_GAP_ORG_SPACIOUS = 72
 export const H_GAP_ORG_COMPACT = 48
-export const V_GAP_ORG_SPACIOUS = 140
-export const V_GAP_ORG_COMPACT = 96
+export const V_GAP_ORG_SPACIOUS = 148
+export const V_GAP_ORG_COMPACT = 104
 export const LAYOUT_ORIGIN_X = 40
 export const LAYOUT_ORIGIN_Y = 40
 export const STALE_LAYOUT_TOLERANCE = 12
