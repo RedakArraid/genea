@@ -677,7 +677,7 @@ function orderByY(a, b) {
   return a.y < b.y ? [a, b] : [b, a];
 }
 
-export function buildConnections(people, positions, connStyle = 'elbow', layout = 'vertical', cardW = CARD_W, cardH = CARD_H, cardHeights = null) {
+export function buildConnections(people, positions, connStyle = 'elbow', layout = 'vertical', cardW = CARD_W, cardH = CARD_H, cardHeights) {
   const out = [];
   const byId = Object.fromEntries(people.map(p => [p.id, p]));
   const hOf = (id) =>

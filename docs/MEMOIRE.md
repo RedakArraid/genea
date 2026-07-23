@@ -3,7 +3,7 @@
 > Source de vérité partagée entre toutes les IA et développeurs.
 > À lire en début de session, à mettre à jour en fin de tâche (voir [AGENTS.md](../AGENTS.md)).
 
-Dernière mise à jour : **2026-07-23** (org branches vs cartes hautes)
+Dernière mise à jour : **2026-07-23** (fix CI build TS buildConnections)
 
 ---
 
@@ -135,6 +135,7 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 
 ## 8. Journal
 
+- **2026-07-23 (fix CI)** — Build frontend CI cassé : `@ts-nocheck` + défaut `cardHeights = null` faisait inférer le 7ᵉ arg de `buildConnections` comme `null` uniquement ; retrait du défaut.
 - **2026-07-23 (org, branches vs poste long)** — Réorganiser / layout org : hauteur de carte estimée selon le poste (`estimateOrgCardHeight`) ; espacement vertical des rangées et ancrage des branches (`buildConnections` + `cardHeights`) pour éviter le chevauchement des lignes sur le texte.
 - **2026-07-23 (fix PUT person 400)** — Enregistrement fiche : `lastName` vide (souvent `-` affiché vide en org) renvoyait 400 ; validation `checkFalsy` + fallback `-` côté API/panneau.
 - **2026-07-23 (org, badge niveau)** — Toggle « Afficher le niveau sur la carte » dans Terminologie (`showLevelOnCard`, défaut true) : masque/affiche le badge N1/N2… sur les fiches canvas ; conservé lors du changement de modèle.
