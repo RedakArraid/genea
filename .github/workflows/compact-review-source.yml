@@ -1,0 +1,22 @@
+name: Compact family source snapshot
+on:
+  push:
+    branches: ['fix/tree-displays-2026-10-22']
+    paths: ['.github/workflows/compact-review-source.yml']
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Archive tracked sources only
+        run: git archive --format=tar HEAD | gzip > /tmp/compact-source.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: compact-review-source
+          path: /tmp/compact-source.tar.gz
+          retention-days: 1
