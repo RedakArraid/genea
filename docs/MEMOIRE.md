@@ -135,6 +135,8 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 
 ## 8. Journal
 
+- **2026-10-22 (retrait carte Union, non déployé)** — Suppression des cartes intermédiaires « Union renseignée » : raccords de lignes continus, espace libéré, cadres de fratrie et parent commun unique conservés. Tests de continuité SVG et géométrique ajoutés. Voir section 13.
+
 - **2026-10-22 (arbre complet par unions, non déployé)** — Parent commun unique, jonctions parentales nommées, fratries séparées dans le graphe complet vertical/horizontal, navigation mobile sans filtrage, positions libres préservées. Suites géométriques et navigateur ajoutées ; voir section 12 et `UNION_OVERVIEW.md`.
 
 - **2026-07-23 (org, poste extensible)** — Champ Poste / Fonction du panneau (et dialogue création) : `Textarea` auto-extensible (`field-sizing-content`), comme Notes, au lieu d’un Input une ligne.
@@ -202,9 +204,17 @@ Ce complément décrit les changements de la branche de correction, pas l'état 
 
 ## 12. Arbre complet par unions - 22 octobre 2026, PR #5 non deployee
 
-- L'arbre genealogique a plusieurs unions propose une projection complete : parent commun affiche une seule fois, partenaires en couloirs distincts, jonctions portant les noms des parents et enfants communs dessous. La vue Familles reste optionnelle, elle ne remplace plus le graphe par defaut pour ce cas.
+- L'arbre genealogique a plusieurs unions propose une projection complete : parent commun affiche une seule fois, partenaires en couloirs distincts, raccords de lignes sans carte intermediaire et enfants communs dessous (voir section 13). La vue Familles reste optionnelle, elle ne remplace plus le graphe par defaut pour ce cas.
 - Vertical/horizontal, quatre styles de cartes, coparents sans mariage, parent inconnu, unions sans enfant, descendants avec leurs propres unions et personnes isolees. Les connexions evitent cartes et jonctions. Aucun ordre chronologique de partenaires n'est deduit des identifiants ou de la naissance des enfants : le modele actuel n'enregistre pas les dates d'union.
 - Projection temporaire sans ecriture de positions : Placement libre restitue les coordonnees manuelles. Le radial reste un placement libre explicite. Les cycles incompatibles avec cette projection conservent le graphe existant.
 - Sur mobile : echelle initiale lisible et navigation entre unions par deplacement du meme graphe, sans filtrer ni supprimer les autres membres. Vue d'ensemble reste une action explicite qui peut reduire les textes. Recherche et generation surlignent les correspondances en conservant le contexte parental.
 - Suites ajoutees : scripts/test-union-overview.cjs et e2e/tree-unions.spec.ts. Anciennes assertions conservees : la suite de lecture choisit explicitement Familles ; le test de cadrage appelle explicitement Vue d'ensemble. Voir docs/UNION_OVERVIEW.md et les resultats du dernier commit avant promotion.
 - Aucun changement backend, migration ou deploiement par cette iteration. Validation navigateur distante et revue des captures requises avant de conclure sur la lisibilite.
+
+## 13. Retrait de la carte intermediaire - 22 octobre 2026, PR #5 non deployee
+
+- A la demande utilisateur, les cartes Union renseignee / Parents communs / Parent renseigne sont retirees de la projection Par unions. Les cartes des personnes restent les points de selection.
+- Les lignes des parents et des enfants se rejoignent exactement au meme point geometrique. Ce point n'est ni une personne ni une carte visible. Plus de place reservee a l'ancien encadre.
+- Cadres de fratrie, parent commun unique, indication du parent inconnu, navigation mobile et positions libres conserves. Les noms des parents et enfants restent accessibles dans la description des groupes.
+- Suite geometrique portee a 71 tests : continuite des raccords, absence de carte intermediaire et reduction de l'espace, en plus des controles de filiation et de collision. Les 17 parcours navigateur conservent leurs controles et verifient les vrais points de raccord SVG ainsi que l'absence de la carte supprimee.
+- Aucun changement de donnees, backend, permissions, migration ou deploiement. Consulter les resultats du dernier commit de la PR pour distinguer les tests presents des executions terminees.

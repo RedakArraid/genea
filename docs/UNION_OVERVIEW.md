@@ -5,9 +5,13 @@
 ## Lecture
 
 Le parent commun reste une seule carte. Chaque partenaire occupe un couloir
-avec une jonction nommant les parents exacts et leurs enfants communs dessous.
-Une couleur et un fond leger renforcent les noms ; la couleur seule n'est
-jamais la cle de lecture. Une coparentalite n'est pas transformee en mariage.
+avec ses enfants communs dessous. Les lignes des parents et des enfants se
+rejoignent en un point geometrique : aucune carte intermediaire "Union
+renseignee" n'est affichee et aucun espace ne lui est reserve.
+Une couleur et un fond leger renforcent le regroupement ; la couleur seule
+n'est jamais la cle de lecture. Les cartes des personnes ouvrent leurs fiches.
+La description accessible de chaque groupe conserve les noms des parents et
+des enfants. Une coparentalite n'est pas transformee en mariage.
 Les personnes isolees sont hors des couloirs et restent accessibles.
 
 Le modele Relationship ne porte pas de dates de debut/fin d'union. L'ordre est
@@ -17,7 +21,7 @@ actuel n'est invente. Les dates de creation en base ne sont pas des dates d'unio
 ## Positions et navigation
 
 computeUnionOverview produit une projection temporaire verticale/horizontale,
-avec jonctions explicites. Aucun appel setPositions ni mutation API n'est fait.
+avec raccords de lignes continus. Aucun appel setPositions ni mutation API n'est fait.
 Placement libre restitue les positions sauvegardees ; le radial reste un choix
 libre explicite. Les organigrammes ne changent pas. Un cycle empechant la
 projection renvoie vers le moteur existant, sans perdre de personne.
@@ -32,13 +36,15 @@ n'efface ni ne remplace les coordonnees sauvegardees et respecte les permissions
 
 ## Verification
 
-- node --test scripts/test-union-overview.cjs : 69 cas (2/3/6/12 unions,
+- node --test scripts/test-union-overview.cjs : 71 cas (2/3/6/12 unions,
   parent commun pere ou mere, deux orientations et quatre styles, multi-generation,
   coparents sans mariage, unions sans enfant, cycle, ordre des donnees).
+  Les points terminaux des parents et initiaux des enfants doivent coincider.
+  Les anciens emplacements de cartes ne doivent pas laisser un espace vide.
 - npx playwright test --config=playwright.unions.config.ts : 17 scenarios
   avec API interceptee, 375/768/1600 px, clair/sombre, navigation sans filtrage,
   parents exacts, sauvegarde manuelle preservee, lecture seule, absence de ligne
-  a l'interieur d'une carte ou d'une jonction.
+  a l'interieur d'une carte, absence de carte d'union et continuite du SVG rendu.
 - Les suites anterieures et l'integration API/PostgreSQL restent executees.
 
 Consulter les workflows du dernier commit pour les resultats effectifs. La

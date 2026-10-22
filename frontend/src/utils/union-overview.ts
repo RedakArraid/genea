@@ -13,7 +13,8 @@ import { detour, segmentHitsCard, segmentsOverlap, type CardObstacle } from './r
 export interface UnionBox { x: number; y: number; width: number; height: number }
 export interface UnionPanel extends UnionBox {
   family: ReadingFamily
-  label: UnionBox
+  /** Geometric meeting point only; no intermediate card is rendered. */
+  junction: Point
   unknown?: UnionBox
   color: number
 }
@@ -34,7 +35,7 @@ interface Unit {
   width: number; left: number; top: number; depth: number; widths: Map<string, number>
 }
 interface LogicalBox { u: number; v: number; cross: number; depth: number }
-const GAP = 32, PAD = 24, UNIT_GAP = 64, LABEL_W = 244
+const GAP = 32, PAD = 24, UNIT_GAP = 64
 const path = (points: Point[]) => points.map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ')
 const compare = (a: NormalizedPerson, b: NormalizedPerson) => personName(a).localeCompare(personName(b), 'fr') || a.id.localeCompare(b.id)
 const chronologicalChildren = (a: NormalizedPerson, b: NormalizedPerson) => {
@@ -97,28 +98,25 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
   }
   if (queue.length !== units.size) return null
   const ownedChildren = (f: ReadingFamily) => [...new Set([...f.children].sort(chronologicalChildren).map(p => unitOf.get(p.id)!))].filter(u => u.owner?.key === f.key)
-  const labelHeight = (f: ReadingFamily) => 38 + f.parents.reduce((n, p) => n + Math.max(1, Math.ceil(personName(p).length / 27)) * 19, 0) + (f.parents.length === 1 ? 22 : 0)
-  const labelCross = (f: ReadingFamily) => horizontal ? labelHeight(f) : LABEL_W
-  const labelDepth = (f: ReadingFamily) => horizontal ? LABEL_W : labelHeight(f)
   for (const unit of [...queue].reverse()) {
     for (const f of unit.families) {
       const exclusive = f.parents.filter(p => !unit.shared.includes(p))
       const parentWidth = exclusive.reduce((n, p) => n + cross(p), 0) + GAP * Math.max(0, exclusive.length - 1)
       const children = ownedChildren(f)
       const childWidth = children.reduce((n, u) => n + u.width, 0) + GAP * Math.max(0, children.length - 1)
-      unit.widths.set(f.key, Math.max(labelCross(f) + PAD * 2, parentWidth + PAD * 2, childWidth + PAD * 2))
+      unit.widths.set(f.key, Math.max(parentWidth, childWidth, ...f.parents.map(cross)) + PAD * 2)
     }
     unit.width = unit.families.length ? [...unit.widths.values()].reduce((n, v) => n + v, 0) + GAP * (unit.families.length - 1) : cross(unit.members[0])
     unit.width = Math.max(unit.width, unit.shared.reduce((n, p) => n + cross(p) + GAP, 0))
     const sharedDepth = unit.shared.length ? Math.max(...unit.shared.map(depth)) + 64 + unit.families.length * 10 : 0
     const exclusiveDepth = Math.max(0, ...unit.members.filter(p => !unit.shared.includes(p)).map(depth), ...unit.families.filter(f => f.parents.length === 1).map(() => horizontal ? w : Math.max(...Object.values(heights))))
-    unit.depth = unit.families.length ? sharedDepth + exclusiveDepth + 28 + Math.max(...unit.families.map(labelDepth)) + 76 : depth(unit.members[0]) + 64
+    unit.depth = unit.families.length ? sharedDepth + exclusiveDepth + 28 + 76 : depth(unit.members[0]) + 64
   }
   const levels = [...new Set(queue.map(u => u.level))].sort((a, b) => a - b)
   const logical = new Map<string, Point>() // x is cross-axis, y is generation-axis.
   const familyCenters = new Map<string, number>(), slots = new Map<Unit, number>()
   const positions: Positions = {}, panels: UnionPanel[] = []
-  const unionNodes = new Map<string, LogicalBox>(), laneOf = new Map<string, { left: number; width: number; parentTop: number }>()
+  const unionNodes = new Map<string, Point>(), laneOf = new Map<string, { left: number; width: number; parentTop: number }>()
   let rowTop = 64
   for (const level of levels) {
     const row = queue.filter(u => u.level === level)
@@ -139,12 +137,12 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
       const sharedDepth = unit.shared.length ? Math.max(...unit.shared.map(depth)) + 64 + unit.families.length * 10 : 0
       const parentTop = rowTop + sharedDepth
       const exclusiveDepth = Math.max(0, ...unit.members.filter(p => !unit.shared.includes(p)).map(depth), ...unit.families.filter(f => f.parents.length === 1).map(() => horizontal ? w : Math.max(...Object.values(heights))))
-      const labelsTop = parentTop + exclusiveDepth + 28
+      const junctionTop = parentTop + exclusiveDepth + 28
       for (const f of unit.families) {
         const width = unit.widths.get(f.key)!, center = lane + width / 2
         familyCenters.set(f.key, center)
         laneOf.set(f.key, { left: lane, width, parentTop })
-        const node: LogicalBox = { u: center - labelCross(f) / 2, v: labelsTop, cross: labelCross(f), depth: labelDepth(f) }
+        const node: Point = { x: center, y: junctionTop }
         unionNodes.set(f.key, node)
         const exclusive = f.parents.filter(p => !unit.shared.includes(p))
         const parentsWidth = exclusive.reduce((n, p) => n + cross(p), 0) + GAP * Math.max(0, exclusive.length - 1)
@@ -154,7 +152,7 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
         let childLeft = center - total / 2
         for (const child of children) { slots.set(child, childLeft + child.width / 2); childLeft += child.width + GAP }
         const unknown = f.parents.length === 1 && unit.shared.length ? box({ u: center - cross(f.parents[0]) / 2, v: parentTop, cross: cross(f.parents[0]), depth: exclusiveDepth }) : undefined
-        panels.push({ family: f, color: panels.length % 6, label: box(node), unknown, ...box({ u: lane + 4, v: parentTop - 18, cross: width - 8, depth: labelsTop + labelDepth(f) - parentTop + 36 }) })
+        panels.push({ family: f, color: panels.length % 6, junction: screen(node.x, node.y), unknown, ...box({ u: lane + 4, v: parentTop - 18, cross: width - 8, depth: junctionTop - parentTop + 36 }) })
         lane += width + GAP
       }
       const hubs = [...unit.shared].sort((a, b) => {
@@ -200,14 +198,14 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
       const pos = logical.get(p.id)!
       const all = unit.families.filter(f => f.parents.includes(p)), port = (all.indexOf(f) + 1) / (all.length + 1)
       const start = { x: pos.x + cross(p) * port, y: pos.y + depth(p) }
-      const input = { x: node.u + node.cross * (index + 1) / (f.parents.length + 1), y: node.v }
+      const input = node
       if (unit.shared.includes(p)) {
         const corridor = unit.top + Math.max(...unit.shared.map(depth)) + 18 + fIndex * 10
         const side = lane.left + 12 + index * 8
-        add(f, 'parent', [start, { x: start.x, y: corridor }, { x: side, y: corridor }, { x: side, y: node.v - 12 }, { x: input.x, y: node.v - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
-      } else add(f, 'parent', [start, { x: start.x, y: node.v - 12 }, { x: input.x, y: node.v - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
+        add(f, 'parent', [start, { x: start.x, y: corridor }, { x: side, y: corridor }, { x: side, y: node.y - 12 }, { x: input.x, y: node.y - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
+      } else add(f, 'parent', [start, { x: start.x, y: node.y - 12 }, { x: input.x, y: node.y - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
     }
-    const output = { x: node.u + node.cross / 2, y: node.v + node.depth }
+    const output = node
     const childTop = Math.min(...f.children.map(c => logical.get(c.id)!.y))
     const bus = output.y + Math.max(20, (childTop - output.y) * .5)
     for (const c of f.children) {
@@ -216,7 +214,10 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
     }
   }
   const obstacles: CardObstacle[] = people.map(p => ({ id: p.id, left: positions[p.id].x, right: positions[p.id].x + w, top: positions[p.id].y, bottom: positions[p.id].y + heights[p.id] }))
-  for (const p of panels) for (const [suffix, r] of [['label', p.label], ['unknown', p.unknown]] as const) if (r) obstacles.push({ id: `${suffix}:${p.family.key}`, left: r.x, right: r.x + r.width, top: r.y, bottom: r.y + r.height })
+  for (const p of panels) {
+    const r = p.unknown
+    if (r) obstacles.push({ id: `unknown:${p.family.key}`, left: r.x, right: r.x + r.width, top: r.y, bottom: r.y + r.height })
+  }
   const used: Array<{ a: Point; b: Point; family: string }> = [], safe: UnionConnection[] = []
   let unresolved = 0
   for (const connection of connections) {

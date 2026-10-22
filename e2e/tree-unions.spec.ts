@@ -32,9 +32,12 @@ async function fixture(page: Page, options: { width?: number; dark?: boolean; la
   await expect(page.getByTestId('tree-person-card')).toHaveCount(12)
   return {id,writes,errors,saved,people}
 }
+function familyLane(page: Page, partnerId: string) {
+  return page.locator(`[data-testid="union-lane"][data-parent-ids*="${partnerId}"]`)
+}
 async function checkPaths(page: Page) {
   expect(await page.evaluate(()=>{
-    const cards=[...document.querySelectorAll('[data-testid="tree-person-card"],[data-testid="union-junction"],[data-testid="unknown-coparent"]')].map(e=>e.getBoundingClientRect())
+    const cards=[...document.querySelectorAll('[data-testid="tree-person-card"],[data-testid="unknown-coparent"]')].map(e=>e.getBoundingClientRect())
     const paths=[...document.querySelectorAll<SVGPathElement>('[data-connection-kind]')]
     return paths.every(path=>{
       const matrix=path.getScreenCTM()!,length=path.getTotalLength()
@@ -42,24 +45,40 @@ async function checkPaths(page: Page) {
       return true
     })
   })).toBe(true)
+  // The old box hid a gap between parent and child paths. Now every path must
+  // actually meet at the same point in the rendered SVG, not just share IDs.
+  expect(await page.getByTestId('union-lane').evaluateAll(lanes=>lanes.every(lane=>{
+    const key=lane.getAttribute('data-family-key'),x=Number(lane.getAttribute('data-junction-x')),y=Number(lane.getAttribute('data-junction-y'))
+    const paths=[...document.querySelectorAll<SVGPathElement>('path[data-union-role]')].filter(p=>p.getAttribute('data-family-key')===key)
+    const parents=paths.filter(p=>p.getAttribute('data-union-role')==='parent'),children=paths.filter(p=>p.getAttribute('data-union-role')==='child')
+    if(parents.length!==(lane.getAttribute('data-parent-ids')||'').split(',').filter(Boolean).length || children.length!==(lane.getAttribute('data-child-ids')||'').split(',').filter(Boolean).length)return false
+    return paths.every(path=>{
+      const p=path.getPointAtLength(path.getAttribute('data-union-role')==='parent'?path.getTotalLength():0)
+      return Math.hypot(p.x-x,p.y-y)<.01
+    })
+  }))).toBe(true)
 }
 for(const layout of ['vertical','horizontal'])for(const width of [375,768,1600])for(const dark of [false,true])test(`all unions ${layout} ${width}px ${dark?'dark':'light'}`,async({page},info)=>{
  const state=await fixture(page,{layout,width,dark})
  await expect(page.getByTestId('graph-unions')).toHaveAttribute('aria-pressed','true')
- await expect(page.getByTestId('union-junction')).toHaveCount(4)
+ await expect(page.getByTestId('union-lane')).toHaveCount(4)
+ await expect(page.getByTestId('union-junction')).toHaveCount(0)
+ await expect(page.locator('[data-union-parent]')).toHaveCount(0)
+ await expect(page.getByText('Union renseign\u00e9e',{exact:true})).toHaveCount(0)
  await expect(page.locator('[data-testid="tree-person-card"][data-person-id="common"]')).toHaveCount(1)
  for(const m of ['a','b','c']){
-   const junction=page.getByTestId('union-junction').filter({has:page.locator(`[data-union-parent="partner-${m}"]`)})
-   await expect(junction).toHaveAttribute('data-child-ids',new RegExp(`${m}1`));await expect(junction).toHaveAttribute('data-child-ids',new RegExp(`${m}2`))
+   const lane=familyLane(page,`partner-${m}`)
+   expect((await lane.getAttribute('data-parent-ids'))!.split(',').sort()).toEqual(['common',`partner-${m}`])
+   expect((await lane.getAttribute('data-child-ids'))!.split(',').sort()).toEqual([`${m}1`,`${m}2`])
  }
  await expect(page.getByTestId('unknown-coparent')).toHaveCount(1)
  await expect(page.getByText('Sans lien renseign\u00e9',{exact:true})).toHaveCount(1)
  await checkPaths(page)
- expect(await page.getByTestId('union-junction').evaluateAll(junctions=>junctions.every(j=>{
-   const key=j.getAttribute('data-family-key'),lane=[...document.querySelectorAll('[data-testid="union-lane"]')].find(el=>el.getAttribute('data-family-key')===key)!.getBoundingClientRect()
-   return (j.getAttribute('data-child-ids')||'').split(',').filter(Boolean).every(id=>{
+ expect(await page.getByTestId('union-lane').evaluateAll(lanes=>lanes.every(lane=>{
+   const box=lane.getBoundingClientRect()
+   return (lane.getAttribute('data-child-ids')||'').split(',').filter(Boolean).every(id=>{
      const card=[...document.querySelectorAll('[data-testid="tree-person-card"]')].find(el=>el.getAttribute('data-person-id')===id)!.getBoundingClientRect()
-     return card.left>=lane.left-1 && card.right<=lane.right+1 && card.top>=lane.top-1 && card.bottom<=lane.bottom+1
+     return card.left>=box.left-1 && card.right<=box.right+1 && card.top>=box.top-1 && card.bottom<=box.bottom+1
    })
  }))).toBe(true)
  if(width===1600) expect(await page.getByTestId('tree-search').evaluate(el=>el.getBoundingClientRect().width)).toBeGreaterThanOrEqual(160)
@@ -78,37 +97,38 @@ for(const layout of ['vertical','horizontal'])for(const width of [375,768,1600])
 test('mobile navigation pans, without filtering other unions or losing the common parent',async({page},info)=>{
  const state=await fixture(page,{width:375})
  await page.getByTestId('union-navigation').getByRole('button',{name:'Mariam',exact:true}).click()
- await expect(page.getByTestId('tree-person-card')).toHaveCount(12);await expect(page.getByTestId('union-junction')).toHaveCount(4)
- const family=page.getByTestId('union-junction').filter({has:page.locator('[data-union-parent="partner-c"]')})
- await expect(family).toBeInViewport();await expect(family).toContainText('Moussa Traore');await expect(family).toContainText('Mariam Diarra')
+ await expect(page.getByTestId('tree-person-card')).toHaveCount(12);await expect(page.getByTestId('union-lane')).toHaveCount(4)
+ const family=familyLane(page,'partner-c')
+ await expect(family).toBeInViewport();await expect(family).toHaveAttribute('aria-label',/Moussa Traore/);await expect(family).toHaveAttribute('aria-label',/Mariam Diarra/)
+ await expect(page.locator('[data-testid="tree-person-card"][data-person-id="partner-c"]')).toBeInViewport()
  expect(state.writes).toEqual([]);await page.screenshot({path:info.outputPath('mobile-next-union.png'),fullPage:true})
 })
 test('manual positions can be recovered exactly; no view preference writes to the API',async({page})=>{
  const state=await fixture(page)
- await page.getByTestId('graph-free').click();await expect(page.getByTestId('union-junction')).toHaveCount(0)
+ await page.getByTestId('graph-free').click();await expect(page.getByTestId('union-lane')).toHaveCount(0)
  const actual=await page.getByTestId('tree-person-card').evaluateAll(cards=>Object.fromEntries(cards.map(e=>[e.getAttribute('data-person-id'),{x:parseFloat((e as HTMLElement).style.left),y:parseFloat((e as HTMLElement).style.top)}])))
  for(const p of state.saved)expect(actual[p.nodeId]).toEqual({x:p.x,y:p.y})
- await page.getByTestId('graph-unions').click();await expect(page.getByTestId('union-junction')).toHaveCount(4)
+ await page.getByTestId('graph-unions').click();await expect(page.getByTestId('union-lane')).toHaveCount(4)
  expect(state.writes).toEqual([])
 })
 test('mother with several partners is treated identically and read-only readers can navigate',async({page})=>{
  const state=await fixture(page,{maternal:true,readonly:true})
- await expect(page.getByTestId('union-junction')).toHaveCount(4)
- for(const j of await page.getByTestId('union-junction').all())await expect(j).toContainText('Aminata Traore')
- await page.getByTestId('union-junction').first().locator('[data-union-parent="common"]').click()
+ await expect(page.getByTestId('union-lane')).toHaveCount(4)
+ for(const lane of await page.getByTestId('union-lane').all())await expect(lane).toHaveAttribute('aria-label',/Aminata Traore/)
+ await page.locator('[data-testid="tree-person-card"][data-person-id="common"]').click()
  await expect(page.locator('aside')).toContainText('Aminata')
  expect(state.writes).toEqual([]);expect(state.errors).toEqual([])
 })
 test('radial is still accessible explicitly, and By union returns to the clear vertical projection',async({page})=>{
  await fixture(page,{layout:'radial'})
- await expect(page.getByTestId('union-junction')).toHaveCount(0)
+ await expect(page.getByTestId('union-lane')).toHaveCount(0)
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('geneamap:tree-view:v1:union-overview-test')!).layout)).toBe('radial')
- await page.getByTestId('graph-unions').click();await expect(page.getByTestId('union-junction')).toHaveCount(4)
+ await page.getByTestId('graph-unions').click();await expect(page.getByTestId('union-lane')).toHaveCount(4)
 })
 test('search highlights the match while retaining the real parental context',async({page})=>{
  const state=await fixture(page)
  await page.getByTestId('tree-search').fill('Bintou')
- await expect(page.getByTestId('tree-person-card')).toHaveCount(12);await expect(page.getByTestId('union-junction')).toHaveCount(4)
+ await expect(page.getByTestId('tree-person-card')).toHaveCount(12);await expect(page.getByTestId('union-lane')).toHaveCount(4)
  await expect(page.getByText(/1 r.sultats ; contexte familial conserv/)).toBeVisible()
  expect(state.writes).toEqual([])
 })

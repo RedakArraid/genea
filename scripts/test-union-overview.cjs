@@ -24,18 +24,27 @@ function verify(people, orientation, style) {
   assert.deepEqual(Object.keys(scene.positions).sort(),people.map(p=>p.id).sort(),'No duplicates or lost people')
   const {w}=G.getCardDimensions(style), heights=G.buildCardHeights(people,style)
   const cards=people.map(p=>({id:p.id,left:scene.positions[p.id].x,right:scene.positions[p.id].x+w,top:scene.positions[p.id].y,bottom:scene.positions[p.id].y+heights[p.id]}))
-  const labels=scene.panels.map(p=>({id:`union:${p.family.key}`,left:p.label.x,right:p.label.x+p.label.width,top:p.label.y,bottom:p.label.y+p.label.height}))
-  for(const [i,a] of [...cards,...labels].entries()) {
+  const unknowns=scene.panels.filter(p=>p.unknown).map(p=>({id:`unknown:${p.family.key}`,left:p.unknown.x,right:p.unknown.x+p.unknown.width,top:p.unknown.y,bottom:p.unknown.y+p.unknown.height}))
+  const obstacles=[...cards,...unknowns]
+  for(const [i,a] of obstacles.entries()) {
     assert.ok(Number.isFinite(a.left)&&Number.isFinite(a.top))
-    for(const b of [...cards,...labels].slice(i+1)) assert.ok(a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top,`${a.id} overlaps ${b.id}`)
+    for(const b of obstacles.slice(i+1)) assert.ok(a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top,`${a.id} overlaps ${b.id}`)
   }
   for(const p of scene.panels) {
+    assert.equal('label' in p,false,'No intermediate label box remains in the layout')
+    assert.ok(Number.isFinite(p.junction.x)&&Number.isFinite(p.junction.y))
+    for(const r of obstacles) assert.ok(p.junction.x<=r.left||p.junction.x>=r.right||p.junction.y<=r.top||p.junction.y>=r.bottom,'A join must not lie inside a card')
     const parentIds=p.family.parents.map(p=>p.id).sort()
     const parents=scene.connections.filter(c=>c.family===p.family.key&&c.role==='parent')
     assert.deepEqual(parents.flatMap(c=>c.ids).sort(),parentIds)
     const children=scene.connections.filter(c=>c.family===p.family.key&&c.role==='child')
     assert.deepEqual(children.map(c=>c.childId).sort(),p.family.children.map(p=>p.id).sort())
-    for(const c of children)assert.deepEqual(c.parentIds.slice().sort(),parentIds)
+    // Without the box, the rendered parent and child paths must meet exactly.
+    for(const c of parents) assert.deepEqual(c.points.at(-1),p.junction,'Parent path is disconnected')
+    for(const c of children) {
+      assert.deepEqual(c.parentIds.slice().sort(),parentIds)
+      assert.deepEqual(c.points[0],p.junction,'Child path is disconnected')
+    }
     // Simple leaf fratries must fit inside their own visible family frame.
     if(p.family.children.every(child=>!scene.panels.some(other=>other.family.parents.some(parent=>parent.id===child.id)))) {
       for(const child of p.family.children) {
@@ -45,7 +54,7 @@ function verify(people, orientation, style) {
       }
     }
   }
-  for(const c of scene.connections)for(let i=1;i<c.points.length;i++)for(const r of [...cards,...labels])assert.equal(R.segmentHitsCard(c.points[i-1],c.points[i],r),false,`line through ${r.id}`)
+  for(const c of scene.connections)for(let i=1;i<c.points.length;i++)for(const r of obstacles)assert.equal(R.segmentHitsCard(c.points[i-1],c.points[i],r),false,`line through ${r.id}`)
   for(const [i,a]of scene.connections.entries())for(const b of scene.connections.slice(i+1))if(a.family!==b.family)for(let j=1;j<a.points.length;j++)for(let k=1;k<b.points.length;k++)assert.equal(R.segmentsOverlap(a.points[j-1],a.points[j],b.points[k-1],b.points[k]),false,'different families share a segment')
   return scene
 }
@@ -67,3 +76,13 @@ test('a cycle is reported as unsupported instead of freezing or deleting ancestr
 })
 test('radial remains a separately selectable free graph, not an ignored setting',()=>assert.equal(U.computeUnionOverview(fixture(),'radial'),null))
 test('empty tree is supported by the existing canvas',()=>assert.equal(U.computeUnionOverview([]),null))
+for(const orientation of ['vertical','horizontal'])test(`removed union card leaves no reserved gap: ${orientation}`,()=>{
+ const people=fixture(),scene=verify(people,orientation,'square')
+ const horizontal=orientation==='horizontal',{w}=G.getCardDimensions('square'),heights=G.buildCardHeights(people,'square')
+ const axis=horizontal?'x':'y'
+ for(const panel of scene.panels) {
+   const parentEdge=Math.max(...panel.family.parents.map(p=>scene.positions[p.id][axis]+(horizontal?w:heights[p.id])), panel.unknown ? panel.unknown[axis]+(horizontal?panel.unknown.width:panel.unknown.height) : -Infinity)
+   const childEdge=Math.min(...panel.family.children.map(p=>scene.positions[p.id][axis]))
+   assert.equal(childEdge-parentEdge,104,'Only the routing corridor remains, not an empty label slot')
+ }
+})
