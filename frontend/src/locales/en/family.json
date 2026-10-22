@@ -31,7 +31,7 @@
     "partners": "Recorded partners",
     "children_one": "{{count}} child",
     "children_other": "{{count}} children",
-    "childrenOfTheseParents": "Children of these parents",
+    "childrenOfTheseParents": "Recorded shared children",
     "noChildren": "No shared children recorded.",
     "addChild": "Add a child",
     "linkChild": "Link an existing child",
@@ -53,6 +53,7 @@
     "close": "Close record",
     "selectedPerson": "Record of {{name}}",
     "dateHint": "Date format follows your browser settings.",
-    "routingWarning": "Some connections cannot be drawn clearly in this arrangement. Use the Families view."
+    "routingWarning": "Some connections cannot be drawn clearly in this arrangement. Use the Families view.",
+    "projectionHint": "Compact family detail. Return to Whole tree to move cards."
   }
 }

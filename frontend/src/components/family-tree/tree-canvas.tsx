@@ -7,7 +7,7 @@ import { readableConnections } from '@/utils/readable-connections'
 import { readingFamilies } from '@/lib/family-reading'
 import { personName } from '@/lib/family-model'
 import { hasMultipleFamilies, familyKey } from '@/utils/family-routing'
-import { buildConnections, computeLineage } from '@/utils/tree-layout'
+import { buildConnections, computeLineage, computeLayout } from '@/utils/tree-layout'
 import { getCardDimensions, buildCardHeights, contentBounds, drawingBounds, fitViewport, zoomAt, screenToWorld, visiblePeople, MIN_ZOOM, MAX_ZOOM } from '@/lib/tree-geometry'
 import type { Point, Positions } from '@/lib/tree-geometry'
 import type { NormalizedPerson, TreeTweaks, FamilyTree } from '@/types'
@@ -42,7 +42,7 @@ interface TreeCanvasProps {
 type View = { pan: Point; scale: number }
 type Gesture = { start: Point[]; view: View; moved: boolean; paste: boolean }
 
-export function TreeCanvas({ people = [], tweaks, treeMeta, background, positions, setPositions, selectedId, onSelect, hoverId, onHover,
+export function TreeCanvas({ people = [], tweaks, treeMeta, background, positions: savedPositions, setPositions, selectedId, onSelect, hoverId, onHover,
   onOpenAdd, onLinkExistingChild, onOpenShare, onOpenTweaks, onSetTweak, searchQuery, onSearchChange, onReorganize,
   fitRequestId = 0, readOnly = false, canDrag = true, isDemo = false, canShare = true, canExport = false, canExportGedcom = true,
   canImport = false, exportBusy = false, importBusy = false, onExportGedcom, onExportPdf, onImportGedcom,
@@ -52,8 +52,7 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   const wrapRef = useRef<HTMLDivElement>(null), toolbarRef = useRef<HTMLDivElement>(null), importRef = useRef<HTMLInputElement>(null)
   const [viewport, setViewport] = useState({ width: 0, height: 0, top: 56 })
   const [view, setView] = useState<View>({ pan: { x: 40, y: 80 }, scale: 0.85 })
-  const viewRef = useRef(view), positionsRef = useRef(positions)
-  positionsRef.current = positions
+  const viewRef = useRef(view), positionsRef = useRef(savedPositions)
   const updateView = useCallback((next: View) => { viewRef.current = next; setView(next) }, [])
   const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false)
   const [panning, setPanning] = useState(false), [draggingId, setDraggingId] = useState<string | null>(null)
@@ -78,7 +77,13 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   const familyData = useMemo(() => readingFamilies(people), [people])
   const [familyScope, setFamilyScope] = useState('all')
   const scopedFamily = familyData.groups.find(group => group.key === familyScope)
-  const scopedIds = useMemo(() => !reading && scopedFamily ? new Set([...scopedFamily.parents, ...scopedFamily.children].map(p => p.id)) : null, [reading, scopedFamily])
+  const scopedIds = useMemo(() => !reading && !pasteMode && scopedFamily ? new Set([...scopedFamily.parents, ...scopedFamily.children].map(p => p.id)) : null, [reading, pasteMode, scopedFamily])
+  // The focused family is a temporary projection, not a rewrite of saved coordinates.
+  const projection = useMemo(() => scopedIds ? computeLayout(people.filter(p => scopedIds.has(p.id)), layout, tweaks.density, { organization: isOrg, cardStyle: style }).positions : null,
+    [scopedIds, people, layout, tweaks.density, isOrg, style])
+  const positions = projection || savedPositions
+  positionsRef.current = positions
+  const canMoveCards = canDrag && !projection
   const { w: cardW, h: cardH } = getCardDimensions(style, { organization: isOrg })
   const heights = useMemo(() => buildCardHeights(people, style, isOrg), [people, style, isOrg])
   const visible = useMemo(() => visiblePeople(people, searchQuery, genFilter).filter(p => !scopedIds || scopedIds.has(p.id)), [people, searchQuery, genFilter, scopedIds])
@@ -219,6 +224,8 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   useLayoutEffect(() => {
     const id = focusRequest.current
     if (!id || reading || !visibleIds.has(id)) return
+    const measuredTop = toolbarRef.current?.getBoundingClientRect().height
+    if (measuredTop == null || Math.abs(measuredTop - viewport.top) > .5) return
     const pos = positionsRef.current[id], r = wrapRef.current?.getBoundingClientRect()
     if (!pos || !r) return
     focusRequest.current = null
@@ -227,11 +234,11 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   }, [focusVersion, reading, visibleIds, viewport, cardW, cardH, heights, updateView])
 
   const runAction = (action: () => void) => { setMobileToolbarOpen(false); queueMicrotask(action) }
-  const canReorganize = !!onReorganize && people.length > 0 && (!readOnly || isDemo)
+  const canReorganize = !projection && !!onReorganize && people.length > 0 && (!readOnly || isDemo)
   const generationPlaceholder = isOrg ? orgLexicon?.levelTerm || t('org.canvas.levelPlaceholder') : t('canvas.generationPlaceholder')
   const actions = (inMenu: boolean) => <>
-    <Button size="sm" variant="outline" disabled={!canReorganize || reading} onClick={() => runAction(() => onReorganize?.())} title={t('canvas.reorganizeTitle')}><LayoutGrid className="mr-1 size-4" />{t('canvas.reorganize')}</Button>
-    <Button size="sm" variant="outline" data-testid="tree-fit" disabled={reading} onClick={() => runAction(fitToView)}><Maximize2 className="mr-1 size-4" />{t('canvas.center')}</Button>
+    {!reading && <><Button size="sm" variant="outline" disabled={!canReorganize} onClick={() => runAction(() => onReorganize?.())} title={t('canvas.reorganizeTitle')}><LayoutGrid className="mr-1 size-4" />{t('canvas.reorganize')}</Button>
+    <Button size="sm" variant="outline" data-testid="tree-fit" disabled={reading} onClick={() => runAction(fitToView)}><Maximize2 className="mr-1 size-4" />{t('canvas.center')}</Button></>}
     <Button size="sm" variant="ghost" aria-label={t('canvas.settings')} onClick={() => runAction(onOpenTweaks)}><Settings className="size-4" />{inMenu && t('canvas.settings')}</Button>
     {canImport && onImportGedcom && <Button size="sm" variant="outline" disabled={importBusy} onClick={() => runAction(() => importRef.current?.click())}><Upload className="mr-1 size-4" />{t('canvas.importGedcom')}</Button>}
     {canExport && (onExportPdf || canExportGedcom && onExportGedcom) && (inMenu ? <>
@@ -275,24 +282,24 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
           </SheetContent>
         </Sheet>
       </> : <>
-        <Select items={generationOptions} value={genFilter} onValueChange={v => v && onSetTweak('generation', v)}><SelectTrigger data-testid="tree-generation-filter" size="sm" className="w-[160px]" aria-label={generationPlaceholder}><SelectValue placeholder={generationPlaceholder} /></SelectTrigger><SelectContent className="max-h-64">{generationOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent></Select>
-        <div className="flex shrink-0 gap-1">{(['vertical','horizontal','radial'] as const).map(l => <Button key={l} data-testid={`layout-${l}`} size="sm" aria-label={layoutLabels[l]} title={layoutLabels[l]} variant={layout === l ? 'default' : 'outline'} onClick={() => { choosePresentation('graph'); onSetTweak('layout', l) }}>{l === 'vertical' ? '\u2193' : l === 'horizontal' ? '\u2192' : '\u25ce'}</Button>)}</div>
+        <Select items={generationOptions} value={genFilter} onValueChange={v => v && onSetTweak('generation', v)}><SelectTrigger data-testid="tree-generation-filter" size="sm" className="w-[200px]" aria-label={generationPlaceholder}><SelectValue placeholder={generationPlaceholder} /></SelectTrigger><SelectContent className="max-h-64">{generationOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent></Select>
+        <div className={cn('flex shrink-0 gap-1', reading && 'hidden')}>{(['vertical','horizontal','radial'] as const).map(l => <Button key={l} data-testid={`layout-${l}`} size="sm" aria-label={layoutLabels[l]} title={layoutLabels[l]} variant={layout === l ? 'default' : 'outline'} onClick={() => { choosePresentation('graph'); onSetTweak('layout', l) }}>{l === 'vertical' ? '\u2193' : l === 'horizontal' ? '\u2192' : '\u25ce'}</Button>)}</div>
         {actions(false)}
       </>}
       </div>
       {!reading && !isOrg && familyData.groups.length > 0 && <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         <label className="flex min-w-0 items-center gap-2 text-xs font-medium">
           <span className="shrink-0">{t('family:reader.familyFilter')}</span>
-          <select data-testid="graph-family-filter" className="h-9 min-w-0 max-w-[280px] rounded-md border bg-background px-2 text-sm" value={scopedFamily ? familyScope : 'all'} onChange={e => setFamilyScope(e.target.value)}>
+          <select data-testid="graph-family-filter" className="h-9 min-w-0 max-w-[280px] rounded-md border bg-background px-2 text-sm" value={scopedIds ? familyScope : 'all'} onChange={e => setFamilyScope(e.target.value)}>
             <option value="all">{t('family:reader.allFamilies')}</option>
             {familyData.groups.map(group => <option key={group.key} value={group.key}>{group.label} - {group.parents.map(personName).join(' + ')}</option>)}
           </select>
         </label>
-        <p className="text-xs leading-5 text-muted-foreground">{t('family:reader.graphLegend')}</p>
+        <p className="text-xs leading-5 text-muted-foreground">{t('family:reader.graphLegend')}{projection && <span className="block">{t('family:reader.projectionHint')}</span>}</p>
       </div>}
     </div>
     {reading && <div className="absolute inset-x-0 bottom-0 z-[2]" style={{ top: viewport.top }}>
-      <FamilyReader people={people} visibleIds={visibleIds} filtered={!!searchQuery.trim() || genFilter !== 'all'} selectedId={selectedId} readOnly={readOnly} onSelect={onSelect} onAdd={onOpenAdd} onLink={onLinkExistingChild} />
+      <FamilyReader hidePhotos={tweaks.hidePhotos} hideDates={tweaks.hideDates} people={people} visibleIds={visibleIds} filtered={!!searchQuery.trim() || genFilter !== 'all'} selectedId={selectedId} readOnly={readOnly} onSelect={onSelect} onAdd={onOpenAdd} onLink={onLinkExistingChild} />
     </div>}
     {!reading && <>
     {showBackground && background && backgroundUrl && <>
@@ -307,7 +314,7 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
       {visible.map(p => positions[p.id] && <PersonCard key={p.id} person={p} pos={positions[p.id]} scale={view.scale} cardStyle={style} isOrg={isOrg} maxGeneration={maxGens} lexicon={orgLexicon}
         hidePhotos={tweaks.hidePhotos} hideDates={tweaks.hideDates} hidePlaces={tweaks.hidePlaces} selected={selectedId === p.id} dragging={draggingId === p.id}
         dim={!!lineage && !lineage.has(p.id)} highlight={!!lineage?.has(p.id)} onSelect={onSelect} onHover={onHover}
-        onDrag={canDrag ? onCardDrag : undefined} onDragStart={canDrag ? () => { draggingRef.current = true; setDraggingId(p.id); onCardDragStateChange?.(true) } : undefined} onDragEnd={canDrag ? onCardDragEnd : undefined} />)}
+        onDrag={canMoveCards ? onCardDrag : undefined} onDragStart={canMoveCards ? () => { draggingRef.current = true; setDraggingId(p.id); onCardDragStateChange?.(true) } : undefined} onDragEnd={canMoveCards ? onCardDragEnd : undefined} />)}
 
     </div>
     <div className="absolute bottom-4 right-4 z-20 flex flex-col gap-1 rounded-lg border bg-background p-1 shadow" data-no-pan>

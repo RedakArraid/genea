@@ -14,12 +14,14 @@ interface FamilyReaderProps {
   filtered: boolean
   selectedId: string | null
   readOnly: boolean
+  hidePhotos?: boolean
+  hideDates?: boolean
   onSelect: (id: string) => void
   onAdd: (parentId?: string | null, relType?: string | null, parent2Id?: string | null) => void
   onLink?: (ids: string[]) => void
 }
 
-export function FamilyReader({ people, visibleIds, filtered, selectedId, readOnly, onSelect, onAdd, onLink }: FamilyReaderProps) {
+export function FamilyReader({ people, visibleIds, filtered, selectedId, readOnly, hidePhotos = false, hideDates = false, onSelect, onAdd, onLink }: FamilyReaderProps) {
   const { t } = useTranslation('family')
   const data = useMemo(() => readingFamilies(people), [people])
   const groups = filtered ? filterReadingFamilies(data.groups, visibleIds) : data.groups
@@ -30,11 +32,11 @@ export function FamilyReader({ people, visibleIds, filtered, selectedId, readOnl
       aria-label={personName(person)} aria-pressed={selectedId === person.id} onClick={() => onSelect(person.id)}
       className={cn('flex min-h-16 w-full min-w-0 items-center gap-3 rounded-lg border bg-background p-3 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedId === person.id && 'border-primary ring-1 ring-primary')}>
       <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-sm font-semibold" aria-hidden="true">
-        {person.photoUrl ? <AuthenticatedImage src={person.photoUrl} alt="" className="size-full object-cover" fallback={<span>{person.given.slice(0, 1)}</span>} /> : person.given.slice(0, 1)}
+        {!hidePhotos && person.photoUrl ? <AuthenticatedImage src={person.photoUrl} alt="" className="size-full object-cover" fallback={<span>{person.given.slice(0, 1)}</span>} /> : person.given.slice(0, 1)}
       </span>
       <span className="min-w-0 flex-1">
         <span data-testid="reader-person-name" className="block text-sm font-semibold leading-5 [overflow-wrap:anywhere]">{personName(person)}</span>
-        {person.born != null && <span className="block text-xs leading-5 text-muted-foreground">{person.born}{person.died != null ? ` - ${person.died}` : ''}</span>}
+        {!hideDates && person.born != null && <span className="block text-xs leading-5 text-muted-foreground">{person.born}{person.died != null ? ` - ${person.died}` : ''}</span>}
         {count > 1 && <span className="block text-xs leading-5 text-muted-foreground">{t('reader.sharedPerson', { count })}</span>}
       </span>
       <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />

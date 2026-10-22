@@ -31,7 +31,7 @@
     "partners": "Conjoints renseignés",
     "children_one": "{{count}} enfant",
     "children_other": "{{count}} enfants",
-    "childrenOfTheseParents": "Enfants de ces parents",
+    "childrenOfTheseParents": "Enfants communs renseignés",
     "noChildren": "Aucun enfant commun renseigné.",
     "addChild": "Ajouter un enfant",
     "linkChild": "Lier un enfant existant",
@@ -53,6 +53,7 @@
     "close": "Fermer la fiche",
     "selectedPerson": "Fiche de {{name}}",
     "dateHint": "Le format des dates dépend des réglages de votre navigateur.",
-    "routingWarning": "Certains liens ne peuvent pas être tracés sans ambiguïté dans cette disposition. Consultez la vue Familles."
+    "routingWarning": "Certains liens ne peuvent pas être tracés sans ambiguïté dans cette disposition. Consultez la vue Familles.",
+    "projectionHint": "Extrait compact. Revenez à Tout l'arbre pour déplacer les cartes."
   }
 }
