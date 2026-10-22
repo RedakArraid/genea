@@ -124,6 +124,9 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   }
   const pointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 || draggingRef.current) return
+    // React portals bubble through the component tree, not the DOM tree.
+    // Never capture a Select/Menu/Sheet gesture rendered outside this viewport.
+    if (!(e.target instanceof Element) || !e.currentTarget.contains(e.target)) return
     const target = e.target as HTMLElement
     if (target.closest('[data-no-pan],button,input,textarea,a,select,[role="combobox"]')) return
     const onCard = !!target.closest('.tree-person-card')
