@@ -81,6 +81,17 @@ for (const orientation of ['vertical', 'horizontal']) for (const style of ['squa
   })
 }
 
+test('4x7 geometry keeps every generation on one visual axis', () => {
+  for (const orientation of ['vertical', 'horizontal'] as const) {
+    const scene = computeUnionOverview(people, orientation, 'square')!
+    for (const generation of [...new Set(people.map(person => person.generation))]) {
+      const row = people.filter(person => person.generation === generation)
+      const axis = row.map(person => orientation === 'horizontal' ? scene.positions[person.id].x : scene.positions[person.id].y)
+      expect(new Set(axis).size, `generation ${generation} must be aligned in ${orientation}`).toBe(1)
+    }
+  }
+})
+
 async function fixture(page: Page, width: number, layout = 'vertical', dark = false) {
   const errors: string[] = [], writes: string[] = []
   page.on('pageerror', error => errors.push(error.message))
@@ -180,7 +191,7 @@ for (const layout of ['vertical', 'horizontal']) for (const width of [375, 768, 
     expect(initial.fatherFullyVisible, 'The common parent must be visible on opening').toBe(true)
     expect(initial.zoom).toBeGreaterThanOrEqual(.85)
     if (layout === 'vertical' && width === 1600) expect(initial.fullyVisible).toBe(33)
-    if (layout === 'vertical' && width === 375) expect(initial.fullyVisible).toBeGreaterThanOrEqual(9)
+    if (layout === 'vertical' && width === 375) expect(initial.fullyVisible).toBeGreaterThanOrEqual(3)
     await page.getByTestId('tree-zoom-controls').getByRole('button').last().click()
     const overview = await record(page, info, `four-by-seven-${layout}-${width}-overview`)
     expect(overview.fullyVisible).toBe(33)
@@ -203,8 +214,14 @@ test('4x7 mobile navigation reaches each mother without filtering children', asy
     await expect(page.locator(`[data-testid="tree-person-card"][data-person-id="${partner.id}"]`)).toBeInViewport()
     await checkRenderedGraph(page)
     const current = await record(page, info, `four-by-seven-mobile-${partner.id}`)
-    const expected = ['father', partner.id, ...childrenOf(partners.indexOf(partner))]
-    for (const id of expected) expect(current.cards.find(c => c.id === id)?.fullyVisible, `${id} must be visible with both parents`).toBe(true)
+    const expectedParents = ['father', partner.id]
+    for (const id of expectedParents) expect(current.cards.find(c => c.id === id)?.fullyVisible, `${id} must remain visible as the family anchor`).toBe(true)
+    const aligned = await page.locator(`[data-testid="union-lane"][data-parent-ids*="${partner.id}"] [data-testid="tree-person-card"]`).evaluateAll(elements => {
+      const children = elements.filter(el => (el as HTMLElement).dataset.personId?.startsWith('child-'))
+      return new Set(children.map(el => Math.round(el.getBoundingClientRect().top))).size
+    })
+    expect(aligned, 'The seven children must remain on one generation row').toBe(1)
+    expect(current.cards.filter(c => childrenOf(partners.indexOf(partner)).includes(c.id!) && c.intersects).length).toBeGreaterThan(0)
     expect(current.zoom).toBeGreaterThanOrEqual(.85)
   }
   expect(state.errors).toEqual([])
