@@ -140,7 +140,6 @@ test('compact mobile navigation keeps one common parent above each chosen family
   assert.equal(childAxis.size,1,'Children stay aligned even when the row requires horizontal panning')
   assert.ok(family.family.children.some(p=>visible(p.id)),'At least one child remains in the readable starting viewport')
   }
- }
 })
 test('full card opt-out preserves all links and restores the normal card sizes',()=>{
  const people=largeFamily(), scene=verify(people,'vertical','square',{compactSiblings:false})
