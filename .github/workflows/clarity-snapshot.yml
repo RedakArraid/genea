@@ -1,0 +1,31 @@
+name: Clarity review snapshot
+on:
+  push:
+    branches: ['fix/tree-displays-2026-10-22']
+    paths: ['.github/workflows/clarity-snapshot.yml']
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: git archive --format=tar HEAD | gzip > /tmp/clarity-source.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clarity-source
+          path: /tmp/clarity-source.tar.gz
+          retention-days: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix frontend && npm ci
+      - run: tar -czf /tmp/clarity-deps.tar.gz frontend/node_modules node_modules
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clarity-deps
+          path: /tmp/clarity-deps.tar.gz
+          retention-days: 1
