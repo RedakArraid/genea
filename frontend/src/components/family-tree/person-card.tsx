@@ -25,7 +25,7 @@ interface PersonCardProps {
 export function PersonCard({ person, pos, scale, cardStyle = 'square', isOrg = false, maxGeneration, lexicon,
   hidePhotos = false, hideDates = false, hidePlaces = false, selected = false, dragging = false,
   dim = false, highlight = false, onSelect, onDrag, onDragStart, onDragEnd, onHover }: PersonCardProps) {
-  const tone = TONE_STYLES[person.tone] || TONE_STYLES.stone
+  const tone = isOrg ? TONE_STYLES[person.tone] || TONE_STYLES.stone : TONE_STYLES.stone
   const { w } = getCardDimensions(cardStyle, { organization: isOrg })
   const height = getPersonCardHeight(person, cardStyle, isOrg)
   const fullName = `${person.given}${person.sur && person.sur !== '-' ? ` ${person.sur}` : ''}`
@@ -82,7 +82,7 @@ export function PersonCard({ person, pos, scale, cardStyle = 'square', isOrg = f
       aria-label={fullName} aria-pressed={onSelect ? selected : undefined}
       className={cn('tree-person-card absolute z-[2] flex select-none rounded-lg border bg-card text-card-foreground shadow-sm transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-primary',
         horizontal ? 'flex-row gap-2 p-2' : 'flex-col', onDrag ? 'cursor-grab active:cursor-grabbing' : onSelect ? 'cursor-pointer' : '',
-        dragging && 'z-[30]', selected && 'ring-2 ring-primary', highlight && !selected && 'ring-2 ring-primary/50', dim && 'opacity-30')}
+        dragging && 'z-[30]', selected && 'ring-2 ring-primary', highlight && !selected && 'ring-2 ring-primary/50', dim && 'opacity-75')}
       style={{ left: pos.x, top: pos.y, width: w, height, minHeight: height }}
       onPointerDown={onPointerDown} onDragStart={e => e.preventDefault()}
       onKeyDown={e => { if (onSelect && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); onSelect(person.id) } }}

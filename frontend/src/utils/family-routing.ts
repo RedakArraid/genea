@@ -24,6 +24,15 @@ export function familyDepthGap(people: RoutingPerson[], normal: number) {
   return Math.max(normal, 56 + maximum * 32)
 }
 
+/** Different parental sets leave a shared parent at different ports. */
+export function familyPort(id: string, key: string, people: RoutingPerson[], positions: Positions, width: number, heightOf: (id: string) => number, horizontal: boolean) {
+  const keys = [...new Set([...parentalFamilies(people), ...people.flatMap(p => (p.spouseIds || []).map(spouse => familyKey([p.id, spouse])))])]
+    .filter(value => (JSON.parse(value) as string[]).includes(id)).sort()
+  const index = Math.max(0, keys.indexOf(key)), fraction = (index + 1) / (keys.length + 1)
+  return horizontal ? { x: positions[id].x + width, y: positions[id].y + heightOf(id) * fraction }
+    : { x: positions[id].x + width * fraction, y: positions[id].y + heightOf(id) }
+}
+
 /** Allocate a separate spouse corridor in the first half of the generation gap. */
 export function unionRoute(
   parents: [string, string], people: RoutingPerson[], positions: Positions,
@@ -45,8 +54,9 @@ export function unionRoute(
     const end = { x: positions[b].x + width / 2, y: positions[b].y }
     return { points: [start, { x: start.x, y: top }, { x: end.x, y: top }, end], anchor: { x: (start.x + end.x) / 2, y: top } }
   }
-  const start = horizontal ? { x: positions[a].x + width, y: positions[a].y + heightOf(a) / 2 } : { x: positions[a].x + width / 2, y: positions[a].y + heightOf(a) }
-  const end = horizontal ? { x: positions[b].x + width, y: positions[b].y + heightOf(b) / 2 } : { x: positions[b].x + width / 2, y: positions[b].y + heightOf(b) }
+  const key = familyKey(parents)
+  const start = familyPort(a, key, people, positions, width, heightOf, horizontal)
+  const end = familyPort(b, key, people, positions, width, heightOf, horizontal)
   const bottom = horizontal ? Math.max(start.x, end.x) : Math.max(start.y, end.y)
   const children = people.filter(p => p.parentIds?.includes(a) || p.parentIds?.includes(b))
   const next = Math.min(...children.map(p => horizontal ? positions[p.id]?.x : positions[p.id]?.y).filter((v): v is number => Number.isFinite(v) && v! > bottom))

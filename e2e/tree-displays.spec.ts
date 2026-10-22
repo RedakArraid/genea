@@ -25,6 +25,7 @@ async function fixture(page: Page, options: Options = {}) {
   page.on('pageerror', error => errors.push(error.message))
   await page.addInitScript(({ id, layout, style, dark }) => {
     localStorage.setItem('geneamap_locale', 'fr')
+    localStorage.setItem(`geneamap:tree-presentation:v1:${id}`, 'graph')
     localStorage.setItem('geneamap-theme', dark ? 'dark' : 'light')
     // This token is decoded in the client only. Every API response is intercepted below.
     localStorage.setItem('token', `e30.${btoa(JSON.stringify({ exp: 4102444800, id: 'display-user' }))}.fixture`)

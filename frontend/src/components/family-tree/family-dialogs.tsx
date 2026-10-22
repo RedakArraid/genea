@@ -53,6 +53,7 @@ export function AddPersonDialog({ open, onClose, onSubmit, treeName, treeId, peo
   const [photo, setPhoto] = useState<File | null>(null), [preview, setPreview] = useState<string | null>(null)
   const [error, setError] = useState(''), [busy, setBusy] = useState(false)
   const submitting = useRef(false)
+  const photoInput = useRef<HTMLInputElement>(null)
   const needsParents = relationType === 'child' && !!parentId && !lex.isOrg
   useEffect(() => {
     if (!open) return
@@ -83,7 +84,7 @@ export function AddPersonDialog({ open, onClose, onSubmit, treeName, treeId, peo
   </div>
   return <Dialog open={open} onOpenChange={value => { if (!value && !busy) onClose() }}>
     <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
-      <DialogHeader><DialogTitle>{lex.addTitle}</DialogTitle></DialogHeader>
+      <DialogHeader><DialogTitle>{!lex.isOrg && relationType ? t(`family:reader.${relationType === 'child' ? 'addTitle' : relationType === 'parent' ? 'parentTitle' : 'spouseTitle'}`) : lex.addTitle}</DialogTitle></DialogHeader>
       <form onSubmit={submit} className="flex flex-col gap-3">
         <fieldset disabled={busy} className="flex min-w-0 flex-col gap-3">
           {needsParents && <>
@@ -91,7 +92,7 @@ export function AddPersonDialog({ open, onClose, onSubmit, treeName, treeId, peo
             {otherParent && <ParentSummary ids={chosenParents} people={people} />}
           </>}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{field('firstName', lex.firstNameRequired)}{field('lastName', lex.lastName)}</div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{field('birthDate', lex.joined, 'date')}{field('deathDate', lex.left, 'date')}</div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{field('birthDate', lex.joined, 'date')}{field('deathDate', lex.left, 'date')}</div><p className="text-xs text-muted-foreground">{t('family:reader.dateHint')}</p>
           {field('birthPlace', lex.site)}
           {!lex.isOrg && <div className="flex flex-col gap-1.5">
             <Label htmlFor="family-gender">{t('person.gender')}</Label>
@@ -104,11 +105,13 @@ export function AddPersonDialog({ open, onClose, onSubmit, treeName, treeId, peo
           <div className="flex flex-col gap-1.5"><Label htmlFor="family-biography">{lex.biography}</Label><Textarea id="family-biography" value={form.biography || ''} onChange={e => setForm(prev => ({ ...prev, biography: e.target.value }))} /></div>
           <div className="flex flex-col gap-1.5"><Label htmlFor="family-photo">{t('person.photo')}</Label>
             {preview && <img src={preview} alt={t('person.photoPreview')} className="size-14 rounded object-cover" />}
-            <Input id="family-photo" type="file" accept="image/*" onChange={e => {
+            <Input ref={photoInput} id="family-photo" className="sr-only" tabIndex={-1} type="file" accept="image/*" onChange={e => {
               const file = e.target.files?.[0] || null
               if (file && file.size > photoMaxBytes(storage)) { setError(t('person.photoTooBig', { max: storage.limits?.photoMaxMb ?? 5 })); e.target.value = ''; return }
               setPhoto(file); setError('')
             }} />
+            <Button type="button" variant="outline" className="w-fit" onClick={() => photoInput.current?.click()}>{t('family:reader.choosePhoto')}</Button>
+            <span className="text-xs text-muted-foreground [overflow-wrap:anywhere]">{photo?.name || t('family:reader.noPhoto')}</span>
           </div>
         </fieldset>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}

@@ -32,9 +32,10 @@ test.beforeEach(async ({ page }) => {
   unknown = await create('FiliationIncomplete'); unlinked = await create('SansParents')
   await db.relationship.createMany({ data: [{ type: 'parent', sourceId: father.id, targetId: unknown.id }, { type: 'child', sourceId: unknown.id, targetId: father.id }] })
   const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' })
-  await page.addInitScript(({ token }) => {
+  await page.addInitScript(({ token, treeId }) => {
+    localStorage.setItem(`geneamap:tree-presentation:v1:${treeId}`, 'graph')
     localStorage.setItem('token', token); localStorage.setItem('geneamap_locale', 'fr'); localStorage.setItem('geneamap-theme', 'light')
-  }, { token })
+  }, { token, treeId: tree.id })
   await page.setViewportSize({ width: 1600, height: 1000 })
 })
 test.afterEach(async () => {

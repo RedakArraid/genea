@@ -84,8 +84,8 @@ interface RelChipProps {
 }
 function RelChip({ person, relative, relType, relId, readOnly, onSelect, onDeleteRelation, onAddChildRelation, onLinkExistingChild }: RelChipProps) {
   const { t } = useTranslation('common')
-  return <div className="inline-flex items-center gap-1" data-relative-id={relative.id}>
-    <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onSelect(relative.id)}>{personName(relative)}</Button>
+  return <div className="inline-flex max-w-full items-center gap-1" data-relative-id={relative.id}>
+    <Button variant="outline" size="sm" className="min-h-8 h-auto min-w-0 whitespace-normal break-words text-left text-xs" onClick={() => onSelect(relative.id)}>{personName(relative)}</Button>
     {!readOnly && relType === 'spouse' && <ChildAddMenu compact
       onNewChild={() => onAddChildRelation(person.id, 'child', relative.id)}
       onLinkExisting={() => onLinkExistingChild([person.id, relative.id])} />}
@@ -153,9 +153,10 @@ function SidePanelContent({
       max={key === 'birthDate' ? todayIsoDate() : undefined} value={form[key]} onChange={e => setForm(prev => ({ ...prev, [key]: e.target.value }))} />
   </div>
   return <>
-    <div className="flex items-center justify-between border-b p-4">
-      <Badge variant="secondary">{formatGenerationBadge(person.generation, { isOrg: lex.isOrg, maxGeneration, lexicon: lex.config })}</Badge>
-      <Button variant="ghost" size="icon" aria-label={t('common:actions.close', { defaultValue: 'Close' })} onClick={onClose}><X className="size-4" /></Button>
+    <div data-testid="person-panel-heading" className="flex shrink-0 items-center justify-between gap-3 border-b bg-background p-4">
+      <div className="min-w-0 flex-1"><h2 className="mb-1 text-sm font-semibold [overflow-wrap:anywhere]">{personName(person)}</h2>
+      <Badge variant="secondary">{formatGenerationBadge(person.generation, { isOrg: lex.isOrg, maxGeneration, lexicon: lex.config })}</Badge></div>
+      <Button variant="ghost" size="icon" aria-label={t('family:reader.close')} onClick={onClose}><X className="size-4" /></Button>
     </div>
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"><div className="flex flex-col gap-4 p-4">
       <div className="flex items-start gap-3">
@@ -212,16 +213,16 @@ function SidePanelContent({
       {FEATURES.documentsEnabled && <><PersonDocuments personId={person.id} readOnly={readOnly || !canUploadDocuments} />
         {!readOnly && !canUploadDocuments && <p className="text-xs text-muted-foreground">{t('documents.planUpgradeHint')}</p>}</>}
     </div></div>
-    <div className="flex flex-col gap-2 border-t p-4">
+    <div className="flex max-h-[40%] shrink-0 flex-col gap-2 overflow-y-auto border-t p-4">
       {(canCopySubtree || canPasteSubtree) && <div className="flex flex-col gap-2">
         {subtreeClipboard && <p className="text-center text-xs text-muted-foreground">{t('subtree.clipboardLabel', { count: subtreeClipboard.personCount })}</p>}
-        {canCopySubtree && <div className="flex gap-2">
-          <Button variant="outline" className="flex-1" disabled={subtreeBusy} title={`${t('subtree.shortcuts.copyBranch')} (${modShortcutLabel('c')})`} onClick={onCopyBranch}><Copy className="mr-1 size-4" />{t('subtree.copyBranch')}</Button>
-          <Button variant="outline" className="flex-1" disabled={subtreeBusy} title={`${t('subtree.shortcuts.copyEntire')} (${modShortcutLabel('c', { shift: true })})`} onClick={onCopyEntireTree}><Copy className="mr-1 size-4" />{t('subtree.copyEntire')}</Button>
+        {canCopySubtree && <div className="grid min-w-0 grid-cols-1 gap-2">
+          <Button variant="outline" className="min-h-10 h-auto w-full min-w-0 whitespace-normal text-left" disabled={subtreeBusy} title={`${t('subtree.shortcuts.copyBranch')} (${modShortcutLabel('c')})`} onClick={onCopyBranch}><Copy className="mr-1 size-4" />{t('subtree.copyBranch')}</Button>
+          <Button variant="outline" className="min-h-10 h-auto w-full min-w-0 whitespace-normal text-left" disabled={subtreeBusy} title={`${t('subtree.shortcuts.copyEntire')} (${modShortcutLabel('c', { shift: true })})`} onClick={onCopyEntireTree}><Copy className="mr-1 size-4" />{t('subtree.copyEntire')}</Button>
         </div>}
-        {canPasteSubtree && subtreeClipboard && <><div className="flex gap-2">
-          <Button variant="secondary" className="flex-1" disabled={subtreeBusy} onClick={onPasteAsChild}><ClipboardPaste className="mr-1 size-4" />{t('subtree.pasteAsChild')}</Button>
-          {!lex.isOrg && <Button variant="secondary" className="flex-1" disabled={subtreeBusy} onClick={onPasteAsSpouse}><ClipboardPaste className="mr-1 size-4" />{t('subtree.pasteAsSpouse')}</Button>}
+        {canPasteSubtree && subtreeClipboard && <><div className="grid min-w-0 grid-cols-1 gap-2">
+          <Button variant="secondary" className="min-h-10 h-auto w-full min-w-0 whitespace-normal text-left" disabled={subtreeBusy} onClick={onPasteAsChild}><ClipboardPaste className="mr-1 size-4" />{t('subtree.pasteAsChild')}</Button>
+          {!lex.isOrg && <Button variant="secondary" className="min-h-10 h-auto w-full min-w-0 whitespace-normal text-left" disabled={subtreeBusy} onClick={onPasteAsSpouse}><ClipboardPaste className="mr-1 size-4" />{t('subtree.pasteAsSpouse')}</Button>}
         </div><Button variant="outline" className="w-full" disabled={subtreeBusy} onClick={onStartCanvasPaste}>{t('subtree.pasteOnCanvas')}</Button></>}
       </div>}
       <Button variant="outline" className="w-full" onClick={() => window.__focusOn?.(person.id)}><Focus className="mr-1 size-4" />{t('relations.focus')}</Button>
