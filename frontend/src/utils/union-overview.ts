@@ -126,8 +126,9 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
         : children.reduce((n, u) => n + u.width, 0) + GAP * Math.max(0, children.length - 1)
       unit.widths.set(f.key, Math.max(parentWidth, childWidth, ...f.parents.map(cross)) + PAD * 2)
     }
-    unit.width = unit.families.length ? [...unit.widths.values()].reduce((n, v) => n + v, 0) + GAP * (unit.families.length - 1) : cross(unit.members[0])
-    unit.width = Math.max(unit.width, unit.shared.reduce((n, p) => n + cross(p) + GAP, 0))
+    const laneWidth = unit.families.length ? [...unit.widths.values()].reduce((n, v) => n + v, 0) + GAP * (unit.families.length - 1) : cross(unit.members[0])
+    const hubWidth = unit.shared.reduce((n, p) => n + cross(p), 0) + GAP * Math.max(0, unit.shared.length - 1)
+    unit.width = laneWidth + (hubWidth ? hubWidth + UNIT_GAP : 0)
     const parentBandDepth = Math.max(0, ...unit.members.map(depth), ...unit.families.filter(f => f.parents.length === 1).map(() => horizontal ? w : Math.max(...Object.values(heights))))
     const routingDepth = unit.families.length ? 44 + unit.families.length * 10 : 0
     unit.depth = unit.families.length ? parentBandDepth + routingDepth + (unit.families.some(f => grids.has(f.key)) ? 44 : 76) : depth(unit.members[0]) + 64
@@ -161,7 +162,8 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
       if (!unit.families.length) {
         const p = unit.members[0]; logical.set(p.id, { x: unit.left, y: rowTop }); continue
       }
-      let lane = unit.left
+      const sharedRowWidth = unit.shared.reduce((n, p) => n + cross(p), 0) + GAP * Math.max(0, unit.shared.length - 1)
+      let lane = unit.left + (sharedRowWidth ? sharedRowWidth + UNIT_GAP : 0)
       const parentTop = rowTop
       const parentBandDepth = Math.max(0, ...unit.members.map(depth), ...unit.families.filter(f => f.parents.length === 1).map(() => horizontal ? w : Math.max(...Object.values(heights))))
       const junctionTop = rowTop + parentBandDepth + 24 + unit.families.length * 10
@@ -196,12 +198,12 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
         return center(a) - center(b) || compare(a, b)
       })
       const totalHubWidth = hubs.reduce((n, p) => n + cross(p), 0) + GAP * Math.max(0, hubs.length - 1)
-      let hubX = unit.left + (unit.width - totalHubWidth) / 2
+      let hubX = unit.left
       // On a narrow screen the ONE common-parent card follows the chosen lane.
       // All people/edges stay in the same graph; no saved coordinate is written.
       if (options.narrow && grids.size && hubs.length === 1) {
         const focused = unit.families.find(f => f.key === options.focusedFamily) || unit.families[0]
-        hubX = familyCenters.get(focused.key)! - totalHubWidth / 2
+        hubX = laneOf.get(focused.key)!.left - totalHubWidth - GAP
       }
       for (const p of hubs) { logical.set(p.id, { x: hubX, y: rowTop }); hubX += cross(p) + GAP }
     }
