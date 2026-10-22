@@ -55,7 +55,22 @@ for(const layout of ['vertical','horizontal'])for(const width of [375,768,1600])
  await expect(page.getByTestId('unknown-coparent')).toHaveCount(1)
  await expect(page.getByText('Sans lien renseign\u00e9',{exact:true})).toHaveCount(1)
  await checkPaths(page)
+ expect(await page.getByTestId('union-junction').evaluateAll(junctions=>junctions.every(j=>{
+   const key=j.getAttribute('data-family-key'),lane=[...document.querySelectorAll('[data-testid="union-lane"]')].find(el=>el.getAttribute('data-family-key')===key)!.getBoundingClientRect()
+   return (j.getAttribute('data-child-ids')||'').split(',').filter(Boolean).every(id=>{
+     const card=[...document.querySelectorAll('[data-testid="tree-person-card"]')].find(el=>el.getAttribute('data-person-id')===id)!.getBoundingClientRect()
+     return card.left>=lane.left-1 && card.right<=lane.right+1 && card.top>=lane.top-1 && card.bottom<=lane.bottom+1
+   })
+ }))).toBe(true)
+ if(width===1600) expect(await page.getByTestId('tree-search').evaluate(el=>el.getBoundingClientRect().width)).toBeGreaterThanOrEqual(160)
  if(width===375){await expect(page.getByTestId('union-navigation')).toBeVisible();expect(parseFloat(await page.getByTestId('tree-zoom').innerText())).toBeGreaterThanOrEqual(85)}
+ if(width===375&&layout==='vertical') expect(await page.getByTestId('tree-zoom-controls').evaluate(controls=>{
+   const box=controls.getBoundingClientRect()
+   return [...document.querySelectorAll('[data-testid="tree-person-card"]')].every(card=>{
+     const r=card.getBoundingClientRect()
+     return r.right<=box.left || r.left>=box.right || r.bottom<=box.top || r.top>=box.bottom
+   })
+ })).toBe(true)
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true)
  expect(state.errors).toEqual([]);expect(state.writes).toEqual([])
  await page.screenshot({path:info.outputPath(`unions-${layout}-${width}-${dark?'dark':'light'}.png`),fullPage:true})

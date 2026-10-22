@@ -3,7 +3,7 @@
 > Source de vérité partagée entre toutes les IA et développeurs.
 > À lire en début de session, à mettre à jour en fin de tâche (voir [AGENTS.md](../AGENTS.md)).
 
-Dernière mise à jour : **2026-10-22** (familles recomposées, PR #5 non déployée ; historique conservé ci-dessous)
+Dernière mise à jour : **2026-10-22** (arbre complet par unions, PR #5 non déployée ; historique conservé ci-dessous)
 
 ---
 
@@ -135,6 +135,8 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 
 ## 8. Journal
 
+- **2026-10-22 (arbre complet par unions, non déployé)** — Parent commun unique, jonctions parentales nommées, fratries séparées dans le graphe complet vertical/horizontal, navigation mobile sans filtrage, positions libres préservées. Suites géométriques et navigateur ajoutées ; voir section 12 et `UNION_OVERVIEW.md`.
+
 - **2026-07-23 (org, poste extensible)** — Champ Poste / Fonction du panneau (et dialogue création) : `Textarea` auto-extensible (`field-sizing-content`), comme Notes, au lieu d’un Input une ligne.
 - **2026-07-23 (fix CI)** — Build frontend CI cassé : `@ts-nocheck` + défaut `cardHeights = null` faisait inférer le 7ᵉ arg de `buildConnections` comme `null` uniquement ; retrait du défaut.
 - **2026-07-23 (org, branches vs poste long)** — Réorganiser / layout org : hauteur de carte estimée selon le poste (`estimateOrgCardHeight`) ; espacement vertical des rangées et ancrage des branches (`buildConnections` + `cardHeights`) pour éviter le chevauchement des lignes sur le texte.
@@ -197,3 +199,12 @@ Ce complément décrit les changements de la branche de correction, pas l'état 
 - Nom fixe dans le panneau, boutons non tronques, cartes moins attenuees, titres contextuels de formulaire et choix photo traduit. Le format du controle de date natif reste celui du navigateur.
 - Nouvelles suites : scripts/test-tree-clarity.cjs et e2e/tree-clarity.spec.ts, integrees au workflow d'affichage. Les suites graphiques existantes choisissent explicitement Arbre ; leurs assertions sont conservees. Voir docs/TREE_READABILITY.md et les derniers resultats de la PR avant promotion.
 - Backend inchange par ce complement. Aucune fusion ni mise en production. Les transactions et limitations de la section 10 restent applicables.
+
+## 12. Arbre complet par unions - 22 octobre 2026, PR #5 non deployee
+
+- L'arbre genealogique a plusieurs unions propose une projection complete : parent commun affiche une seule fois, partenaires en couloirs distincts, jonctions portant les noms des parents et enfants communs dessous. La vue Familles reste optionnelle, elle ne remplace plus le graphe par defaut pour ce cas.
+- Vertical/horizontal, quatre styles de cartes, coparents sans mariage, parent inconnu, unions sans enfant, descendants avec leurs propres unions et personnes isolees. Les connexions evitent cartes et jonctions. Aucun ordre chronologique de partenaires n'est deduit des identifiants ou de la naissance des enfants : le modele actuel n'enregistre pas les dates d'union.
+- Projection temporaire sans ecriture de positions : Placement libre restitue les coordonnees manuelles. Le radial reste un placement libre explicite. Les cycles incompatibles avec cette projection conservent le graphe existant.
+- Sur mobile : echelle initiale lisible et navigation entre unions par deplacement du meme graphe, sans filtrer ni supprimer les autres membres. Vue d'ensemble reste une action explicite qui peut reduire les textes. Recherche et generation surlignent les correspondances en conservant le contexte parental.
+- Suites ajoutees : scripts/test-union-overview.cjs et e2e/tree-unions.spec.ts. Anciennes assertions conservees : la suite de lecture choisit explicitement Familles ; le test de cadrage appelle explicitement Vue d'ensemble. Voir docs/UNION_OVERVIEW.md et les resultats du dernier commit avant promotion.
+- Aucun changement backend, migration ou deploiement par cette iteration. Validation navigateur distante et revue des captures requises avant de conclure sur la lisibilite.

@@ -124,9 +124,14 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
     const row = queue.filter(u => u.level === level)
     row.sort((a, b) => (slots.get(a) ?? Infinity) - (slots.get(b) ?? Infinity) || compare(a.members[0], b.members[0]))
     let end = 32
+    let previous: Unit | undefined
     for (const unit of row) {
-      unit.left = Math.max(end, slots.has(unit) ? slots.get(unit)! - unit.width / 2 : end)
-      unit.top = rowTop; end = unit.left + unit.width + UNIT_GAP
+      // Use the same sibling gap as the reserved lane width. A larger global
+      // unit gap would push the second child beyond its own parental frame.
+      const spacing = previous ? previous.owner?.key && previous.owner.key === unit.owner?.key ? GAP : UNIT_GAP : 0
+      const minimum = end + spacing
+      unit.left = Math.max(minimum, slots.has(unit) ? slots.get(unit)! - unit.width / 2 : minimum)
+      unit.top = rowTop; end = unit.left + unit.width; previous = unit
       if (!unit.families.length) {
         const p = unit.members[0]; logical.set(p.id, { x: unit.left, y: rowTop }); continue
       }

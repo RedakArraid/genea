@@ -280,8 +280,8 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   return <div ref={wrapRef} data-testid="tree-viewport" className={cn('relative size-full overscroll-none overflow-hidden', reading ? 'touch-auto' : 'touch-none', !showBackground && 'bg-muted/20', panning && 'cursor-grabbing', pasteMode && 'cursor-crosshair')}
     onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={pointerEnd}>
     <div ref={toolbarRef} data-no-pan data-testid="tree-toolbar" data-toolbar-mode={compact ? 'compact' : 'full'} className="absolute inset-x-0 top-0 z-10 flex min-w-0 flex-col gap-2 border-b bg-background/95 p-2 backdrop-blur">
-      <div className="flex min-w-0 items-center gap-2">
-      <div className={cn('relative min-w-0 flex-1', !compact && 'max-w-[180px]')}>
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+      <div className={cn('relative min-w-0 flex-1', !compact && 'min-w-[160px] max-w-[200px]')}>
         <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
         <Input data-testid="tree-search" aria-label={t('canvas.searchPlaceholder')} className="min-w-0 pl-8" placeholder={t('canvas.searchPlaceholder')} value={searchQuery} onChange={e => onSearchChange(e.target.value)} />
       </div>
@@ -351,7 +351,7 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
         onDrag={canMoveCards ? onCardDrag : undefined} onDragStart={canMoveCards ? () => { draggingRef.current = true; setDraggingId(p.id); onCardDragStateChange?.(true) } : undefined} onDragEnd={canMoveCards ? onCardDragEnd : undefined} />)}
 
     </div>
-    <div className="absolute bottom-4 right-4 z-20 flex flex-col gap-1 rounded-lg border bg-background p-1 shadow" data-no-pan>
+    <div className={cn("absolute bottom-4 right-4 z-20 flex gap-1 rounded-lg border bg-background p-1 shadow", unionScene ? "flex-row items-center" : "flex-col")} data-no-pan data-testid="tree-zoom-controls">
       <Button size="sm" variant="ghost" aria-label={en ? 'Zoom in' : 'Agrandir'} data-testid="tree-zoom-in" onClick={() => zoom(1.15)}>+</Button>
       <span className="px-2 text-center text-xs" data-testid="tree-zoom">{view.scale < .1 ? (view.scale * 100).toFixed(1) : Math.round(view.scale * 100)}%</span>
       <Button size="sm" variant="ghost" aria-label={en ? 'Zoom out' : 'R\u00e9duire'} onClick={() => zoom(1 / 1.15)}>{'\u2212'}</Button>

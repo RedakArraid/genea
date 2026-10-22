@@ -36,6 +36,14 @@ function verify(people, orientation, style) {
     const children=scene.connections.filter(c=>c.family===p.family.key&&c.role==='child')
     assert.deepEqual(children.map(c=>c.childId).sort(),p.family.children.map(p=>p.id).sort())
     for(const c of children)assert.deepEqual(c.parentIds.slice().sort(),parentIds)
+    // Simple leaf fratries must fit inside their own visible family frame.
+    if(p.family.children.every(child=>!scene.panels.some(other=>other.family.parents.some(parent=>parent.id===child.id)))) {
+      for(const child of p.family.children) {
+        const pos=scene.positions[child.id]
+        assert.ok(pos.x>=p.x && pos.x+w<=p.x+p.width,`${child.id} outside family width`)
+        assert.ok(pos.y>=p.y && pos.y+heights[child.id]<=p.y+p.height,`${child.id} outside family height`)
+      }
+    }
   }
   for(const c of scene.connections)for(let i=1;i<c.points.length;i++)for(const r of [...cards,...labels])assert.equal(R.segmentHitsCard(c.points[i-1],c.points[i],r),false,`line through ${r.id}`)
   for(const [i,a]of scene.connections.entries())for(const b of scene.connections.slice(i+1))if(a.family!==b.family)for(let j=1;j<a.points.length;j++)for(let k=1;k<b.points.length;k++)assert.equal(R.segmentsOverlap(a.points[j-1],a.points[j],b.points[k-1],b.points[k]),false,'different families share a segment')
