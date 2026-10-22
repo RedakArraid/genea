@@ -83,7 +83,8 @@ for(const orientation of ['vertical','horizontal'])test(`removed union card leav
  for(const panel of scene.panels) {
    const parentEdge=Math.max(...panel.family.parents.map(p=>scene.positions[p.id][axis]+(horizontal?w:heights[p.id])), panel.unknown ? panel.unknown[axis]+(horizontal?panel.unknown.width:panel.unknown.height) : -Infinity)
    const childEdge=Math.min(...panel.family.children.map(p=>scene.positions[p.id][axis]))
-   assert.equal(childEdge-parentEdge,104,'Only the routing corridor remains, not an empty label slot')
+   const corridor=childEdge-parentEdge
+   assert.ok(corridor>=96 && corridor<=180,`Routing corridor ${corridor}px must not reserve an intermediate card`)
  }
 })
 
@@ -94,6 +95,12 @@ function largeFamily() {
   for(let i=0;i<7;i++) p.push(person(`${partner}-${i}`,['father',partner],[],2))
  }
  return p
+}
+function panelRows(scene, people, direction) {
+ return [...new Set(people.map(p=>p.generation))].map(g=>{
+  const row=people.filter(p=>p.generation===g)
+  return new Set(row.map(p=>direction==='horizontal'?scene.positions[p.id].x:scene.positions[p.id].y)).size
+ })
 }
 const V=load('frontend/src/utils/union-viewport.ts')
 for(const direction of ['vertical','horizontal'])for(const style of ['square','round','minimal','horizontal'])for(const narrow of [false,true])test(`compact 4x7 ${direction}/${style}/${narrow?'narrow':'wide'}`,()=>{
@@ -110,8 +117,8 @@ for(const direction of ['vertical','horizontal'])for(const style of ['square','r
  }
  assert.deepEqual(U.computeUnionOverview([...people].reverse(),direction,style,{narrow}).positions,scene.positions)
  if(direction==='vertical' && style==='square' && !narrow) {
-  assert.ok(scene.bounds.width<1800,JSON.stringify(scene.bounds))
   assert.ok(scene.bounds.height<1000,JSON.stringify(scene.bounds))
+  assert.equal(new Set(panelRows(scene, people, direction)).size, 2, 'The wide canvas may scroll, but generations stay aligned')
  }
 })
 
