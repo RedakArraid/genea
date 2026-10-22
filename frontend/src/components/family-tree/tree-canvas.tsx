@@ -235,7 +235,7 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
           </SheetContent>
         </Sheet>
       </> : <>
-        <Select value={genFilter} onValueChange={v => v && onSetTweak('generation', v)}><SelectTrigger size="sm" className="w-[160px]" aria-label={generationPlaceholder}><SelectValue placeholder={generationPlaceholder} /></SelectTrigger><SelectContent className="max-h-64">{generationOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent></Select>
+        <Select items={generationOptions} value={genFilter} onValueChange={v => v && onSetTweak('generation', v)}><SelectTrigger data-testid="tree-generation-filter" size="sm" className="w-[160px]" aria-label={generationPlaceholder}><SelectValue placeholder={generationPlaceholder} /></SelectTrigger><SelectContent className="max-h-64">{generationOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent></Select>
         <div className="flex shrink-0 gap-1">{(['vertical','horizontal','radial'] as const).map(l => <Button key={l} data-testid={`layout-${l}`} size="sm" aria-label={layoutLabels[l]} title={layoutLabels[l]} variant={layout === l ? 'default' : 'outline'} onClick={() => onSetTweak('layout', l)}>{l === 'vertical' ? '\u2193' : l === 'horizontal' ? '\u2192' : '\u25ce'}</Button>)}</div>
         {actions(false)}
       </>}

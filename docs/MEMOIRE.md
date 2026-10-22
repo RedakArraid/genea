@@ -168,3 +168,14 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 - **2026-07-05** — Amélioration « Réorganiser » : layout multi-conjoints (`computeSpouseOnlyLayout`), confirmation avant écrasement des positions manuelles, tooltip, 12 tests layout.
 - **2026-07-05** — Fixes édition fiche/photo : `AuthenticatedImage` (JWT), listeners pointerup, SVG liaisons dynamique, layout plein écran. Tests E2E `person-edit.spec.ts` et `buttons.spec.ts`.
 - **Avant** — Billing Côte d'Ivoire (Paystack + CinetPay + promos), OTP téléphone, migration phone-primary/email-optionnel, arbre démo, collaboration, admin.
+- **2026-10-22 (affichages, branche non déployée)** — Corrections sur `fix/tree-displays-2026-10-22`, issue de `dev`, distincte de la PR backend #4 : géométrie partagée, moteur typé, liens horizontaux/radiaux et multi-conjoints, quatre styles de cartes, cadrage complet, filtres cohérents, conservation des positions manuelles et préférences, PDF organisation accessible, aperçus marketing alignés. Premier run GitHub Actions `39756071690` sur `bb32ad1` : 65 tests géométriques + 46 tests existants + 55 scénarios Chromium réussis, build frontend complet réussi ; 13 captures examinées. Ajout ensuite du libellé traduit du filtre et de cinq scénarios navigateur, avec vérification explicite du thème réel. Voir [TREE_DISPLAY_AUDIT.md](TREE_DISPLAY_AUDIT.md) et le dernier run de la PR. Aucune fusion ni mise en production.
+
+## 9. Complément affichages — 22 octobre 2026
+
+Ce complément décrit les changements de la branche de correction, pas l'état déployé. Il complète les sections 3, 5, 6 et 7 ci-dessus sans réécrire l'historique.
+
+- Géométrie navigateur commune : `frontend/src/lib/tree-geometry.ts`. Le canvas, les cartes et les aperçus marketing partagent les mêmes dimensions, hauteurs et transformations. Le moteur organisation vertical carré existant reste conservé.
+- Commandes ajoutées : `node --test scripts/test-tree-displays.cjs` (65 tests) et `npx playwright test --config=playwright.displays.config.ts` (60 scénarios dans la suite enrichie). Le fichier existant `scripts/test-layout.mjs` contient actuellement 46 assertions, validées sans le modifier ; le compteur historique de 12 dans la section 6 est ancien.
+- Workflow `tree-display-checks.yml` : tests et compilation, sans déploiement ; API simulée et données fictives pour les scénarios navigateur. Captures PNG conservées sept jours.
+- À faire avant promotion : revue du diff et tests staging avec les vraies permissions, photos et données, ainsi que Safari/mobile physique. La validation Chromium avec API simulée ne remplace pas l'intégration.
+- Limite explicite : l'export PDF reste une liste textuelle, pas une reproduction graphique du canvas. Des croisements de liens restent possibles dans les graphes complexes ; le cadrage global peut rendre les grandes familles petites et nécessite alors zoom ou filtres.

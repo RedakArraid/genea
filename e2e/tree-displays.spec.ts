@@ -25,7 +25,7 @@ async function fixture(page: Page, options: Options = {}) {
   page.on('pageerror', error => errors.push(error.message))
   await page.addInitScript(({ id, layout, style, dark }) => {
     localStorage.setItem('geneamap_locale', 'fr')
-    localStorage.setItem('theme', dark ? 'dark' : 'light')
+    localStorage.setItem('geneamap-theme', dark ? 'dark' : 'light')
     // This token is decoded in the client only. Every API response is intercepted below.
     localStorage.setItem('token', `e30.${btoa(JSON.stringify({ exp: 4102444800, id: 'display-user' }))}.fixture`)
     if (!localStorage.getItem(`geneamap:tree-view:v1:${id}`)) localStorage.setItem(`geneamap:tree-view:v1:${id}`, JSON.stringify({ layout, cardStyle: style, density: 'spacious', connStyle: 'elbow' }))
@@ -52,6 +52,7 @@ async function fixture(page: Page, options: Options = {}) {
   })
   await page.goto(`/tree/${id}`)
   await expect(page.getByTestId('tree-person-card')).toHaveCount(people.length)
+  await expect(page.locator('html')).toHaveClass(dark ? /\bdark\b/ : /\blight\b/)
   return { id, people, positions, writes, errors }
 }
 
@@ -151,3 +152,37 @@ test('manual card coordinates persist through drag, save and reload', async ({ p
   await expectFitted(page)
   expect(result.errors).toEqual([])
 })
+
+test('generation filter displays its translated label before opening', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await fixture(page)
+  const filter = page.getByTestId('tree-generation-filter')
+  await expect(filter).not.toHaveText(/^all$/)
+  await expect(filter).toContainText(/générations/i)
+  await filter.click()
+  await page.getByRole('option').filter({ hasText: /2/ }).first().click()
+  await expect(page.getByTestId('tree-person-card')).toHaveCount(16)
+  await expect(page.locator('[data-connection-kind]')).toHaveCount(0)
+  await expectFitted(page)
+})
+
+for (const url of ['/', '/organisation']) for (const width of [375, 1440]) {
+  test(`marketing preview ${url} ${width}px`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 1000 })
+    const result = await fixture(page)
+    await page.goto(url)
+    const preview = page.getByTestId('marketing-tree-preview').first()
+    await expect(preview).toBeVisible()
+    await preview.scrollIntoViewIfNeeded()
+    await expect.poll(() => preview.evaluate(el => {
+      const r = el.getBoundingClientRect()
+      const cards = [...el.querySelectorAll<HTMLElement>('.tree-person-card')]
+      return cards.length > 1 && cards.every(card => {
+        const c = card.getBoundingClientRect()
+        return c.left >= r.left - 1 && c.right <= r.right + 1 && c.top >= r.top - 1 && c.bottom <= r.bottom + 1
+      })
+    })).toBe(true)
+    expect(result.errors).toEqual([])
+    await preview.screenshot({ path: info.outputPath(`marketing-${url === '/' ? 'family' : 'org'}-${width}.png`) })
+  })
+}
