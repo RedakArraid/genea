@@ -115,7 +115,6 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
     if (options.narrow) for (const parent of f.parents) compactIds.add(parent.id)
   }
   for (const id of compactIds) cardSizes[id] = getCompactCardDimensions()
-  const sharedGap = (unit: Unit) => unit.families.some(f => grids.has(f.key)) ? 24 + unit.families.length * 8 : 64 + unit.families.length * 10
   const gridPositions = new Map<Unit, Point>()
   for (const unit of [...queue].reverse()) {
     for (const f of unit.families) {
@@ -188,7 +187,7 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
           let childLeft = center - total / 2
           for (const child of children) { slots.set(child, childLeft + child.width / 2); childLeft += child.width + GAP }
         }
-        const unknown = f.parents.length === 1 && unit.shared.length ? box({ u: center - cross(f.parents[0]) / 2, v: parentTop, cross: cross(f.parents[0]), depth: exclusiveDepth }) : undefined
+        const unknown = f.parents.length === 1 && unit.shared.length ? box({ u: center - cross(f.parents[0]) / 2, v: parentTop, cross: cross(f.parents[0]), depth: parentBandDepth }) : undefined
         panels.push({ family: f, compact: grids.has(f.key), color: panels.length % 6, junction: screen(node.x, node.y), unknown, ...box({ u: lane + 4, v: parentTop - 18, cross: width - 8, depth: junctionTop - parentTop + 36 }) })
         lane += width + GAP
       }
