@@ -124,6 +124,7 @@ test('graph family focus keeps only the intended parents and children', async ({
   await expect(page.getByTestId('tree-person-card')).toHaveCount(4)
   await expect(page.locator('.tree-person-card[data-person-id="mother-b"]')).toBeVisible()
   await expect(page.locator('.tree-person-card[data-person-id="mother-a"]')).toHaveCount(0)
+  await page.screenshot({ path: info.outputPath('mobile-focused-family.png'), fullPage: true })
   await page.getByTestId('view-families').click()
   await expect(page.getByTestId('reading-family')).toHaveCount(4)
   await page.reload()
@@ -135,4 +136,24 @@ test('English labels do not expose translation keys', async ({ page }) => {
   await fixture(page, { lang: 'en' })
   await expect(page.getByTestId('family-reader')).toContainText('Read by family')
   await expect(page.getByTestId('family-reader')).not.toContainText('reader.')
+})
+
+
+test('centering a person from Families opens the graph and clears incompatible filters', async ({ page }) => {
+  const state = await fixture(page)
+  await page.getByTestId('tree-search').fill('Issa')
+  await page.locator('[data-testid="reader-children"] [data-person-id="b1"]').click()
+  await page.locator('aside').getByRole('button', { name: 'Centrer', exact: true }).click()
+  await expect(page.getByTestId('view-graph')).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByTestId('tree-search')).toHaveValue('')
+  await expect(page.getByTestId('tree-person-card')).toHaveCount(12)
+  await expect(page.getByTestId('person-panel-heading')).toContainText('Issa Traore')
+  await expect.poll(() => page.getByTestId('tree-zoom').innerText()).toMatch(/^(9[0-9]|[1-9][0-9]{2})%$/)
+  await expect.poll(() => page.locator('.tree-person-card[data-person-id="b1"]').evaluate(card => {
+    const viewport = document.querySelector('[data-testid="tree-viewport"]')!.getBoundingClientRect()
+    const toolbar = document.querySelector('[data-testid="tree-toolbar"]')!.getBoundingClientRect()
+    const rect = card.getBoundingClientRect()
+    return Math.abs((rect.left + rect.right) / 2 - (viewport.left + viewport.right) / 2) < 2 && rect.top >= toolbar.bottom && rect.bottom <= viewport.bottom
+  })).toBe(true)
+  expect(state.errors).toEqual([])
 })

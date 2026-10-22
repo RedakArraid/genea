@@ -60,7 +60,7 @@ jobs:
         env:
           VITE_API_URL: http://127.0.0.1:3001/api
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Real browser, API and database family journeys
         run: npx playwright test --config=playwright.families.config.ts
       - name: Keep synthetic-family screenshots

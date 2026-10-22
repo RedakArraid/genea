@@ -43,7 +43,7 @@ jobs:
         env:
           VITE_API_URL: http://127.0.0.1:5173/api
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Browser display tests with mocked API
         run: npx playwright test --config=playwright.displays.config.ts
       - name: Visual clarity and mobile reading journeys
