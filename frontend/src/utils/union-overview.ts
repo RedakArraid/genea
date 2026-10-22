@@ -123,15 +123,15 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
       const parentWidth = exclusive.reduce((n, p) => n + cross(p), 0) + GAP * Math.max(0, exclusive.length - 1)
       const children = ownedChildren(f)
       const childWidth = grids.has(f.key)
-        ? 2 * Math.max(...children.map(u => u.width)) + GRID_GAP + GRID_GUTTER
+        ? children.reduce((n, u) => n + u.width, 0) + GRID_GAP * Math.max(0, children.length - 1) + GRID_GUTTER * 2
         : children.reduce((n, u) => n + u.width, 0) + GAP * Math.max(0, children.length - 1)
       unit.widths.set(f.key, Math.max(parentWidth, childWidth, ...f.parents.map(cross)) + PAD * 2)
     }
     unit.width = unit.families.length ? [...unit.widths.values()].reduce((n, v) => n + v, 0) + GAP * (unit.families.length - 1) : cross(unit.members[0])
     unit.width = Math.max(unit.width, unit.shared.reduce((n, p) => n + cross(p) + GAP, 0))
-    const sharedDepth = unit.shared.length ? Math.max(...unit.shared.map(depth)) + sharedGap(unit) : 0
-    const exclusiveDepth = Math.max(0, ...unit.members.filter(p => !unit.shared.includes(p)).map(depth), ...unit.families.filter(f => f.parents.length === 1).map(() => horizontal ? w : Math.max(...Object.values(heights))))
-    unit.depth = unit.families.length ? sharedDepth + exclusiveDepth + 28 + (unit.families.some(f => grids.has(f.key)) ? 28 : 76) : depth(unit.members[0]) + 64
+    const parentBandDepth = Math.max(0, ...unit.members.map(depth), ...unit.families.filter(f => f.parents.length === 1).map(() => horizontal ? w : Math.max(...Object.values(heights))))
+    const routingDepth = unit.families.length ? 44 + unit.families.length * 10 : 0
+    unit.depth = unit.families.length ? parentBandDepth + routingDepth + (unit.families.some(f => grids.has(f.key)) ? 44 : 76) : depth(unit.members[0]) + 64
   }
   const levels = [...new Set(queue.map(u => u.level))].sort((a, b) => a - b)
   const logical = new Map<string, Point>() // x is cross-axis, y is generation-axis.
@@ -163,10 +163,9 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
         const p = unit.members[0]; logical.set(p.id, { x: unit.left, y: rowTop }); continue
       }
       let lane = unit.left
-      const sharedDepth = unit.shared.length ? Math.max(...unit.shared.map(depth)) + sharedGap(unit) : 0
-      const parentTop = rowTop + sharedDepth
-      const exclusiveDepth = Math.max(0, ...unit.members.filter(p => !unit.shared.includes(p)).map(depth), ...unit.families.filter(f => f.parents.length === 1).map(() => horizontal ? w : Math.max(...Object.values(heights))))
-      const junctionTop = parentTop + exclusiveDepth + 28
+      const parentTop = rowTop
+      const parentBandDepth = Math.max(0, ...unit.members.map(depth), ...unit.families.filter(f => f.parents.length === 1).map(() => horizontal ? w : Math.max(...Object.values(heights))))
+      const junctionTop = rowTop + parentBandDepth + 24 + unit.families.length * 10
       for (const f of unit.families) {
         const width = unit.widths.get(f.key)!, center = lane + width / 2
         familyCenters.set(f.key, center)
@@ -179,13 +178,11 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
         for (const p of exclusive) { logical.set(p.id, { x, y: parentTop }); x += cross(p) + GAP }
         const children = ownedChildren(f), total = children.reduce((n, u) => n + u.width, 0) + GAP * Math.max(0, children.length - 1)
         if (grids.has(f.key)) {
-          const cellCross = Math.max(...children.map(u => cross(u.members[0])))
-          const cellDepth = Math.max(...children.map(u => depth(u.members[0])))
-          const left = lane + PAD + GRID_GUTTER
-          children.forEach((child, index) => {
-            const x = left + (index % 2) * (cellCross + GRID_GAP)
-            const y = childRowTop + Math.floor(index / 2) * (cellDepth + GRID_GAP)
-            gridPositions.set(child, { x, y }); slots.set(child, x + child.width / 2)
+          let childLeft = lane + PAD + GRID_GUTTER
+          children.forEach(child => {
+            gridPositions.set(child, { x: childLeft, y: childRowTop })
+            slots.set(child, childLeft + child.width / 2)
+            childLeft += child.width + GRID_GAP
           })
         } else {
           let childLeft = center - total / 2
@@ -246,7 +243,8 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
       const start = { x: pos.x + cross(p) * port, y: pos.y + depth(p) }
       const input = node
       if (unit.shared.includes(p)) {
-        const corridor = unit.top + Math.max(...unit.shared.map(depth)) + 18 + fIndex * 10
+        const parentBandDepth = Math.max(...unit.members.map(depth))
+        const corridor = unit.top + parentBandDepth + 8 + fIndex * 10
         const side = lane.left + 12 + index * 8
         add(f, 'parent', [start, { x: start.x, y: corridor }, { x: side, y: corridor }, { x: side, y: node.y - 12 }, { x: input.x, y: node.y - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
       } else add(f, 'parent', [start, { x: start.x, y: node.y - 12 }, { x: input.x, y: node.y - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
@@ -256,9 +254,7 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
     const bus = output.y + Math.max(20, (childTop - output.y) * .5)
     for (const c of f.children) {
       const pos = logical.get(c.id)!, end = { x: pos.x + cross(c) / 2, y: pos.y }
-      const points = grids.has(f.key)
-        ? [output, { x: lane.left + PAD / 2, y: output.y }, { x: lane.left + PAD / 2, y: pos.y - 12 }, { x: end.x, y: pos.y - 12 }, end]
-        : [output, { x: output.x, y: bus }, { x: end.x, y: bus }, end]
+      const points = [output, { x: output.x, y: bus }, { x: end.x, y: bus }, end]
       add(f, 'child', points.map(p => screen(p.x, p.y)), [...f.parents.map(p => p.id), c.id], c.id)
     }
   }
