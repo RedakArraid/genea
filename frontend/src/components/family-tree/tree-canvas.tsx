@@ -1,1073 +1,280 @@
-import { useRef, useState, useEffect, useMemo, useCallback } from "react"
-import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2, MoreVertical, UserPlus, Link2, FileDown, Upload } from "lucide-react"
-import { useTranslation } from "react-i18next"
-import { PersonCard } from "./person-card"
-import { buildConnections, computeLineage, getCardDimensions, buildOrgCardHeights } from "@/utils/tree-layout"
-import type { NormalizedPerson, TreeTweaks, FamilyTree } from "@/types"
-import type { TreeBackgroundConfig } from "@/lib/tree-background"
-import { isTreeBackgroundActive, buildViewportBackgroundStyle } from "@/lib/tree-background"
-import { useProtectedMediaUrl } from "@/hooks/use-protected-media-url"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { cn } from "@/lib/utils"
-import { isOrganizationTree } from "@/lib/tree-type"
-import { getMaxGeneration, formatLevelFilterLabel } from "@/lib/generation-level"
-import { resolveOrgLexicon } from "@/lib/org-lexicon"
-
-const TOOLBAR_H = 48
-const VIEW_PADDING = 40
-const VIEW_PADDING_LEFT = 56
-const SIDE_PANEL_W = 320
-const CANVAS_PADDING = 80
-const MOBILE_BREAKPOINT = 768
-
-function computeFocusPersonIds(people: NormalizedPerson[]): Set<string> {
-  if (people.length <= 10) return new Set(people.map((p) => p.id))
-
-  const maxGen = Math.max(...people.map((p) => p.generation ?? 1))
-  const focusGens = new Set([maxGen, maxGen - 1, maxGen - 2].filter((g) => g >= 1))
-  const ids = new Set<string>()
-
-  for (const p of people) {
-    if (!focusGens.has(p.generation ?? 1)) continue
-    ids.add(p.id)
-    for (const pid of p.parentIds ?? []) ids.add(pid)
-    for (const sid of p.spouseIds ?? []) ids.add(sid)
-  }
-
-  return ids.size > 0 ? ids : new Set(people.map((p) => p.id))
-}
-
-function computeSmartFitScale(
-  bounds: { width: number; height: number },
-  availW: number,
-  availH: number,
-  personCount: number,
-  isMobile: boolean
-): number {
-  const fitScale = Math.min(availW / bounds.width, availH / bounds.height)
-  const minScale =
-    personCount <= 8
-      ? isMobile
-        ? 0.55
-        : 0.45
-      : personCount <= 16
-        ? isMobile
-          ? 0.42
-          : 0.34
-        : isMobile
-          ? 0.36
-          : 0.28
-  return Math.max(0.2, Math.min(2.5, Math.max(fitScale, minScale)))
-}
-
-function computeConnectionBounds(
-  people: NormalizedPerson[],
-  positions: Record<string, { x: number; y: number }>,
-  cardW: number,
-  cardH: number,
-  connections: ReturnType<typeof buildConnections>,
-  cardHeights?: Record<string, number> | null
-) {
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-
-  const include = (x: number, y: number) => {
-    minX = Math.min(minX, x)
-    minY = Math.min(minY, y)
-    maxX = Math.max(maxX, x)
-    maxY = Math.max(maxY, y)
-  }
-
-  for (const p of people) {
-    const pos = positions[p.id]
-    if (!pos) continue
-    const h = cardHeights?.[p.id] ?? cardH
-    include(pos.x, pos.y)
-    include(pos.x + cardW, pos.y + h)
-  }
-
-  for (const c of connections) {
-    if (c.midX != null && c.midY != null) include(c.midX, c.midY)
-  }
-
-  if (!isFinite(minX)) {
-    return { minX: 0, minY: 0, width: 1400, height: 1000 }
-  }
-
-  minX -= CANVAS_PADDING
-  minY -= CANVAS_PADDING
-  maxX += CANVAS_PADDING
-  maxY += CANVAS_PADDING
-
-  return {
-    minX,
-    minY,
-    width: Math.max(800, maxX - minX),
-    height: Math.max(600, maxY - minY),
-  }
-}
-
-function computeContentBounds(
-  positions: Record<string, { x: number; y: number }>,
-  personIds: Set<string>,
-  cardW: number,
-  cardH: number,
-  cardHeights?: Record<string, number> | null
-) {
-  const entries = Object.entries(positions).filter(([id]) => personIds.has(id))
-  if (entries.length === 0) return null
-
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  for (const [id, pos] of entries) {
-    const h = cardHeights?.[id] ?? cardH
-    minX = Math.min(minX, pos.x)
-    minY = Math.min(minY, pos.y)
-    maxX = Math.max(maxX, pos.x + cardW)
-    maxY = Math.max(maxY, pos.y + h)
-  }
-  return {
-    minX,
-    minY,
-    maxX,
-    maxY,
-    width: maxX - minX,
-    height: maxY - minY,
-    centerX: (minX + maxX) / 2,
-    centerY: (minY + maxY) / 2,
-  }
-}
+import { useRef, useState, useEffect, useMemo, useCallback, useLayoutEffect } from 'react'
+import { Plus, Search, Settings, Share2, LayoutGrid, Maximize2, MoreVertical, UserPlus, Link2, FileDown, Upload } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { PersonCard } from './person-card'
+import { buildConnections, computeLineage } from '@/utils/tree-layout'
+import { getCardDimensions, buildCardHeights, contentBounds, drawingBounds, fitViewport, zoomAt, screenToWorld, visiblePeople, MIN_ZOOM, MAX_ZOOM } from '@/lib/tree-geometry'
+import type { Point, Positions } from '@/lib/tree-geometry'
+import type { NormalizedPerson, TreeTweaks, FamilyTree } from '@/types'
+import type { TreeBackgroundConfig } from '@/lib/tree-background'
+import { isTreeBackgroundActive, buildViewportBackgroundStyle } from '@/lib/tree-background'
+import { useProtectedMediaUrl } from '@/hooks/use-protected-media-url'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { cn } from '@/lib/utils'
+import { isOrganizationTree } from '@/lib/tree-type'
+import { getMaxGeneration, formatLevelFilterLabel } from '@/lib/generation-level'
+import { resolveOrgLexicon } from '@/lib/org-lexicon'
 
 interface TreeCanvasProps {
-  people: NormalizedPerson[]
-  tweaks: TreeTweaks
-  treeMeta?: Pick<FamilyTree, "treeType" | "orgLexicon">
-  background?: TreeBackgroundConfig | null
-  positions: Record<string, { x: number; y: number }>
-  setPositions: React.Dispatch<React.SetStateAction<Record<string, { x: number; y: number }>>>
-  selectedId: string | null
-  onSelect: (id: string) => void
-  hoverId: string | null
-  onHover: (id: string | null) => void
-  canvasW?: number
-  canvasH?: number
+  people: NormalizedPerson[]; tweaks: TreeTweaks
+  treeMeta?: Pick<FamilyTree, 'treeType' | 'orgLexicon'>; background?: TreeBackgroundConfig | null
+  positions: Positions; setPositions: React.Dispatch<React.SetStateAction<Positions>>
+  selectedId: string | null; onSelect: (id: string) => void; hoverId: string | null; onHover: (id: string | null) => void
+  canvasW?: number; canvasH?: number
   onOpenAdd: (parentId?: string | null, relType?: string | null, parent2Id?: string | null) => void
   onLinkExistingChild?: (parentIds: string[]) => void
-  onOpenShare: () => void
-  onOpenTweaks: () => void
-  onSetTweak: (key: keyof TreeTweaks, val: string | boolean) => void
-  searchQuery: string
-  onSearchChange: (q: string) => void
-  onReorganize?: () => void
-  fitRequestId?: number
-  readOnly?: boolean
-  canDrag?: boolean
-  isDemo?: boolean
-  canShare?: boolean
-  canExport?: boolean
-  canExportGedcom?: boolean
-  canImport?: boolean
-  exportBusy?: boolean
-  importBusy?: boolean
-  onExportGedcom?: () => void
-  onExportPdf?: () => void
-  onImportGedcom?: (file: File) => void
+  onOpenShare: () => void; onOpenTweaks: () => void; onSetTweak: (key: keyof TreeTweaks, val: string | boolean) => void
+  searchQuery: string; onSearchChange: (q: string) => void; onReorganize?: () => void; fitRequestId?: number
+  readOnly?: boolean; canDrag?: boolean; isDemo?: boolean; canShare?: boolean; canExport?: boolean; canExportGedcom?: boolean; canImport?: boolean
+  exportBusy?: boolean; importBusy?: boolean; onExportGedcom?: () => void; onExportPdf?: () => void; onImportGedcom?: (file: File) => void
   onCardDragStateChange?: (dragging: boolean, pending?: { id: string; x: number; y: number }) => void
-  pasteMode?: boolean
-  onPasteAtCanvas?: (anchor: { x: number; y: number }) => void
+  pasteMode?: boolean; onPasteAtCanvas?: (anchor: Point) => void
 }
+type View = { pan: Point; scale: number }
+type Gesture = { start: Point[]; view: View; moved: boolean; paste: boolean }
 
-export function TreeCanvas({
-  people = [],
-  tweaks,
-  treeMeta,
-  background,
-  positions,
-  setPositions,
-  selectedId,
-  onSelect,
-  hoverId,
-  onHover,
-  onOpenAdd,
-  onLinkExistingChild,
-  onOpenShare,
-  onOpenTweaks,
-  onSetTweak,
-  searchQuery,
-  onSearchChange,
-  onReorganize,
-  fitRequestId = 0,
-  readOnly = false,
-  canDrag = true,
-  isDemo = false,
-  canShare = true,
-  canExport = false,
-  canExportGedcom = true,
-  canImport = false,
-  exportBusy = false,
-  importBusy = false,
-  onExportGedcom,
-  onExportPdf,
-  onImportGedcom,
-  onCardDragStateChange,
-  pasteMode = false,
-  onPasteAtCanvas,
-}: TreeCanvasProps) {
-  const { t } = useTranslation("tree")
-  const importInputRef = useRef<HTMLInputElement>(null)
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const innerRef = useRef<HTMLDivElement>(null)
-  const lastFitKeyRef = useRef<string | null>(null)
-  const isDraggingCardRef = useRef(false)
-  const isPanningRef = useRef(false)
-  const dragRafRef = useRef<number | null>(null)
-  const pendingDragRef = useRef<{ id: string; x: number; y: number } | null>(null)
-  const positionsRef = useRef(positions)
+export function TreeCanvas({ people = [], tweaks, treeMeta, background, positions, setPositions, selectedId, onSelect, hoverId, onHover,
+  onOpenAdd, onLinkExistingChild, onOpenShare, onOpenTweaks, onSetTweak, searchQuery, onSearchChange, onReorganize,
+  fitRequestId = 0, readOnly = false, canDrag = true, isDemo = false, canShare = true, canExport = false, canExportGedcom = true,
+  canImport = false, exportBusy = false, importBusy = false, onExportGedcom, onExportPdf, onImportGedcom,
+  onCardDragStateChange, pasteMode = false, onPasteAtCanvas }: TreeCanvasProps) {
+  const { t, i18n } = useTranslation('tree')
+  const en = i18n.resolvedLanguage?.startsWith('en')
+  const wrapRef = useRef<HTMLDivElement>(null), toolbarRef = useRef<HTMLDivElement>(null), importRef = useRef<HTMLInputElement>(null)
+  const [viewport, setViewport] = useState({ width: 0, height: 0, top: 56 })
+  const [view, setView] = useState<View>({ pan: { x: 40, y: 80 }, scale: 0.85 })
+  const viewRef = useRef(view), positionsRef = useRef(positions)
   positionsRef.current = positions
-  const [pan, setPan] = useState({ x: 60, y: 40 })
-  const [scale, setScale] = useState(0.85)
-  const panRef = useRef(pan)
-  const scaleRef = useRef(scale)
-  panRef.current = pan
-  scaleRef.current = scale
-  const [panning, setPanning] = useState(false)
-  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const updateView = useCallback((next: View) => { viewRef.current = next; setView(next) }, [])
   const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false)
-
-  const layout = tweaks.layout || "vertical"
-  const connStyle = tweaks.connStyle || "elbow"
-  const genFilter = tweaks.generation || "all"
-  const cardStyle = tweaks.cardStyle || "square"
+  const [panning, setPanning] = useState(false), [draggingId, setDraggingId] = useState<string | null>(null)
+  const pointers = useRef(new Map<number, Point>()), gesture = useRef<Gesture | null>(null)
+  const draggingRef = useRef(false), dragFrame = useRef<number | null>(null), pendingDrag = useRef<{ id: string; x: number; y: number } | null>(null)
+  const lastFit = useRef('')
   const isOrg = isOrganizationTree(treeMeta)
-  const orgLexicon = useMemo(() => (isOrg ? resolveOrgLexicon(treeMeta) : null), [isOrg, treeMeta])
-  const sidePanelOpen = Boolean(selectedId)
-  const { w: cardW, h: cardH } = useMemo(
-    () => getCardDimensions(cardStyle, { organization: isOrg }),
-    [cardStyle, isOrg]
-  )
-
-  const filteredIds = useMemo(() => {
-    if (genFilter === "all") return new Set(people.map((p) => p.id))
-    const gen = +genFilter
-    return new Set(people.filter((p) => p.generation === gen).map((p) => p.id))
-  }, [genFilter, people])
-
-  const lineage = useMemo(() => {
-    if (!hoverId) return null
-    return computeLineage(hoverId, people)
-  }, [hoverId, people])
-
-  const cardHeights = useMemo(
-    () => (isOrg ? buildOrgCardHeights(people) : null),
-    [isOrg, people]
-  )
-
-  const connections = useMemo(
-    () => buildConnections(people, positions, connStyle, layout, cardW, cardH, cardHeights),
-    [people, positions, connStyle, layout, cardW, cardH, cardHeights]
-  )
-
-  const connectionBounds = useMemo(
-    () => computeConnectionBounds(people, positions, cardW, cardH, connections, cardHeights),
-    [people, positions, cardW, cardH, connections, cardHeights]
-  )
-
-  const onCardDrag = useCallback(
-    (id: string, np: { x: number; y: number }) => {
-      pendingDragRef.current = { id, ...np }
-      if (dragRafRef.current != null) return
-      dragRafRef.current = requestAnimationFrame(() => {
-        dragRafRef.current = null
-        const pending = pendingDragRef.current
-        if (!pending) return
-        setPositions((prev) => ({ ...prev, [pending.id]: { x: pending.x, y: pending.y } }))
-      })
-    },
-    [setPositions]
-  )
-
-  const onCardDragStart = useCallback((id: string) => {
-    isDraggingCardRef.current = true
-    setDraggingId(id)
-    onCardDragStateChange?.(true)
-  }, [onCardDragStateChange])
-
-  const onCardDragEnd = useCallback(() => {
-    const pending = pendingDragRef.current
-    if (pending) {
-      setPositions((prev) => ({ ...prev, [pending.id]: { x: pending.x, y: pending.y } }))
-      pendingDragRef.current = null
-    }
-    if (dragRafRef.current != null) {
-      cancelAnimationFrame(dragRafRef.current)
-      dragRafRef.current = null
-    }
-    isDraggingCardRef.current = false
-    setDraggingId(null)
-    onCardDragStateChange?.(false, pending ?? undefined)
-  }, [setPositions, onCardDragStateChange])
-
-  const onPointerDownBg = (e: React.PointerEvent) => {
-    if (e.button !== 0 || isDraggingCardRef.current) return
-    if (e.pointerType === "touch" || e.pointerType === "pen") return
-
-    const el = e.target as HTMLElement
-    const isBackground =
-      el === wrapRef.current ||
-      el === innerRef.current ||
-      el.classList.contains("tree-connections") ||
-      el.tagName === "svg" ||
-      el.tagName === "path"
-    if (!isBackground) return
-
-    const wrap = wrapRef.current
-    if (!wrap) return
-
-    if (pasteMode && onPasteAtCanvas) {
-      e.preventDefault()
-      const rect = wrap.getBoundingClientRect()
-      const mx = e.clientX - rect.left
-      const my = e.clientY - rect.top
-      const wx = (mx - panRef.current.x) / scaleRef.current
-      const wy = (my - panRef.current.y) / scaleRef.current
-      onPasteAtCanvas({ x: wx, y: wy })
-      return
-    }
-
-    e.preventDefault()
-    wrap.setPointerCapture(e.pointerId)
-
-    const pointerId = e.pointerId
-    const startX = e.clientX
-    const startY = e.clientY
-    const startPan = { ...panRef.current }
-    isPanningRef.current = true
-    setPanning(true)
-
-    const onMove = (ev: PointerEvent) => {
-      if (ev.pointerId !== pointerId) return
-      ev.preventDefault()
-      setPan({
-        x: startPan.x + (ev.clientX - startX),
-        y: startPan.y + (ev.clientY - startY),
-      })
-    }
-
-    const onEnd = (ev: PointerEvent) => {
-      if (ev.pointerId !== pointerId) return
-      isPanningRef.current = false
-      setPanning(false)
-      wrap.removeEventListener("pointermove", onMove)
-      wrap.removeEventListener("pointerup", onEnd)
-      wrap.removeEventListener("pointercancel", onEnd)
-      if (wrap.hasPointerCapture(pointerId)) {
-        wrap.releasePointerCapture(pointerId)
-      }
-    }
-
-    wrap.addEventListener("pointermove", onMove, { passive: false })
-    wrap.addEventListener("pointerup", onEnd)
-    wrap.addEventListener("pointercancel", onEnd)
-  }
-
-  const onWheel = useCallback(
-    (e: WheelEvent) => {
-      e.preventDefault()
-      const rect = wrapRef.current?.getBoundingClientRect()
-      if (!rect) return
-      const mx = e.clientX - rect.left
-      const my = e.clientY - rect.top
-      const factor = e.deltaY > 0 ? 0.92 : 1.08
-      const newScale = Math.max(0.2, Math.min(2.5, scale * factor))
-      const wx = (mx - pan.x) / scale
-      const wy = (my - pan.y) / scale
-      setScale(newScale)
-      setPan({ x: mx - wx * newScale, y: my - wy * newScale })
-    },
-    [scale, pan]
-  )
-
-  useEffect(() => {
-    const wrap = wrapRef.current
-    if (!wrap) return
-    wrap.addEventListener("wheel", onWheel, { passive: false })
-    return () => wrap.removeEventListener("wheel", onWheel)
-  }, [onWheel])
-
-  useEffect(() => {
-    const wrap = wrapRef.current
-    if (!wrap) return
-
-    const isInteractiveTarget = (target: EventTarget | null) => {
-      const el = target as HTMLElement | null
-      return !!el?.closest("button, input, textarea, a, select, [role='combobox'], [data-no-pan]")
-    }
-
-    const touches = new Map<number, { x: number; y: number }>()
-    let pinchStartDist = 0
-    let pinchStartScale = 1
-    let pinchStartPan = { x: 0, y: 0 }
-    let pinchCenter = { x: 0, y: 0 }
-    let singleFingerPan: { x: number; y: number; pan: { x: number; y: number } } | null = null
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (isDraggingCardRef.current || isInteractiveTarget(e.target)) return
-
-      for (const touch of e.changedTouches) {
-        touches.set(touch.identifier, { x: touch.clientX, y: touch.clientY })
-      }
-
-      if (e.touches.length === 1) {
-        e.preventDefault()
-        const touch = e.touches[0]
-        singleFingerPan = {
-          x: touch.clientX,
-          y: touch.clientY,
-          pan: { ...panRef.current },
-        }
-        isPanningRef.current = true
-        setPanning(true)
-      } else if (e.touches.length > 1) {
-        singleFingerPan = null
-      }
-
-      if (touches.size === 2) {
-        const pts = [...touches.values()]
-        pinchStartDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
-        pinchStartScale = scaleRef.current
-        pinchStartPan = { ...panRef.current }
-        pinchCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
-      }
-    }
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (isDraggingCardRef.current) return
-
-      if (singleFingerPan && e.touches.length === 1) {
-        e.preventDefault()
-        const touch = e.touches[0]
-        setPan({
-          x: singleFingerPan.pan.x + (touch.clientX - singleFingerPan.x),
-          y: singleFingerPan.pan.y + (touch.clientY - singleFingerPan.y),
-        })
-        return
-      }
-
-      if (touches.size < 2 || pinchStartDist === 0) return
-      e.preventDefault()
-      for (const touch of e.changedTouches) {
-        touches.set(touch.identifier, { x: touch.clientX, y: touch.clientY })
-      }
-      const pts = [...touches.values()]
-      if (pts.length < 2) return
-      const newDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
-      const newScale = Math.max(0.2, Math.min(2.5, pinchStartScale * (newDist / pinchStartDist)))
-      const rect = wrap.getBoundingClientRect()
-      const mx = pinchCenter.x - rect.left
-      const my = pinchCenter.y - rect.top
-      const wx = (mx - pinchStartPan.x) / pinchStartScale
-      const wy = (my - pinchStartPan.y) / pinchStartScale
-      setScale(newScale)
-      setPan({ x: mx - wx * newScale, y: my - wy * newScale })
-    }
-
-    const onTouchEnd = (e: TouchEvent) => {
-      for (const touch of e.changedTouches) {
-        touches.delete(touch.identifier)
-      }
-      if (touches.size < 2) pinchStartDist = 0
-      if (e.touches.length === 0) {
-        singleFingerPan = null
-        isPanningRef.current = false
-        setPanning(false)
-      }
-    }
-
-    wrap.addEventListener("touchstart", onTouchStart, { passive: false, capture: true })
-    wrap.addEventListener("touchmove", onTouchMove, { passive: false })
-    wrap.addEventListener("touchend", onTouchEnd)
-    wrap.addEventListener("touchcancel", onTouchEnd)
-    return () => {
-      wrap.removeEventListener("touchstart", onTouchStart, { capture: true })
-      wrap.removeEventListener("touchmove", onTouchMove)
-      wrap.removeEventListener("touchend", onTouchEnd)
-      wrap.removeEventListener("touchcancel", onTouchEnd)
-    }
-  }, [])
-
-  const jumpTo = useCallback(
-    (wx: number, wy: number) => {
-      const r = wrapRef.current?.getBoundingClientRect()
-      if (!r) return
-      setPan({ x: r.width / 2 - wx * scale, y: r.height / 2 - wy * scale })
-    },
-    [scale]
-  )
-
-  const fitToView = useCallback(() => {
-    const r = wrapRef.current?.getBoundingClientRect()
-    if (!r || people.length === 0) return
-
-    const personIds = new Set(people.map((p) => p.id))
-    let bounds = computeContentBounds(positionsRef.current, personIds, cardW, cardH, cardHeights)
-    if (!bounds || bounds.width === 0 || bounds.height === 0) return
-
-    const isMobile = r.width < MOBILE_BREAKPOINT
-    const aspect = bounds.width / Math.max(bounds.height, 1)
-    if (people.length > 10 && aspect > 2 && !isOrg) {
-      const focusBounds = computeContentBounds(
-        positionsRef.current,
-        computeFocusPersonIds(people),
-        cardW,
-        cardH,
-        cardHeights
-      )
-      if (focusBounds) bounds = focusBounds
-    }
-
-    const sidePanelW = sidePanelOpen ? SIDE_PANEL_W : 0
-    const availW = r.width - VIEW_PADDING - VIEW_PADDING_LEFT - sidePanelW
-    const availH = r.height - TOOLBAR_H - VIEW_PADDING * 2
-    const newScale = computeSmartFitScale(bounds, availW, availH, people.length, isMobile)
-
-    const visibleCenterX = VIEW_PADDING_LEFT + availW / 2
-    const visibleCenterY = TOOLBAR_H + (r.height - TOOLBAR_H) / 2
-
-    let panX = visibleCenterX - bounds.centerX * newScale
-    const panY = visibleCenterY - bounds.centerY * newScale
-
-    const contentLeft = panX + bounds.minX * newScale
-    if (contentLeft < VIEW_PADDING_LEFT) {
-      panX += VIEW_PADDING_LEFT - contentLeft
-    }
-
-    setScale(newScale)
-    setPan({ x: panX, y: panY })
-  }, [people, cardW, cardH, cardHeights, sidePanelOpen, isOrg])
-
-  useEffect(() => {
-    if (fitRequestId === 0) return
-    lastFitKeyRef.current = null
-    const frame = requestAnimationFrame(() => fitToView())
-    return () => cancelAnimationFrame(frame)
-  }, [fitRequestId, fitToView])
-
-  useEffect(() => {
-    if (people.length === 0 || Object.keys(positions).length === 0) return
-
-    const fitKey = `${layout}-${people.map((p) => p.id).sort().join(",")}-${Object.keys(positions).length}`
-    if (lastFitKeyRef.current === fitKey) return
-    lastFitKeyRef.current = fitKey
-
-    const frame = requestAnimationFrame(() => fitToView())
-    return () => cancelAnimationFrame(frame)
-  }, [people, layout, fitToView])
-
-  useEffect(() => {
-    const wrap = wrapRef.current
-    if (!wrap || people.length === 0) return
-
-    const observer = new ResizeObserver(() => {
-      if (lastFitKeyRef.current && !isDraggingCardRef.current && !isPanningRef.current) fitToView()
-    })
-    observer.observe(wrap)
-    return () => observer.disconnect()
-  }, [people.length, fitToView])
-
-  useEffect(() => {
-    window.__focusOn = (id) => {
-      const pos = positions[id]
-      if (pos) jumpTo(pos.x + cardW / 2, pos.y + cardH / 2)
-    }
-    return () => { window.__focusOn = undefined }
-  }, [positions, jumpTo, cardW, cardH])
-
+  const orgLexicon = useMemo(() => isOrg ? resolveOrgLexicon(treeMeta) : null, [isOrg, treeMeta])
+  const layout = tweaks.layout || 'vertical', style = tweaks.cardStyle || 'square', genFilter = tweaks.generation || 'all'
+  const compact = viewport.width < 1120
+  const { w: cardW, h: cardH } = getCardDimensions(style, { organization: isOrg })
+  const heights = useMemo(() => buildCardHeights(people, style, isOrg), [people, style, isOrg])
+  const visible = useMemo(() => visiblePeople(people, searchQuery, genFilter), [people, searchQuery, genFilter])
+  const visibleIds = useMemo(() => new Set(visible.map(p => p.id)), [visible])
+  const connections = useMemo(() => buildConnections(visible, positions, tweaks.connStyle, layout, cardW, cardH, heights), [visible, positions, tweaks.connStyle, layout, cardW, cardH, heights])
+  const bounds = useMemo(() => drawingBounds(contentBounds(positions, visibleIds, cardW, cardH, heights), connections, 8), [positions, visibleIds, cardW, cardH, heights, connections])
+  const lineage = useMemo(() => hoverId ? computeLineage(hoverId, people) : null, [hoverId, people])
   const maxGens = useMemo(() => getMaxGeneration(people), [people])
+  const generationOptions = useMemo(() => [{ value: 'all', label: isOrg ? t('org.canvas.allLevels') : t('canvas.allGenerations') },
+    ...Array.from({ length: maxGens }, (_, i) => ({ value: String(i + 1), label: isOrg && orgLexicon ? formatLevelFilterLabel(i + 1, maxGens, orgLexicon) : t('canvas.generationLabel', { num: i + 1 }) }))], [maxGens, isOrg, orgLexicon, t])
+  const layoutLabels = { vertical: t('canvas.layoutVertical'), horizontal: t('canvas.layoutHorizontal'), radial: t('canvas.layoutRadial') }
+  const backgroundUrl = useProtectedMediaUrl(isTreeBackgroundActive(background) ? background?.imageUrl : null)
+  const showBackground = isTreeBackgroundActive(background) && !!backgroundUrl
 
-  const generationOptions = useMemo(
-    () => [
-      {
-        value: "all",
-        label: isOrg && orgLexicon
-          ? t("org.canvas.allLevelsNamed", { term: orgLexicon.levelTerm.toLowerCase() })
-          : isOrg
-            ? t("org.canvas.allLevels")
-            : t("canvas.allGenerations"),
-      },
-      ...Array.from({ length: maxGens }, (_, i) => {
-        const gen = i + 1
-        return {
-          value: String(gen),
-          label: isOrg && orgLexicon
-            ? formatLevelFilterLabel(gen, maxGens, orgLexicon)
-            : t("canvas.generationLabel", { num: gen }),
-        }
-      }),
-    ],
-    [maxGens, isOrg, orgLexicon, t]
-  )
-
-  const generationPlaceholder = isOrg && orgLexicon ? orgLexicon.levelTerm : isOrg ? t("org.canvas.levelPlaceholder") : t("canvas.generationPlaceholder")
-
-  const runMobileToolbarAction = useCallback((action: () => void) => {
-    setMobileToolbarOpen(false)
-    queueMicrotask(action)
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current, toolbar = toolbarRef.current
+    if (!wrap || !toolbar) return
+    const measure = () => {
+      const rect = wrap.getBoundingClientRect(), top = toolbar.getBoundingClientRect().height
+      setViewport(prev => prev.width === rect.width && prev.height === rect.height && prev.top === top ? prev : { width: rect.width, height: rect.height, top })
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(wrap); observer.observe(toolbar)
+    return () => observer.disconnect()
   }, [])
+  const fitToView = useCallback(() => {
+    if (!visible.length || viewport.width <= 0 || viewport.height <= viewport.top) return
+    updateView(fitViewport(bounds, viewport.width, viewport.height, viewport.top))
+  }, [bounds, viewport, visible.length, updateView])
+  const fitKey = `${layout}/${tweaks.density}/${style}/${genFilter}/${searchQuery}/${fitRequestId}/${viewport.width}/${viewport.height}/${viewport.top}/${visible.map(p => `${p.id}:${heights[p.id]}:${!!positions[p.id]}`).sort().join(',')}`
+  useLayoutEffect(() => {
+    if (draggingRef.current || pointers.current.size || lastFit.current === fitKey || !visible.length || viewport.width <= 0) return
+    lastFit.current = fitKey
+    fitToView()
+  }, [fitKey, fitToView, visible.length, viewport.width])
 
-  const layoutLabels: Record<"vertical" | "horizontal" | "radial", string> = {
-    vertical: t("canvas.layoutVertical", { defaultValue: "↓ Vertical" }),
-    horizontal: t("canvas.layoutHorizontal", { defaultValue: "→ Horizontal" }),
-    radial: t("canvas.layoutRadial", { defaultValue: "◎ Radial" }),
+  const zoom = useCallback((factor: number, anchor?: Point) => {
+    const rect = wrapRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const origin = anchor || { x: rect.width / 2, y: viewport.top + (rect.height - viewport.top) / 2 }
+    updateView(zoomAt(viewRef.current.pan, viewRef.current.scale, viewRef.current.scale * factor, origin))
+  }, [updateView, viewport.top])
+  useEffect(() => {
+    const wrap = wrapRef.current
+    if (!wrap) return
+    const wheel = (e: WheelEvent) => {
+      if ((e.target as HTMLElement).closest('[data-no-pan]') || !e.deltaY) return
+      e.preventDefault()
+      const r = wrap.getBoundingClientRect()
+      zoom(e.deltaY > 0 ? 0.92 : 1.08, { x: e.clientX - r.left, y: e.clientY - r.top })
+    }
+    wrap.addEventListener('wheel', wheel, { passive: false })
+    return () => wrap.removeEventListener('wheel', wheel)
+  }, [zoom])
+
+  const localPoint = (e: React.PointerEvent): Point => {
+    const r = wrapRef.current!.getBoundingClientRect()
+    return { x: e.clientX - r.left, y: e.clientY - r.top }
   }
-  const backgroundUrl = useProtectedMediaUrl(
-    isTreeBackgroundActive(background) ? background?.imageUrl : null
-  )
-  const showBackground = isTreeBackgroundActive(background) && Boolean(backgroundUrl)
+  const rebaseGesture = (paste = false) => {
+    gesture.current = { start: [...pointers.current.values()].slice(0, 2), view: viewRef.current, moved: false, paste }
+  }
+  const pointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || draggingRef.current) return
+    const target = e.target as HTMLElement
+    if (target.closest('[data-no-pan],button,input,textarea,a,select,[role="combobox"]')) return
+    const onCard = !!target.closest('.tree-person-card')
+    if (onCard && e.pointerType === 'mouse') return
+    e.preventDefault()
+    pointers.current.set(e.pointerId, localPoint(e))
+    e.currentTarget.setPointerCapture(e.pointerId)
+    rebaseGesture(pasteMode && !onCard && pointers.current.size === 1)
+  }
+  const pointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!pointers.current.has(e.pointerId) || !gesture.current) return
+    pointers.current.set(e.pointerId, localPoint(e))
+    const current = [...pointers.current.values()].slice(0, 2), g = gesture.current
+    if (current.length !== g.start.length) { rebaseGesture(); return }
+    if (current.length === 1) {
+      const dx = current[0].x - g.start[0].x, dy = current[0].y - g.start[0].y
+      if (Math.hypot(dx, dy) < 4 && !g.moved) return
+      g.moved = true; setPanning(true)
+      updateView({ scale: g.view.scale, pan: { x: g.view.pan.x + dx, y: g.view.pan.y + dy } })
+    } else if (current.length === 2) {
+      const midpoint = (a: Point[]) => ({ x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2 })
+      const distance = (a: Point[]) => Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y)
+      const world = screenToWorld(midpoint(g.start), g.view.pan, g.view.scale)
+      const scale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, g.view.scale * distance(current) / Math.max(1, distance(g.start))))
+      const at = midpoint(current)
+      g.moved = true; g.paste = false; setPanning(true)
+      updateView({ scale, pan: { x: at.x - world.x * scale, y: at.y - world.y * scale } })
+    }
+  }
+  const pointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!pointers.current.has(e.pointerId)) return
+    const g = gesture.current
+    if (e.type === 'pointerup' && g?.paste && !g.moved) onPasteAtCanvas?.(screenToWorld(localPoint(e), viewRef.current.pan, viewRef.current.scale))
+    pointers.current.delete(e.pointerId)
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId)
+    if (pointers.current.size) rebaseGesture()
+    else { gesture.current = null; setPanning(false) }
+  }
+  const onCardDrag = useCallback((id: string, pos: Point) => {
+    pendingDrag.current = { id, ...pos }
+    if (dragFrame.current !== null) return
+    dragFrame.current = requestAnimationFrame(() => {
+      dragFrame.current = null
+      const p = pendingDrag.current
+      if (p) setPositions(prev => ({ ...prev, [p.id]: { x: p.x, y: p.y } }))
+    })
+  }, [setPositions])
+  const onCardDragEnd = useCallback(() => {
+    if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current)
+    dragFrame.current = null
+    const pending = pendingDrag.current
+    if (pending) setPositions(prev => ({ ...prev, [pending.id]: { x: pending.x, y: pending.y } }))
+    pendingDrag.current = null; draggingRef.current = false; setDraggingId(null)
+    onCardDragStateChange?.(false, pending || undefined)
+  }, [setPositions, onCardDragStateChange])
+  useEffect(() => () => { if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current) }, [])
+  useEffect(() => {
+    const focus = (id: string) => {
+      const pos = positionsRef.current[id], r = wrapRef.current?.getBoundingClientRect()
+      if (!pos || !r) return
+      const s = viewRef.current.scale
+      updateView({ scale: s, pan: { x: r.width / 2 - (pos.x + cardW / 2) * s, y: viewport.top + (r.height - viewport.top) / 2 - (pos.y + (heights[id] || cardH) / 2) * s } })
+    }
+    window.__focusOn = focus
+    return () => { if (window.__focusOn === focus) window.__focusOn = undefined }
+  }, [cardW, cardH, heights, viewport.top, updateView])
 
-  return (
-    <div
-      ref={wrapRef}
-      className={cn(
-        "relative size-full touch-none overscroll-none overflow-hidden",
-        !showBackground && "bg-muted/20",
-        panning && "cursor-grabbing",
-        pasteMode && "cursor-crosshair"
-      )}
-      onPointerDown={onPointerDownBg}
-    >
-      <div className="absolute inset-x-0 top-0 z-10 border-b bg-background/95 p-2 backdrop-blur" data-no-pan>
-        {/* Mobile toolbar */}
-        <div className="flex items-center gap-2 md:hidden">
-          <div className="relative min-w-0 flex-1">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-            <Input
-              className="pl-8"
-              placeholder={t("canvas.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-            />
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="shrink-0"
-            aria-label={t("canvas.toolbarMenu")}
-            onClick={() => setMobileToolbarOpen(true)}
-          >
-            <MoreVertical className="size-4" />
-          </Button>
-          <Sheet open={mobileToolbarOpen} onOpenChange={setMobileToolbarOpen}>
-            <SheetContent side="bottom" className="gap-0 overflow-y-auto p-0">
-              <SheetHeader className="border-b px-4 py-3">
-                <SheetTitle>{t("canvas.toolbarMenu")}</SheetTitle>
-              </SheetHeader>
-              <div className="flex flex-col gap-1 p-2">
-                <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">{generationPlaceholder}</p>
-                {generationOptions.map((opt) => (
-                  <Button
-                    key={opt.value}
-                    type="button"
-                    variant="ghost"
-                    className="h-10 justify-start px-2"
-                    onClick={() => runMobileToolbarAction(() => onSetTweak("generation", opt.value))}
-                  >
-                    {opt.label}
-                    {genFilter === opt.value ? " ✓" : ""}
-                  </Button>
-                ))}
-                <div className="my-1 h-px bg-border" />
-                <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                  {t("canvas.layoutLabel")}
-                </p>
-                {(["vertical", "horizontal", "radial"] as const).map((l) => (
-                  <Button
-                    key={l}
-                    type="button"
-                    variant="ghost"
-                    className="h-10 justify-start px-2"
-                    onClick={() => runMobileToolbarAction(() => onSetTweak("layout", l))}
-                  >
-                    {layoutLabels[l]}
-                    {layout === l ? " ✓" : ""}
-                  </Button>
-                ))}
-                <div className="my-1 h-px bg-border" />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-10 justify-start px-2"
-                  disabled={!onReorganize || people.length === 0 || (readOnly && !isDemo)}
-                  onClick={() => runMobileToolbarAction(() => onReorganize?.())}
-                >
-                  <LayoutGrid className="mr-2 size-4" />
-                  {t("canvas.reorganize")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-10 justify-start px-2"
-                  onClick={() => runMobileToolbarAction(fitToView)}
-                >
-                  <Maximize2 className="mr-2 size-4" />
-                  {t("canvas.center")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-10 justify-start px-2"
-                  onClick={() => runMobileToolbarAction(onOpenTweaks)}
-                >
-                  <Settings className="mr-2 size-4" />
-                  {t("canvas.settings")}
-                </Button>
-                {canImport && onImportGedcom && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-10 justify-start px-2"
-                    disabled={importBusy}
-                    onClick={() => runMobileToolbarAction(() => importInputRef.current?.click())}
-                  >
-                    <Upload className="mr-2 size-4" />
-                    {t("canvas.importGedcom")}
-                  </Button>
-                )}
-                {canExport && canExportGedcom && onExportGedcom && onExportPdf && (
-                  <>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-10 justify-start px-2"
-                      disabled={exportBusy}
-                      onClick={() => runMobileToolbarAction(onExportGedcom)}
-                    >
-                      <FileDown className="mr-2 size-4" />
-                      {t("canvas.exportGedcom")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-10 justify-start px-2"
-                      disabled={exportBusy}
-                      onClick={() => runMobileToolbarAction(onExportPdf)}
-                    >
-                      <FileDown className="mr-2 size-4" />
-                      {t("canvas.exportPdf")}
-                    </Button>
-                  </>
-                )}
-                {!readOnly && canShare && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-10 justify-start px-2"
-                    onClick={() => runMobileToolbarAction(onOpenShare)}
-                  >
-                    <Share2 className="mr-2 size-4" />
-                    {t("canvas.share")}
-                  </Button>
-                )}
-                {!readOnly && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-10 justify-start px-2"
-                    onClick={() => runMobileToolbarAction(() => onOpenAdd())}
-                  >
-                    <Plus className="mr-2 size-4" />
-                    {t("canvas.add")}
-                  </Button>
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
+  const runAction = (action: () => void) => { setMobileToolbarOpen(false); queueMicrotask(action) }
+  const canReorganize = !!onReorganize && people.length > 0 && (!readOnly || isDemo)
+  const generationPlaceholder = isOrg ? orgLexicon?.levelTerm || t('org.canvas.levelPlaceholder') : t('canvas.generationPlaceholder')
+  const actions = (inMenu: boolean) => <>
+    <Button size="sm" variant="outline" disabled={!canReorganize} onClick={() => runAction(() => onReorganize?.())} title={t('canvas.reorganizeTitle')}><LayoutGrid className="mr-1 size-4" />{t('canvas.reorganize')}</Button>
+    <Button size="sm" variant="outline" data-testid="tree-fit" onClick={() => runAction(fitToView)}><Maximize2 className="mr-1 size-4" />{t('canvas.center')}</Button>
+    <Button size="sm" variant="ghost" aria-label={t('canvas.settings')} onClick={() => runAction(onOpenTweaks)}><Settings className="size-4" />{inMenu && t('canvas.settings')}</Button>
+    {canImport && onImportGedcom && <Button size="sm" variant="outline" disabled={importBusy} onClick={() => runAction(() => importRef.current?.click())}><Upload className="mr-1 size-4" />{t('canvas.importGedcom')}</Button>}
+    {canExport && (onExportPdf || canExportGedcom && onExportGedcom) && (inMenu ? <>
+      {canExportGedcom && onExportGedcom && <Button size="sm" variant="outline" disabled={exportBusy} onClick={() => runAction(onExportGedcom)}><FileDown className="mr-1 size-4" />{t('canvas.exportGedcom')}</Button>}
+      {onExportPdf && <Button data-testid="tree-export-pdf" size="sm" variant="outline" disabled={exportBusy} onClick={() => runAction(onExportPdf)}><FileDown className="mr-1 size-4" />{t('canvas.exportPdf')}</Button>}
+    </> : <DropdownMenu modal={false}>
+      <DropdownMenuTrigger data-testid="tree-export-menu" render={<Button size="sm" variant="outline" disabled={exportBusy} />}><FileDown className="mr-1 size-4" />{t('canvas.export')}</DropdownMenuTrigger>
+      <DropdownMenuContent align="end" positionMethod="fixed">
+        {canExportGedcom && onExportGedcom && <DropdownMenuItem disabled={exportBusy} onClick={onExportGedcom}>{t('canvas.exportGedcom')}</DropdownMenuItem>}
+        {onExportPdf && <DropdownMenuItem data-testid="tree-export-pdf" disabled={exportBusy} onClick={onExportPdf}>{t('canvas.exportPdf')}</DropdownMenuItem>}
+      </DropdownMenuContent>
+    </DropdownMenu>)}
+    {!readOnly && canShare && <Button size="sm" variant="outline" onClick={() => runAction(onOpenShare)}><Share2 className="mr-1 size-4" />{t('canvas.share')}</Button>}
+    {!readOnly && <Button size="sm" onClick={() => runAction(() => onOpenAdd())}><Plus className="mr-1 size-4" />{t('canvas.add')}</Button>}
+  </>
 
-        {/* Desktop toolbar */}
-        <div className="hidden items-center gap-2 md:flex">
-        <div className="relative max-w-xs flex-1">
-          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-          <Input
-            className="pl-8"
-            placeholder={t("canvas.searchPlaceholder")}
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
-        </div>
-        <Select value={genFilter} onValueChange={(v) => v && onSetTweak("generation", v)}>
-          <SelectTrigger size="sm" className="w-[180px]">
-            <SelectValue placeholder={generationPlaceholder} />
-          </SelectTrigger>
-          <SelectContent className="max-h-64">
-            {generationOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex gap-1">
-          {(["vertical", "horizontal", "radial"] as const).map((l) => (
-            <Button
-              key={l}
-              size="sm"
-              variant={layout === l ? "default" : "outline"}
-              onClick={() => onSetTweak("layout", l)}
-            >
-              {l === "vertical" ? "↓" : l === "horizontal" ? "→" : "◎"}
-            </Button>
-          ))}
-        </div>
-        <div className="flex-1" />
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onReorganize}
-          disabled={!onReorganize || people.length === 0 || (readOnly && !isDemo)}
-          title={t("canvas.reorganizeTitle")}
-        >
-          <LayoutGrid className="mr-1 size-4" />
-          {t("canvas.reorganize")}
-        </Button>
-        <Button size="sm" variant="outline" onClick={fitToView} title={t("canvas.centerTitle")}>
-          <Maximize2 className="mr-1 size-4" />
-          {t("canvas.center")}
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onOpenTweaks}>
-          <Settings className="size-4" />
-        </Button>
-        {canImport && onImportGedcom && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={importBusy}
-            onClick={() => importInputRef.current?.click()}
-          >
-            <Upload className="mr-1 size-4" />
-            {t("canvas.importGedcom")}
-          </Button>
-        )}
-        {canExport && canExportGedcom && onExportGedcom && onExportPdf && (
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger
-              render={<Button size="sm" variant="outline" disabled={exportBusy} />}
-            >
-              <FileDown className="mr-1 size-4" />
-              {t("canvas.export")}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" positionMethod="fixed">
-              <DropdownMenuItem disabled={exportBusy} onClick={onExportGedcom}>
-                {t("canvas.exportGedcom")}
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={exportBusy} onClick={onExportPdf}>
-                {t("canvas.exportPdf")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-        {!readOnly && canShare && (
-          <>
-            <Button size="sm" variant="outline" onClick={onOpenShare}>
-              <Share2 className="mr-1 size-4" />
-              {t("canvas.share")}
-            </Button>
-            <Button size="sm" onClick={() => onOpenAdd()}>
-              <Plus className="mr-1 size-4" />
-              {t("canvas.add")}
-            </Button>
-          </>
-        )}
-        {!readOnly && !canShare && (
-          <Button size="sm" onClick={() => onOpenAdd()}>
-            <Plus className="mr-1 size-4" />
-            {t("canvas.add")}
-          </Button>
-        )}
-        </div>
+  return <div ref={wrapRef} data-testid="tree-viewport" className={cn('relative size-full touch-none overscroll-none overflow-hidden', !showBackground && 'bg-muted/20', panning && 'cursor-grabbing', pasteMode && 'cursor-crosshair')}
+    onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={pointerEnd}>
+    <div ref={toolbarRef} data-no-pan data-testid="tree-toolbar" data-toolbar-mode={compact ? 'compact' : 'full'} className="absolute inset-x-0 top-0 z-10 flex min-w-0 items-center gap-2 border-b bg-background/95 p-2 backdrop-blur">
+      <div className={cn('relative min-w-0 flex-1', !compact && 'max-w-[180px]')}>
+        <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+        <Input data-testid="tree-search" aria-label={t('canvas.searchPlaceholder')} className="min-w-0 pl-8" placeholder={t('canvas.searchPlaceholder')} value={searchQuery} onChange={e => onSearchChange(e.target.value)} />
       </div>
-
-      {showBackground && background && backgroundUrl && (
-        <>
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 top-12 z-0"
-            style={buildViewportBackgroundStyle(background, backgroundUrl)}
-          />
-          {background.overlay && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 top-12 z-0 bg-background opacity-50" />
-          )}
-        </>
-      )}
-
-      <div
-        ref={innerRef}
-        className="absolute left-0 right-0 bottom-0 top-12 z-[1]"
-        style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transformOrigin: "0 0" }}
-      >
-        <svg
-          className="tree-connections pointer-events-none absolute left-0 top-0 z-[1]"
-          viewBox={`${connectionBounds.minX} ${connectionBounds.minY} ${connectionBounds.width} ${connectionBounds.height}`}
-          width={connectionBounds.width}
-          height={connectionBounds.height}
-          style={{ left: connectionBounds.minX, top: connectionBounds.minY }}
-        >
-          {connections.map((c, i) => {
-            const dim = lineage && !c.ids.every((id: string) => lineage.has(id))
-            const hi = lineage && c.ids.every((id: string) => lineage.has(id))
-            return (
-              <g key={i}>
-                <path
-                  d={c.path}
-                  fill="none"
-                  stroke="var(--background)"
-                  strokeWidth={hi ? 5 : 4.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeDasharray={c.kind === "spouse" ? "6 4" : undefined}
-                  opacity={dim ? 0.25 : 1}
-                />
-                <path
-                  d={c.path}
-                  fill="none"
-                  stroke={c.kind === "spouse" ? "var(--muted-foreground)" : "var(--primary)"}
-                  strokeWidth={hi ? 3 : 2.5}
-                  strokeLinecap="butt"
-                  strokeLinejoin="miter"
-                  strokeDasharray={c.kind === "spouse" ? "6 4" : undefined}
-                  opacity={dim ? 0.2 : hi ? 1 : 0.95}
-                />
-              </g>
-            )
-          })}
-        </svg>
-
-        {people.map((p) => {
-          const pos = positions[p.id]
-          if (!pos) return null
-          if (searchQuery) {
-            const q = searchQuery.toLowerCase()
-            if (!`${p.given} ${p.sur}`.toLowerCase().includes(q)) return null
-          }
-          const isFiltered = !filteredIds.has(p.id)
-          const dim = (lineage && !lineage.has(p.id)) || isFiltered
-          const hi = lineage?.has(p.id)
-
-          return (
-            <PersonCard
-              key={p.id}
-              person={p}
-              pos={pos}
-              scale={scale}
-              cardStyle={tweaks.cardStyle}
-              isOrg={isOrg}
-              maxGeneration={maxGens}
-              lexicon={orgLexicon}
-              hidePhotos={tweaks.hidePhotos}
-              hideDates={tweaks.hideDates}
-              hidePlaces={tweaks.hidePlaces}
-              selected={selectedId === p.id}
-              dragging={draggingId === p.id}
-              dim={!!dim}
-              highlight={!!hi}
-              onSelect={onSelect}
-              onDrag={canDrag ? onCardDrag : undefined}
-              onDragStart={canDrag ? () => onCardDragStart(p.id) : undefined}
-              onDragEnd={canDrag ? onCardDragEnd : undefined}
-              onHover={onHover}
-            />
-          )
-        })}
-
-        {!readOnly &&
-          connections
-            .filter((c) => c.kind === "spouse" && c.midX != null && c.midY != null)
-            .map((c, i) => (
-              <div
-                key={`spouse-add-${i}`}
-                className="absolute z-[10] pointer-events-none"
-                style={{ left: c.midX, top: c.midY }}
-              >
-                <DropdownMenu modal={false}>
-                  <DropdownMenuTrigger
-                    render={
-                      <button
-                        type="button"
-                        title={t("canvas.addChild")}
-                        className="pointer-events-auto flex size-[22px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-2 border-primary bg-primary text-sm font-bold text-primary-foreground shadow-md hover:scale-110"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    }
-                  >
-                    +
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="z-[200]">
-                    <DropdownMenuItem
-                      onClick={() => queueMicrotask(() => onOpenAdd(c.ids[0], "child", c.ids[1]))}
-                    >
-                      <UserPlus className="size-4" />
-                      {t("relations.newChild")}
-                    </DropdownMenuItem>
-                    {onLinkExistingChild && (
-                      <DropdownMenuItem
-                        onClick={() => queueMicrotask(() => onLinkExistingChild([c.ids[0], c.ids[1]]))}
-                      >
-                        <Link2 className="size-4" />
-                        {t("relations.linkExistingChild")}
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            ))}
-      </div>
-
-      <div className="absolute bottom-4 right-4 z-20 flex flex-col gap-1 rounded-lg border bg-background p-1 shadow pointer-events-auto" data-no-pan>
-        <Button size="sm" variant="ghost" onClick={() => setScale((s) => Math.min(2.5, s * 1.15))}>+</Button>
-        <span className="px-2 text-center text-xs">{Math.round(scale * 100)}%</span>
-        <Button size="sm" variant="ghost" onClick={() => setScale((s) => Math.max(0.2, s / 1.15))}>−</Button>
-        <Button size="sm" variant="ghost" onClick={fitToView} title={t("canvas.centerTree")}>
-          <Maximize2 className="size-4" />
-        </Button>
-      </div>
-
-      {people.length === 0 && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center pt-12">
-          <div className="text-center text-muted-foreground">
-            <p className="text-4xl">🌳</p>
-            <p className="mt-2 font-medium">{t("canvas.emptyTree")}</p>
-            <p className="text-sm">{readOnly ? t("canvas.emptyReadOnly") : t("canvas.emptyEditable")}</p>
-          </div>
-        </div>
-      )}
-      <input
-        ref={importInputRef}
-        type="file"
-        accept=".ged,text/plain"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file && onImportGedcom) onImportGedcom(file)
-          e.target.value = ""
-        }}
-      />
+      {compact ? <>
+        <Button data-testid="tree-toolbar-menu" size="sm" variant="outline" aria-label={t('canvas.toolbarMenu')} onClick={() => setMobileToolbarOpen(true)}><MoreVertical className="size-4" /></Button>
+        <Sheet open={mobileToolbarOpen} onOpenChange={setMobileToolbarOpen}>
+          <SheetContent side="bottom" className="max-h-[85svh] gap-0 overflow-y-auto p-0">
+            <SheetHeader className="border-b px-4 py-3"><SheetTitle>{t('canvas.toolbarMenu')}</SheetTitle></SheetHeader>
+            <div className="grid gap-2 p-4" data-no-pan>
+              <p className="text-sm font-medium">{generationPlaceholder}</p>
+              <div className="flex flex-wrap gap-1">{generationOptions.map(opt => <Button key={opt.value} size="sm" variant={genFilter === opt.value ? 'default' : 'outline'} onClick={() => runAction(() => onSetTweak('generation', opt.value))}>{opt.label}</Button>)}</div>
+              <p className="text-sm font-medium">{t('canvas.layoutLabel')}</p>
+              <div className="flex flex-wrap gap-1">{(['vertical','horizontal','radial'] as const).map(l => <Button key={l} data-testid={`layout-${l}`} size="sm" variant={layout === l ? 'default' : 'outline'} onClick={() => runAction(() => onSetTweak('layout', l))}>{layoutLabels[l]}</Button>)}</div>
+              {actions(true)}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </> : <>
+        <Select value={genFilter} onValueChange={v => v && onSetTweak('generation', v)}><SelectTrigger size="sm" className="w-[160px]" aria-label={generationPlaceholder}><SelectValue placeholder={generationPlaceholder} /></SelectTrigger><SelectContent className="max-h-64">{generationOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent></Select>
+        <div className="flex shrink-0 gap-1">{(['vertical','horizontal','radial'] as const).map(l => <Button key={l} data-testid={`layout-${l}`} size="sm" aria-label={layoutLabels[l]} title={layoutLabels[l]} variant={layout === l ? 'default' : 'outline'} onClick={() => onSetTweak('layout', l)}>{l === 'vertical' ? '\u2193' : l === 'horizontal' ? '\u2192' : '\u25ce'}</Button>)}</div>
+        {actions(false)}
+      </>}
     </div>
-  )
+    {showBackground && background && backgroundUrl && <>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0" style={{ ...buildViewportBackgroundStyle(background, backgroundUrl), top: viewport.top }} />
+      {background.overlay && <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 bg-background opacity-50" style={{ top: viewport.top }} />}
+    </>}
+    {/* One world origin for cards, SVG, wheel, focus and paste. No second toolbar offset. */}
+    <div data-testid="tree-world" className="absolute inset-0 z-[1]" style={{ transform: `translate(${view.pan.x}px, ${view.pan.y}px) scale(${view.scale})`, transformOrigin: '0 0' }}>
+      <svg className="tree-connections pointer-events-none absolute z-[1]" viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`} width={bounds.width} height={bounds.height} style={{ left: bounds.minX, top: bounds.minY }}>
+        {connections.map((c, i) => <path key={i} data-connection-kind={c.kind} data-connection-ids={c.ids.join(',')} d={c.path} fill="none" stroke={c.kind === 'spouse' ? 'var(--muted-foreground)' : 'var(--primary)'} strokeWidth={lineage && c.ids.every(id => lineage.has(id)) ? 3 : 2.5} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={c.kind === 'spouse' ? '6 4' : undefined} opacity={lineage && !c.ids.every(id => lineage.has(id)) ? .2 : .95} />)}
+      </svg>
+      {visible.map(p => positions[p.id] && <PersonCard key={p.id} person={p} pos={positions[p.id]} scale={view.scale} cardStyle={style} isOrg={isOrg} maxGeneration={maxGens} lexicon={orgLexicon}
+        hidePhotos={tweaks.hidePhotos} hideDates={tweaks.hideDates} hidePlaces={tweaks.hidePlaces} selected={selectedId === p.id} dragging={draggingId === p.id}
+        dim={!!lineage && !lineage.has(p.id)} highlight={!!lineage?.has(p.id)} onSelect={onSelect} onHover={onHover}
+        onDrag={canDrag ? onCardDrag : undefined} onDragStart={canDrag ? () => { draggingRef.current = true; setDraggingId(p.id); onCardDragStateChange?.(true) } : undefined} onDragEnd={canDrag ? onCardDragEnd : undefined} />)}
+      {!readOnly && !isOrg && connections.filter(c => c.kind === 'spouse').map((c, i) => <div key={`add-${i}`} className="pointer-events-none absolute z-[10]" style={{ left: c.midX, top: c.midY }} data-no-pan>
+        <DropdownMenu modal={false}><DropdownMenuTrigger render={<button type="button" aria-label={t('canvas.addChild')} className="pointer-events-auto flex size-[22px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-primary bg-primary font-bold text-primary-foreground shadow" />}>+</DropdownMenuTrigger>
+          <DropdownMenuContent align="center" className="z-[200]">
+            <DropdownMenuItem onClick={() => queueMicrotask(() => onOpenAdd(c.ids[0], 'child', c.ids[1]))}><UserPlus className="size-4" />{t('relations.newChild')}</DropdownMenuItem>
+            {onLinkExistingChild && <DropdownMenuItem onClick={() => queueMicrotask(() => onLinkExistingChild([c.ids[0], c.ids[1]]))}><Link2 className="size-4" />{t('relations.linkExistingChild')}</DropdownMenuItem>}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>)}
+    </div>
+    <div className="absolute bottom-4 right-4 z-20 flex flex-col gap-1 rounded-lg border bg-background p-1 shadow" data-no-pan>
+      <Button size="sm" variant="ghost" aria-label={en ? 'Zoom in' : 'Agrandir'} data-testid="tree-zoom-in" onClick={() => zoom(1.15)}>+</Button>
+      <span className="px-2 text-center text-xs" data-testid="tree-zoom">{view.scale < .1 ? (view.scale * 100).toFixed(1) : Math.round(view.scale * 100)}%</span>
+      <Button size="sm" variant="ghost" aria-label={en ? 'Zoom out' : 'R\u00e9duire'} onClick={() => zoom(1 / 1.15)}>{'\u2212'}</Button>
+      <Button size="sm" variant="ghost" aria-label={t('canvas.centerTree')} onClick={fitToView}><Maximize2 className="size-4" /></Button>
+    </div>
+    <div className="pointer-events-none absolute bottom-4 left-4 z-10 rounded bg-background/90 px-2 py-1 text-xs text-muted-foreground">{visible.length} / {people.length}</div>
+    {!visible.length && <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4 text-center" style={{ paddingTop: viewport.top }}>
+      <div className="rounded-lg bg-background/90 p-4 text-muted-foreground">
+        <p className="font-medium">{people.length ? t('canvas.noResults', { defaultValue: en ? 'No matching people' : 'Aucune personne correspondante' }) : t('canvas.emptyTree')}</p>
+        {people.length ? <Button className="pointer-events-auto mt-2" variant="outline" size="sm" data-no-pan onClick={() => { onSearchChange(''); onSetTweak('generation', 'all') }}>{en ? 'Clear filters' : 'Effacer les filtres'}</Button> : <p className="text-sm">{readOnly ? t('canvas.emptyReadOnly') : t('canvas.emptyEditable')}</p>}
+      </div>
+    </div>}
+    <input ref={importRef} type="file" accept=".ged,text/plain" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) onImportGedcom?.(file); e.target.value = '' }} />
+  </div>
 }
