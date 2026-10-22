@@ -3,7 +3,7 @@ import type { NormalizedPerson, Person, Relationship, PersonTone } from '../type
 import * as orgLayout from '../lib/org-layout'
 import { CARD_W, CARD_H, getCardDimensions, buildCardHeights, isFinitePoint, contentBounds } from '../lib/tree-geometry'
 import type { Point, Positions } from '../lib/tree-geometry'
-import { familyKey, familyDepthGap, hasMultipleFamilies, unionRoute, familyBusLane } from './family-routing'
+import { familyKey, familyDepthGap, hasMultipleFamilies, unionRoute, familyBusLane, planFamilyBuses } from './family-routing'
 export { CARD_W, CARD_H, getCardDimensions, buildCardHeights }
 export { buildOrgCardHeights, estimateOrgCardHeight } from '../lib/org-layout'
 export interface LayoutOptions { organization?: boolean; cardStyle?: string }
@@ -182,7 +182,6 @@ export function computeLayout(people: LayoutPerson[], layout = 'vertical', densi
     row.sort((a, b) => {
       const ac = a.parents.size ? meanExtent([...a.parents].map(center)) : 0
       const bc = b.parents.size ? meanExtent([...b.parents].map(center)) : 0
-      // A shared father does not make children of different mothers one sibling unit.
       return ac - bc || groupFamily(a).localeCompare(groupFamily(b)) || a.members[0].id.localeCompare(b.members[0].id)
     })
     let left = (maxWidth - rowWidths[index]) / 2
@@ -241,6 +240,7 @@ export function buildConnections(people: LayoutPerson[], positions: Positions, c
     groups.get(key)!.children.push(p.id)
   }
   const horizontal = layout === 'horizontal', radial = layout === 'radial'
+  const busLanes = multiple ? planFamilyBuses([...byId.values()], positions, cardW, h, layout, unions) : new Map<string, number>()
   const orderedGroups = [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
   for (const [rank, [, { parents, children }]] of orderedGroups.entries()) {
     children.sort((a, b) => (horizontal ? positions[a].y - positions[b].y : positions[a].x - positions[b].x) || a.localeCompare(b))
@@ -273,7 +273,7 @@ export function buildConnections(people: LayoutPerson[], positions: Positions, c
     if (!union && parents.length > 1) parentEdges.forEach(p => push(horizontal ? [p, { x: anchor.x, y: p.y }, anchor] : [p, { x: p.x, y: anchor.y }, anchor], parents))
     const parentEdge = horizontal ? Math.max(anchor.x, ...parentEdges.map(p => p.x)) : Math.max(anchor.y, ...parentEdges.map(p => p.y))
     const childEdge = Math.min(...childEdges.map(p => horizontal ? p.x : p.y))
-    const mid = multiple ? familyBusLane(parentEdge, childEdge, rank, groups.size) : (parentEdge + childEdge) / 2
+    const mid = multiple ? busLanes.get(keyOf(parents)) ?? familyBusLane(parentEdge, childEdge, rank, groups.size) : (parentEdge + childEdge) / 2
     const min = Math.min(horizontal ? anchor.y : anchor.x, ...childEdges.map(p => horizontal ? p.y : p.x))
     const max = Math.max(horizontal ? anchor.y : anchor.x, ...childEdges.map(p => horizontal ? p.y : p.x))
     const trunk = horizontal ? [anchor, { x: mid, y: anchor.y }] : [anchor, { x: anchor.x, y: mid }]

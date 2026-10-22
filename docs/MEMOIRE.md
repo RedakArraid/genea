@@ -3,7 +3,7 @@
 > Source de vérité partagée entre toutes les IA et développeurs.
 > À lire en début de session, à mettre à jour en fin de tâche (voir [AGENTS.md](../AGENTS.md)).
 
-Dernière mise à jour : **2026-07-23** (poste org textarea extensible)
+Dernière mise à jour : **2026-10-22** (familles recomposées, PR #5 non déployée ; historique conservé ci-dessous)
 
 ---
 
@@ -75,7 +75,7 @@ Flux Git : `dev` → merge dans `staging` (tests) → merge dans `main` (prod). 
 - **Import / export GEDCOM & PDF** : export `GET …/export/gedcom|pdf`, import `POST …/import/gedcom` (forfaits Famille/Patrimoine, plan du propriétaire) ; boutons dans la toolbar arbre.
 - **Correspondances publiques** : API `GET …/matches` + opt-in `PUT …/matching-opt-in` ; page `/trees/:id/matches` branchée sur l'API (plus de mock).
 - **Historique personnes (Patrimoine)** : snapshots `PersonRevision`, routes `GET/POST …/revisions`, panneau latéral « Historique » avec restauration.
-- **Lier enfant existant** : menu « Nouvel enfant / Lier existant » pour rattacher une personne déjà dans l'arbre à un parent ou un couple (2 liens parent créés).
+- **Lier enfant existant** : menu « Nouvel enfant / lier existant » pour rattacher une personne déjà dans l'arbre à un parent ou un couple (2 liens parent créés).
 - Partage : visibilité PRIVATE/SHARED/PUBLIC, invitations collaborateurs (VIEWER/EDITOR) avec **email d'invitation** (lien `/invite/:token` ou accès direct), lien public lecture seule.
 - Arbre démo public « Famille Dupont » (10 personnes), **auto-provisionné** au démarrage API si absent, réinitialisable par l'admin.
 - **Admin SMTP** : configuration email depuis `/admin/smtp` (table `SmtpSetting`, prioritaire sur les variables d'env).
@@ -150,7 +150,7 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 - **2026-07-11 (nuit, polish)** — Landing `#prix` dual XOF/USD ; tests intégration import/matching/révisions (69/69) ; E2E Patrimoine ; seed `0700000003` en Patrimoine ; fix DELETE personne + refresh historique panneau.
 - **2026-07-11 (nuit, intégration complète)** — Import GEDCOM, API matching, historique Patrimoine (`PersonRevision`), tarifs dual XOF/USD, admin i18n fr/en, OpenWA compose + doc, OTP libellé WhatsApp, `canVersioning`/`canExport` dans `treeAccess`.
 - **2026-07-11 (soir, admin i18n)** — Back-office admin internationalisé fr/en : namespace `admin` (shell, pages dashboard/users/trees/storage/smtp/openwa/demo/plans/promo), `LanguageSwitcher` dans `admin-shell`, `data-testid` E2E inchangés.
-- **2026-07-11 (soir)** — Export **GEDCOM & PDF** : routes `GET /api/family-trees/:id/export/gedcom|pdf`, gating via `canExport` (forfaits Famille/Patrimoine, plan du propriétaire), bouton Exporter dans la toolbar arbre, tests unitaires + intégration.
+- **2026-07-11 (soir)** — Export **GEDCOM & PDF** : routes `GET /api/family-trees/:id/export/gedcom|pdf`, import `POST …/import/gedcom`, gating via `canExport` (forfaits Famille/Patrimoine, plan du propriétaire), bouton Exporter dans la toolbar arbre, tests unitaires + intégration.
 - **2026-07-11** — Rebrand **GeneaIA → geneamap** : UI, emails seed `@geneamap.com`, templates SMTP/WhatsApp/invitations, GEDCOM/PDF, docs ; clé locale `geneamap_locale` (migration depuis `geneaia_locale`). Identifiants infra alignés (`geneamap-*`, GHCR `redakarraid/geneamap`, variables `GENEAMAP_*`).
 - **2026-07-11** — Alignement cohérence projet : compte admin seed/tests/docs (`admin@geneamap.com` / `admin123`), ports locaux unifiés (3001/5173), test intégration inscription avec téléphone, sérialisation `Infinity`→`null` dans API plans, `Payment.amount` en centimes USD, retrait enum `CINETPAY`, features forfaits sans promesses non livrées (GEDCOM/versioning), tests intégration en CI.
 - **2026-07-05 (soir, OpenWA admin)** — Page admin `/admin/openwa` : table `OpenWaSetting`, API GET/PATCH + statut session + test WhatsApp. OTP : WhatsApp prioritaire (OpenWA), email SMTP secours.
@@ -179,3 +179,11 @@ Ce complément décrit les changements de la branche de correction, pas l'état 
 - Workflow `tree-display-checks.yml` : tests et compilation, sans déploiement ; API simulée et données fictives pour les scénarios navigateur. Captures PNG conservées sept jours.
 - À faire avant promotion : revue du diff et tests staging avec les vraies permissions, photos et données, ainsi que Safari/mobile physique. La validation Chromium avec API simulée ne remplace pas l'intégration.
 - Limite explicite : l'export PDF reste une liste textuelle, pas une reproduction graphique du canvas. Des croisements de liens restent possibles dans les graphes complexes ; le cadrage global peut rendre les grandes familles petites et nécessite alors zoom ou filtres.
+
+## 10. Familles recomposées — 22 octobre 2026, PR #5 non déployée
+
+- Choix explicite de l'autre parent, y compris « inconnu », pour créer ou lier un enfant. Aucun choix automatique du premier conjoint. Le raccourci d'une union précise reste explicite et affiche les noms sélectionnés.
+- Création atomique de la personne et des filiations, liens inverses transactionnels, verrou par arbre, protection contre les cycles et les personnes d'autres arbres, création idempotente par `clientRequestId`. Voir `familyMutation.js` et les nouveaux endpoints `family-member` / `link-child`.
+- Affichage des enfants par parents exacts, couloirs distincts entre unions, classement des mêmes parents / demi-fratries / filiations incomplètes, traductions FR/EN dans le namespace `family`.
+- Workflow `family-integrity-checks.yml` : PostgreSQL jetable, vraies routes Express et parcours Chromium, sans accès à la production. Il complète les tests d'affichage existants. Résultats d'exécution détaillés sur la PR et ses workflows ; ne pas confondre une suite présente avec un run terminé.
+- Guide technique et limites : [FAMILY_INTEGRITY.md](FAMILY_INTEGRITY.md). Déployer backend et frontend ensemble après staging ; aucune migration de schéma. Les anciennes filiations potentiellement fausses ne sont ni devinées ni réattribuées automatiquement. Les imports/collages et les photos réelles restent à valider séparément.

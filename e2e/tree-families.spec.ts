@@ -51,7 +51,7 @@ async function childMenu(page: Page, existing = false) {
   await page.locator(`[data-person-id="${father.id}"]`).click()
   const section = page.getByTestId('family-children')
   await section.getByRole('button', { name: /Ajouter/ }).first().click()
-  await page.getByRole('menuitem', { name: existing ? /Lier existant/ : /Nouvel enfant/ }).click()
+  await page.getByRole('menuitem', { name: existing ? /Lier une personne existante/ : /Nouvel enfant/ }).click()
 }
 async function parentsOf(name: string) {
   const p = await db.person.findFirst({ where: { treeId: tree.id, firstName: name } })
@@ -59,13 +59,14 @@ async function parentsOf(name: string) {
   const links = await db.relationship.findMany({ where: { targetId: p.id, type: 'parent' } })
   return links.map((r: any) => r.sourceId).sort()
 }
-test('generic add requires a deliberate mother choice and persists it through reload', async ({ page }) => {
+test('generic add requires a deliberate mother choice and persists it through reload', async ({ page }, info) => {
   await open(page); await childMenu(page)
   await expect(page.getByTestId('family-other-parent')).toHaveValue('')
   await page.getByTestId('family-firstName').fill('NouveauB')
   await expect(page.getByTestId('family-save')).toBeDisabled()
   await page.getByTestId('family-other-parent').selectOption(mothers[1].id)
   await expect(page.getByTestId('family-parent-summary')).toContainText('MereB')
+  await page.screenshot({ path: info.outputPath('explicit-parent-selection.png'), fullPage: true })
   await page.getByTestId('family-save').click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect(await parentsOf('NouveauB')).toEqual([father.id, mothers[1].id].sort())
@@ -110,13 +111,15 @@ test('failed creation retains the form, never announces success, and can be retr
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect(await parentsOf('AReessayer')).toEqual([father.id, mothers[2].id].sort())
 })
-test('side panel separates full, half and incomplete sibling groups', async ({ page }) => {
+test('side panel separates full, half and incomplete sibling groups', async ({ page }, info) => {
   await open(page); await page.locator(`[data-person-id="${children[0].id}"]`).click()
   await expect(page.getByTestId('siblings-full')).toContainText('Enfant01')
   await expect(page.getByTestId('siblings-half')).toContainText('Enfant10')
   await expect(page.getByTestId('siblings-half')).toContainText('Enfant20')
   await expect(page.getByTestId('siblings-uncertain')).toContainText('FiliationIncomplete')
   await expect(page.getByTestId('siblings-half')).not.toContainText('FiliationIncomplete')
+  await page.getByTestId('siblings-uncertain').scrollIntoViewIfNeeded()
+  await page.screenshot({ path: info.outputPath('sibling-classification.png'), fullPage: true })
 })
 for (const width of [375, 1600]) for (const layout of ['vertical', 'horizontal', 'radial']) test(`real family display ${width}px ${layout}`, async ({ page }, info) => {
   await page.setViewportSize({ width, height: width === 375 ? 812 : 1000 })

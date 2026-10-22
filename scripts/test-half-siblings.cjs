@@ -26,7 +26,6 @@ const fixture = (maternal = false, married = true) => {
   const hub = maternal ? 'mother' : 'father';
   const partners = ['partner1', 'partner2', 'partner3'];
   const ids = [hub, ...partners, 'a1', 'a2', 'b1', 'b2', 'c1', 'c2'];
-  // Deliberately interleave IDs across families to catch accidental ID-based placement.
   const pairs = { a1: [hub, partners[0]], b2: [hub, partners[0]], b1: [hub, partners[1]], c2: [hub, partners[1]], c1: [hub, partners[2]], a2: [hub, partners[2]] };
   const people = ids.map(id => ({ id, firstName: id, lastName: 'Test', treeId: 't' }));
   const relations = Object.entries(pairs).flatMap(([child, parents]) => parents.flatMap(parent => [
@@ -95,3 +94,23 @@ test('link picker excludes ancestors, self, existing complete links and accident
   assert.equal(F.canLinkChild(people[0], ['father'], people), false);
   assert.equal(F.canLinkChild(people[5], ['father', 'm2'], people), true);
 });
+for (const count of [2, 3, 6, 12]) for (const maternal of [false, true]) for (const mode of ['vertical', 'horizontal']) {
+  test(`unknown co-parent plus ${count} unions (${maternal ? 'mother' : 'father'}, ${mode}) keeps separate bus corridors`, () => {
+    const hub = maternal ? 'mother' : 'father';
+    const partners = Array.from({ length: count }, (_, i) => `partner${i}`);
+    const ids = [hub, ...partners, 'unknown', ...partners.flatMap((_, i) => [`child${i}a`, `child${i}b`])];
+    const relations = [{ type: 'parent', sourceId: hub, targetId: 'unknown' }];
+    partners.forEach((partner, i) => {
+      relations.push({ type: 'spouse', sourceId: hub, targetId: partner });
+      for (const child of [`child${i}a`, `child${i}b`]) for (const parent of [hub, partner]) relations.push({ type: 'parent', sourceId: parent, targetId: child });
+    });
+    const people = L.normalizePersons(ids.map(id => ({ id, firstName: id, lastName: '', treeId: 't' })), relations);
+    const positions = L.computeLayout(people, mode, 'compact').positions;
+    const links = L.buildConnections(people, positions, 'elbow', mode);
+    const buses = links.filter(l => l.kind === 'child' && !l.childId && l.points.length === 2 && (mode === 'vertical' ? l.points[0].y === l.points[1].y && l.points[0].x !== l.points[1].x : l.points[0].x === l.points[1].x && l.points[0].y !== l.points[1].y));
+    assert.equal(buses.length, count + 1);
+    const lanes = buses.map(l => mode === 'vertical' ? l.points[0].y : l.points[0].x).sort((a, b) => a - b);
+    for (let i = 1; i < lanes.length; i++) assert.ok(lanes[i] - lanes[i - 1] >= 10, `bus spacing too small: ${lanes[i] - lanes[i - 1]}`);
+    assert.deepEqual(links.find(l => l.childId === 'unknown').parentIds, [hub]);
+  });
+}
