@@ -313,7 +313,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         onCardDragStateChange={dragging => { isDraggingCardRef.current = dragging; if (dragging) positionsDirtyRef.current = true }} />
     </div>
     {selectedPerson && <SidePanel person={selectedPerson} people={people} currentTree={currentTree} onClose={() => setSelectedId(null)}
-      onSelect={id => { setSelectedId(id); window.__focusOn?.(id) }} onSave={canEditInfo ? handleSidePanelSave : undefined}
+      onSelect={id => { setSelectedId(id); window.__focusOn?.(id) }} onSave={canEditPerson ? handleSidePanelSave : undefined}
       onAddRelation={p => { setRelationPersonData(currentTree.Person?.find(x => x.id === p.id) || personForEdit(p, currentTree.id)); setIsRelationOpen(true) }}
       onAddChildRelation={handleOpenAddModal} onLinkExistingChild={handleOpenLinkChildModal} onDelete={handleDeletePerson} onDeleteRelation={handleDeleteRelation}
       readOnly={readOnly} canEditInfo={canEditPerson} canChangePhoto={canChangePhoto} canVersioning={canVersioning}
