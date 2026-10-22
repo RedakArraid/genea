@@ -118,7 +118,7 @@ for(const direction of ['vertical','horizontal'])for(const style of ['square','r
  assert.deepEqual(U.computeUnionOverview([...people].reverse(),direction,style,{narrow}).positions,scene.positions)
  if(direction==='vertical' && style==='square' && !narrow) {
   assert.ok(scene.bounds.height<1000,JSON.stringify(scene.bounds))
-  assert.equal(new Set(panelRows(scene, people, direction)).size, 2, 'The wide canvas may scroll, but generations stay aligned')
+  assert.deepEqual(panelRows(scene, people, direction), [1, 1], 'The wide canvas may scroll, but each generation keeps one axis')
  }
 })
 
