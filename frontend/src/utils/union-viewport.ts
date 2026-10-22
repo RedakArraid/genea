@@ -3,10 +3,10 @@ import { boundsFromPoints, fitViewport, type Bounds } from '../lib/tree-geometry
 
 /** Frame a readable graph, never an arbitrary first lane with its parent offscreen. */
 export function unionReadingView(scene: UnionOverview, width: number, height: number, top: number, familyKey?: string) {
-  const bottom = 52 // Zoom controls and the person counter must not cover a card.
+  const bottom = 60 // Zoom controls and the person counter must not cover a card.
   const availableHeight = Math.max(top + 1, height - bottom)
-  const fit = (bounds: Bounds) => {
-    const fitted = fitViewport(bounds, width, availableHeight, top, 12)
+  const fit = (bounds: Bounds, padding = 12) => {
+    const fitted = fitViewport(bounds, width, availableHeight, top, padding)
     const scale = Math.min(1, fitted.scale)
     return { scale, pan: { x: width / 2 - bounds.centerX * scale, y: top + (availableHeight - top) / 2 - bounds.centerY * scale } }
   }
@@ -23,6 +23,11 @@ export function unionReadingView(scene: UnionOverview, width: number, height: nu
   const relatives = boundsOf([...family.family.parents, ...family.family.children].map(p => p.id))
   const framed = fit(relatives)
   if (framed.scale >= .85) return framed
+  // A wrapping toolbar can consume the last few pixels of decorative margin.
+  // Try a tighter frame before discarding the children from the initial view;
+  // keep the same readable scale and the reserved space for zoom controls.
+  const snug = fit(relatives, 4)
+  if (snug.scale >= .85) return snug
   // Horizontal/nested graphs may need panning. Start on the recorded parents,
   // not on a child disconnected from its context; the full graph remains mounted.
   const parents = boundsOf(family.family.parents.map(p => p.id))

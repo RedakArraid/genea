@@ -37,7 +37,7 @@ jobs:
       - name: Readability geometry and family grouping
         run: node --test scripts/test-tree-clarity.cjs
       - name: Complete union graph geometry
-        run: node --test scripts/test-union-overview.cjs
+        run: node --test scripts/test-union-overview.cjs scripts/test-union-viewport.cjs
       - name: Existing layout tests
         run: npm test --prefix frontend
       - name: Build complete frontend
