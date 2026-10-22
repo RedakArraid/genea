@@ -103,8 +103,10 @@ for(const direction of ['vertical','horizontal'])for(const style of ['square','r
  for(const panel of scene.panels) {
   assert.ok(panel.compact)
   const cross=p=>direction==='horizontal'?p.y:p.x
-  assert.equal(new Set(panel.family.children.map(p=>cross(scene.positions[p.id]))).size,2,'Exactly two sibling columns, not seven')
-  assert.ok(panel.family.children.every(p=>p.generation===2),'Wrapping cannot change a generation')
+  const generationAxis=p=>direction==='horizontal'?p.x:p.y
+  assert.equal(new Set(panel.family.children.map(p=>generationAxis(scene.positions[p.id]))).size,1,'One generation must stay on one visual axis')
+  assert.equal(new Set(panel.family.children.map(p=>cross(scene.positions[p.id]))).size,7,'Compact siblings remain distinct along the generation row')
+  assert.ok(panel.family.children.every(p=>p.generation===2),'Compaction cannot change a generation')
  }
  assert.deepEqual(U.computeUnionOverview([...people].reverse(),direction,style,{narrow}).positions,scene.positions)
  if(direction==='vertical' && style==='square' && !narrow) {
@@ -112,16 +114,31 @@ for(const direction of ['vertical','horizontal'])for(const style of ['square','r
   assert.ok(scene.bounds.height<1000,JSON.stringify(scene.bounds))
  }
 })
+
+for(const direction of ['vertical','horizontal']) test(`every linked person in the same generation shares one visual axis: ${direction}`,()=>{
+ const people=largeFamily(), scene=verify(people,direction,'square')
+ const axis=p=>direction==='horizontal'?scene.positions[p.id].x:scene.positions[p.id].y
+ for(const generation of [...new Set(people.map(p=>p.generation))]) {
+  const row=people.filter(p=>p.generation===generation)
+  assert.equal(new Set(row.map(axis)).size,1,`generation ${generation} is not aligned`)
+ }
+})
+
 test('compact mobile navigation keeps one common parent above each chosen family',()=>{
  const people=largeFamily(), initial=U.computeUnionOverview(people,'vertical','square',{narrow:true})
  for(const family of initial.panels) {
   const scene=verify(people,'vertical','square',{narrow:true,focusedFamily:family.family.key})
   const view=V.unionReadingView(scene,375,766,172,family.family.key)
   assert.ok(view.scale>=.85)
-  for(const p of [...family.family.parents,...family.family.children]) {
-   const pos=scene.positions[p.id],size=scene.cardSizes[p.id]
-   assert.ok(pos.x*view.scale+view.pan.x>=0 && (pos.x+size.w)*view.scale+view.pan.x<=375,'Family fits narrow viewport width')
-   assert.ok(pos.y*view.scale+view.pan.y>=172 && (pos.y+size.h)*view.scale+view.pan.y<=714,'Family fits above zoom controls')
+  const visible = id => {
+   const pos=scene.positions[id],size=scene.cardSizes[id]
+   return pos.x*view.scale+view.pan.x>=0 && (pos.x+size.w)*view.scale+view.pan.x<=375
+     && pos.y*view.scale+view.pan.y>=172 && (pos.y+size.h)*view.scale+view.pan.y<=714
+  }
+  for(const p of family.family.parents) assert.ok(visible(p.id),'Both recorded parents remain the mobile anchor')
+  const childAxis = new Set(family.family.children.map(p=>scene.positions[p.id].y))
+  assert.equal(childAxis.size,1,'Children stay aligned even when the row requires horizontal panning')
+  assert.ok(family.family.children.some(p=>visible(p.id)),'At least one child remains in the readable starting viewport')
   }
  }
 })
