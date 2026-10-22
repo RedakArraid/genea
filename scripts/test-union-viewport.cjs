@@ -37,27 +37,35 @@ function screenBox(scene, view, id) {
     top: p.y * view.scale + view.pan.y, bottom: (p.y + size.h) * view.scale + view.pan.y }
 }
 for (const [width, height, top] of [[375, 766, 185], [390, 766, 185], [375, 766, 172]]) {
-  test(`4x7 ${width}x${height}, toolbar ${top}: nine relatives remain above controls`, () => {
+  test(`4x7 ${width}x${height}, toolbar ${top}: parents anchor one aligned child row`, () => {
     const people = fixture(), initial = computeUnionOverview(people, 'vertical', 'square', { narrow: true })
     for (const panel of initial.panels) {
       const scene = computeUnionOverview(people, 'vertical', 'square', { narrow: true, focusedFamily: panel.family.key })
       const view = unionReadingView(scene, width, height, top, panel.family.key)
       assert.ok(view.scale >= .85, 'Do not shrink names below the existing readable threshold')
       assert.equal(Object.keys(scene.positions).length, 33, 'No filtering or duplicate father')
-      for (const person of [...panel.family.parents, ...panel.family.children]) {
+      for (const person of panel.family.parents) {
         const r = screenBox(scene, view, person.id)
-        assert.ok(r.left >= 0 && r.right <= width, `${person.id} is clipped horizontally`)
-        assert.ok(r.top >= top && r.bottom <= height - 60, `${person.id} is clipped or under controls`)
+        assert.ok(r.left >= 0 && r.right <= width, `${person.id} parent anchor is clipped horizontally`)
+        assert.ok(r.top >= top && r.bottom <= height - 60, `${person.id} parent anchor is clipped vertically`)
       }
+      assert.equal(new Set(panel.family.children.map(person => scene.positions[person.id].y)).size, 1, 'One generation must use one row')
+      assert.ok(panel.family.children.some(person => {
+        const r = screenBox(scene, view, person.id)
+        return r.right > 0 && r.left < width && r.bottom > top && r.top < height - 60
+      }), 'The aligned child row remains reachable from the opening frame')
     }
   })
 }
-test('4x7 desktop: all 33 cards remain visible without reducing names', () => {
-  const scene = computeUnionOverview(fixture()), view = unionReadingView(scene, 1600, 906, 141)
+test('4x7 desktop keeps a readable common-parent anchor while all generations stay aligned', () => {
+  const people = fixture(), scene = computeUnionOverview(people), view = unionReadingView(scene, 1600, 906, 141)
   assert.ok(view.scale >= .85)
-  for (const id of Object.keys(scene.positions)) {
-    const r = screenBox(scene, view, id)
-    assert.ok(r.left >= 0 && r.right <= 1600 && r.top >= 141 && r.bottom <= 846, id)
+  assert.equal(Object.keys(scene.positions).length, 33)
+  const father = screenBox(scene, view, 'father')
+  assert.ok(father.left >= 0 && father.right <= 1600 && father.top >= 141 && father.bottom <= 846)
+  for (const generation of [1, 2]) {
+    const row = people.filter(person => person.generation === generation)
+    assert.equal(new Set(row.map(person => scene.positions[person.id].y)).size, 1, `generation ${generation} is not aligned`)
   }
 })
 test('short screens retain a readable common parent, not an illegible automatic overview', () => {
