@@ -80,7 +80,7 @@ class MinHeap {
 }
 
 /** Bounded orthogonal visibility search, only used when an existing segment is ambiguous. */
-function detour(start: Point, end: Point, cards: CardObstacle[], used: Segment[]): Point[] | null {
+export function detour(start: Point, end: Point, cards: CardObstacle[], used: Segment[]): Point[] | null {
   const padding = 8
   const port = (p: Point) => {
     for (const r of cards) {

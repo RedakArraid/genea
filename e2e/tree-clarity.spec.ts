@@ -21,7 +21,7 @@ async function fixture(page: Page, options: { width?: number; dark?: boolean; la
     localStorage.setItem('geneamap_locale', lang || 'fr')
     localStorage.setItem('geneamap-theme', dark ? 'dark' : 'light')
     localStorage.setItem('token', `e30.${btoa(JSON.stringify({ exp: 4102444800, id: 'clarity-user' }))}.fixture`)
-    if (graph) localStorage.setItem(`geneamap:tree-presentation:v1:${id}`, 'graph')
+    localStorage.setItem(`geneamap:tree-presentation:v1:${id}`, graph ? 'graph' : 'families')
     if (!localStorage.getItem(`geneamap:tree-view:v1:${id}`)) localStorage.setItem(`geneamap:tree-view:v1:${id}`, JSON.stringify({ layout: layout || 'vertical', cardStyle: 'square', density: 'spacious', connStyle: 'elbow' }))
   }, { id, ...options })
   await page.route('**/api/**', async route => {
@@ -45,7 +45,7 @@ async function fixture(page: Page, options: { width?: number; dark?: boolean; la
 }
 
 for (const width of [375, 768, 1600]) for (const dark of [false, true]) {
-  test(`readable default families at ${width}px ${dark ? 'dark' : 'light'}`, async ({ page }, info) => {
+  test(`explicit Families reading at ${width}px ${dark ? 'dark' : 'light'}`, async ({ page }, info) => {
     const state = await fixture(page, { width, dark })
     await expect(page.getByTestId('view-families')).toHaveAttribute('aria-pressed', 'true')
     const groups = page.getByTestId('reading-family')

@@ -126,6 +126,8 @@ for (const width of [375, 1600]) for (const layout of ['vertical', 'horizontal',
   await page.setViewportSize({ width, height: width === 375 ? 812 : 1000 })
   await page.addInitScript(({ id, layout }) => localStorage.setItem(`geneamap:tree-view:v1:${id}`, JSON.stringify({ layout, cardStyle: 'square' })), { id: tree.id, layout })
   await open(page)
+  // Overview is explicit: the initial mobile projection keeps names readable.
+  await page.getByRole('button', { name: "Centrer l'arbre", exact: true }).click()
   await expect.poll(async () => page.getByTestId('tree-viewport').evaluate(viewport => {
     const box = viewport.getBoundingClientRect(), toolbar = viewport.querySelector('[data-testid="tree-toolbar"]')!.getBoundingClientRect()
     return [...viewport.querySelectorAll('.tree-person-card')].every(card => {

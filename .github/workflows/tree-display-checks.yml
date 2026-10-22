@@ -36,6 +36,8 @@ jobs:
         run: node --test scripts/test-tree-displays.cjs
       - name: Readability geometry and family grouping
         run: node --test scripts/test-tree-clarity.cjs
+      - name: Complete union graph geometry
+        run: node --test scripts/test-union-overview.cjs
       - name: Existing layout tests
         run: npm test --prefix frontend
       - name: Build complete frontend
@@ -48,6 +50,8 @@ jobs:
         run: npx playwright test --config=playwright.displays.config.ts
       - name: Visual clarity and mobile reading journeys
         run: npx playwright test --config=playwright.clarity.config.ts
+      - name: Complete union graph browser journeys
+        run: npx playwright test --config=playwright.unions.config.ts
       - name: Keep browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -56,5 +60,6 @@ jobs:
           path: |
             test-results/displays/**/*.png
             test-results/clarity/**/*.png
+            test-results/unions/**/*.png
           if-no-files-found: ignore
           retention-days: 7
