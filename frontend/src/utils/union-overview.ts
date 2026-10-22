@@ -203,7 +203,13 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
       // All people/edges stay in the same graph; no saved coordinate is written.
       if (options.narrow && grids.size && hubs.length === 1) {
         const focused = unit.families.find(f => f.key === options.focusedFamily) || unit.families[0]
-        hubX = laneOf.get(focused.key)!.left - totalHubWidth - GAP
+        const focusedLane = laneOf.get(focused.key)!
+        hubX = focusedLane.left + PAD
+        let partnerX = hubX + totalHubWidth + GAP
+        for (const p of focused.parents.filter(p => !unit.shared.includes(p))) {
+          logical.set(p.id, { x: partnerX, y: rowTop })
+          partnerX += cross(p) + GAP
+        }
       }
       for (const p of hubs) { logical.set(p.id, { x: hubX, y: rowTop }); hubX += cross(p) + GAP }
     }
