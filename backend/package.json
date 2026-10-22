@@ -4,6 +4,7 @@
   "description": "Backend API for geneamap application",
   "main": "src/index.js",
   "scripts": {
+    "build": "npm run lint",
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "dev:watch": "nodemon src/index.js",

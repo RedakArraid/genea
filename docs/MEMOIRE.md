@@ -3,7 +3,7 @@
 > Source de vérité partagée entre toutes les IA et développeurs.
 > À lire en début de session, à mettre à jour en fin de tâche (voir [AGENTS.md](../AGENTS.md)).
 
-Dernière mise à jour : **2026-07-23** (poste org textarea extensible)
+Dernière mise à jour : **2026-10-22** (correctifs audit sur branche dédiée, non déployés)
 
 ---
 
@@ -117,11 +117,15 @@ Mot de passe utilisateurs test : `password123`.
 | `npm run test:e2e` | Playwright : admin, boutons, collaboration, édition personne, **Patrimoine** (import GEDCOM, historique, correspondances, landing XOF) |
 | `bash scripts/test-integration.sh` | Smoke API **69 assertions** (export/import GEDCOM, matching, révisions, permissions) |
 | `bash scripts/check-r2.sh` | Vérification credentials Cloudflare R2 |
+| `node --test scripts/test-audit-regressions.cjs` | 21 tests ciblés audit : droits des arêtes, copie démo, webhook, cache médias, script build ; I/O simulées, sans services externes |
+
+Workflow dédié `.github/workflows/audit-regressions.yml` : vérification syntaxique backend et tests ciblés, sans installation de dépendances ni déploiement. Ne remplace pas les tests d'intégration/E2E.
 
 E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`.
 
 ## 7. À faire / prochaines étapes
 
+- [ ] Valider les correctifs audit du 2026-10-22 en intégration et staging (Express réel, PostgreSQL, stockage, webhook Paystack test) avant promotion vers `main` ; branche `fix/audit-2026-10-22`, destinée à `dev`.
 - [x] Buckets R2 `geneamap-staging` et `geneamap-prod` créés et validés (lecture/écriture OK, credentials gérés par Paul dans `~/.config/paul/.env`).
 - [x] Secrets GitHub configurés (environnements `staging`/`production`, clé SSH dédiée `~/.ssh/deploy-keys/geneamap_deploy`).
 - [x] DNS geneamap.com : A `@`, `www`, `api`, `staging`, `api-staging` → `178.238.229.159` (attention : proxy Cloudflare orange actif, fonctionne mais recommandé de passer en DNS only).
@@ -135,6 +139,7 @@ E2E adaptés à l'édition inline : testids `edit-first-name`, `save-person-btn`
 
 ## 8. Journal
 
+- **2026-10-22 (audit, correctifs non déployés)** — Branche `fix/audit-2026-10-22` issue de `dev` (`ffe91e4`) : autorisation des arêtes existantes depuis leur arbre en base, traduction de l'arête vers la copie personnelle de démo, webhook Paystack enregistré avant les parseurs JSON, médias `private, no-store`, script backend `build` aligné sur la vérification syntaxique. Ajout de 21 tests de non-régression et d'un workflow CI dédié. Vérification locale sur fichiers copiés : 10 réussis / 11 échoués avant, 21 réussis après ; pas de clone complet ni d'intégration/E2E exécutée localement. Aucun changement de schéma, de secrets ou de production ; validation staging à effectuer.
 - **2026-07-23 (org, poste extensible)** — Champ Poste / Fonction du panneau (et dialogue création) : `Textarea` auto-extensible (`field-sizing-content`), comme Notes, au lieu d’un Input une ligne.
 - **2026-07-23 (fix CI)** — Build frontend CI cassé : `@ts-nocheck` + défaut `cardHeights = null` faisait inférer le 7ᵉ arg de `buildConnections` comme `null` uniquement ; retrait du défaut.
 - **2026-07-23 (org, branches vs poste long)** — Réorganiser / layout org : hauteur de carte estimée selon le poste (`estimateOrgCardHeight`) ; espacement vertical des rangées et ancrage des branches (`buildConnections` + `cardHeights`) pour éviter le chevauchement des lignes sur le texte.
