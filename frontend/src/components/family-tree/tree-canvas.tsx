@@ -60,6 +60,8 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   const pointers = useRef(new Map<number, Point>()), gesture = useRef<Gesture | null>(null)
   const draggingRef = useRef(false), dragFrame = useRef<number | null>(null), pendingDrag = useRef<{ id: string; x: number; y: number } | null>(null)
   const lastFit = useRef('')
+  const focusRequest = useRef<string | null>(null)
+  const [focusVersion, setFocusVersion] = useState(0)
   const isOrg = isOrganizationTree(treeMeta)
   const orgLexicon = useMemo(() => isOrg ? resolveOrgLexicon(treeMeta) : null, [isOrg, treeMeta])
   const layout = tweaks.layout || 'vertical', style = tweaks.cardStyle || 'square', genFilter = tweaks.generation || 'all'
@@ -68,7 +70,7 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   const [presentation, setPresentation] = useState<string | null>(() => {
     try { return localStorage.getItem(presentationKey) } catch { return null }
   })
-  const reading = !isOrg && (presentation === 'families' || presentation !== 'graph' && (viewport.width < 768 || hasMultipleFamilies(people)))
+  const reading = !pasteMode && !isOrg && (presentation === 'families' || presentation !== 'graph' && (viewport.width < 768 || hasMultipleFamilies(people)))
   const choosePresentation = (value: 'families' | 'graph') => {
     setPresentation(value)
     try { localStorage.setItem(presentationKey, value) } catch { /* Private browsing can disable storage. */ }
@@ -81,7 +83,7 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   const heights = useMemo(() => buildCardHeights(people, style, isOrg), [people, style, isOrg])
   const visible = useMemo(() => visiblePeople(people, searchQuery, genFilter).filter(p => !scopedIds || scopedIds.has(p.id)), [people, searchQuery, genFilter, scopedIds])
   const visibleIds = useMemo(() => new Set(visible.map(p => p.id)), [visible])
-  const routed = useMemo(() => readableConnections(buildConnections(visible, positions, tweaks.connStyle, layout, cardW, cardH, heights), Object.fromEntries(visible.map(p => [p.id, positions[p.id]]).filter(([, pos]) => !!pos)), cardW, heights), [visible, positions, tweaks.connStyle, layout, cardW, cardH, heights])
+  const routed = useMemo(() => reading ? { connections: [], unresolved: 0 } : readableConnections(buildConnections(visible, positions, tweaks.connStyle, layout, cardW, cardH, heights), Object.fromEntries(visible.map(p => [p.id, positions[p.id]]).filter(([, pos]) => !!pos)), cardW, heights), [reading, visible, positions, tweaks.connStyle, layout, cardW, cardH, heights])
   const connections = routed.connections
   const bounds = useMemo(() => drawingBounds(contentBounds(positions, visibleIds, cardW, cardH, heights), connections, 8), [positions, visibleIds, cardW, cardH, heights, connections])
   const lineage = useMemo(() => hoverId ? computeLineage(hoverId, people) : null, [hoverId, people])
@@ -204,14 +206,25 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   useEffect(() => () => { if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current) }, [])
   useEffect(() => {
     const focus = (id: string) => {
-      const pos = positionsRef.current[id], r = wrapRef.current?.getBoundingClientRect()
-      if (!pos || !r) return
-      const s = Math.max(.9, viewRef.current.scale)
-      updateView({ scale: s, pan: { x: r.width / 2 - (pos.x + cardW / 2) * s, y: viewport.top + (r.height - viewport.top) / 2 - (pos.y + (heights[id] || cardH) / 2) * s } })
+      if (!positionsRef.current[id]) return
+      focusRequest.current = id
+      setPresentation('graph'); setFamilyScope('all')
+      onSearchChange(''); onSetTweak('generation', 'all')
+      setFocusVersion(version => version + 1)
     }
     window.__focusOn = focus
     return () => { if (window.__focusOn === focus) window.__focusOn = undefined }
-  }, [cardW, cardH, heights, viewport.top, updateView])
+  }, [onSearchChange, onSetTweak])
+  // Apply explicit focus after the new mode, filters and toolbar have rendered.
+  useLayoutEffect(() => {
+    const id = focusRequest.current
+    if (!id || reading || !visibleIds.has(id)) return
+    const pos = positionsRef.current[id], r = wrapRef.current?.getBoundingClientRect()
+    if (!pos || !r) return
+    focusRequest.current = null
+    const scale = Math.max(.9, viewRef.current.scale)
+    updateView({ scale, pan: { x: r.width / 2 - (pos.x + cardW / 2) * scale, y: viewport.top + (r.height - viewport.top) / 2 - (pos.y + (heights[id] || cardH) / 2) * scale } })
+  }, [focusVersion, reading, visibleIds, viewport, cardW, cardH, heights, updateView])
 
   const runAction = (action: () => void) => { setMobileToolbarOpen(false); queueMicrotask(action) }
   const canReorganize = !!onReorganize && people.length > 0 && (!readOnly || isDemo)

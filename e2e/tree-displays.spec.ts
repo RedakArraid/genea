@@ -161,7 +161,7 @@ test('generation filter displays its translated label before opening', async ({ 
   await expect(filter).not.toHaveText(/^all$/)
   await expect(filter).toContainText(/générations/i)
   await filter.click()
-  await page.getByRole('option').filter({ hasText: /2/ }).first().click()
+  await page.locator('[data-slot="select-content"]').getByRole('option').filter({ hasText: /2/ }).first().click()
   await expect(page.getByTestId('tree-person-card')).toHaveCount(16)
   await expect(page.locator('[data-connection-kind]')).toHaveCount(0)
   await expectFitted(page)

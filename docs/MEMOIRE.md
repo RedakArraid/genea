@@ -187,3 +187,13 @@ Ce complément décrit les changements de la branche de correction, pas l'état 
 - Affichage des enfants par parents exacts, couloirs distincts entre unions, classement des mêmes parents / demi-fratries / filiations incomplètes, traductions FR/EN dans le namespace `family`.
 - Workflow `family-integrity-checks.yml` : PostgreSQL jetable, vraies routes Express et parcours Chromium, sans accès à la production. Il complète les tests d'affichage existants. Résultats d'exécution détaillés sur la PR et ses workflows ; ne pas confondre une suite présente avec un run terminé.
 - Guide technique et limites : [FAMILY_INTEGRITY.md](FAMILY_INTEGRITY.md). Déployer backend et frontend ensemble après staging ; aucune migration de schéma. Les anciennes filiations potentiellement fausses ne sont ni devinées ni réattribuées automatiquement. Les imports/collages et les photos réelles restent à valider séparément.
+
+
+## 11. Lisibilite visuelle - 22 octobre 2026, PR #5 non deployee
+
+- Revue des captures : les tests precedents ne suffisaient pas a valider la lecture des filiations. Des superpositions de segments et des lignes derriere des cartes etaient encore ambiguës.
+- Nouvelle vue Familles : groupes explicites de parents/enfants, textes non reduits, personnes sans liens separees, identite unique pour un parent affiche dans plusieurs groupes. Vue par defaut en genealogie sur mobile et pour les familles a plusieurs unions ; choix Arbre conserve localement par arbre.
+- Vue graphique : filtre par famille exacte, ports distincts, detours autour des cartes et separation des segments partages. En cas de placement manuel impossible a router, avertissement visible et lecture exhaustive disponible dans Familles ; aucune filiation inventee. Les boutons + sur les croisements sont retires ; ajout et rattachement restent disponibles dans les groupes et la fiche.
+- Nom fixe dans le panneau, boutons non tronques, cartes moins attenuees, titres contextuels de formulaire et choix photo traduit. Le format du controle de date natif reste celui du navigateur.
+- Nouvelles suites : scripts/test-tree-clarity.cjs et e2e/tree-clarity.spec.ts, integrees au workflow d'affichage. Les suites graphiques existantes choisissent explicitement Arbre ; leurs assertions sont conservees. Voir docs/TREE_READABILITY.md et les derniers resultats de la PR avant promotion.
+- Backend inchange par ce complement. Aucune fusion ni mise en production. Les transactions et limitations de la section 10 restent applicables.

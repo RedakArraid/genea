@@ -205,7 +205,10 @@ export function readableConnections(connections: Connection[], positions: Positi
     const original = connections.filter(c => key(c) === family)
     const fallback: Connection[] = []
     const children = new Map(original.filter(c => c.childId).map(c => [c.childId!, c]))
-    const other = used.filter(s => s.family !== family && !failedFamilies.has(s.family))
+    const other = [...used.filter(s => s.family !== family && !failedFamilies.has(s.family)), ...replacements.flatMap(c => {
+      const points = sampledPoints(c)
+      return points.slice(1).map((b, i) => ({ a: points[i], b, family: key(c) }))
+    })]
     let valid = true
     const add = (c: Connection, start: Point, end: Point) => {
       const points = detour(start, end, cards, other)
