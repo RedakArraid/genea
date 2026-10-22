@@ -11,6 +11,8 @@ export interface CardPerson {
 }
 export const CARD_W = 120
 export const CARD_H = 150
+/** A readable name and portrait, used explicitly by compact sibling groups. */
+export const getCompactCardDimensions = () => ({ w: 148, h: 64 })
 export const MIN_ZOOM = 0.001
 export const MAX_ZOOM = 2.5
 

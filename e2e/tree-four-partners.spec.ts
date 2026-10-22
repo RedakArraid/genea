@@ -1,7 +1,6 @@
 import { test, expect, type Page, type TestInfo } from '@playwright/test'
 import { normalizePersons } from '../frontend/src/utils/tree-layout'
 import { computeUnionOverview } from '../frontend/src/utils/union-overview'
-import { buildCardHeights, getCardDimensions } from '../frontend/src/lib/tree-geometry'
 import { siblingGroups } from '../frontend/src/lib/family-model'
 import { segmentHitsCard, segmentsOverlap } from '../frontend/src/utils/readable-connections'
 import type { Person, Relationship } from '../frontend/src/types'
@@ -44,8 +43,8 @@ for (const orientation of ['vertical', 'horizontal']) for (const style of ['squa
     expect(Object.keys(scene.positions).sort()).toEqual(persons.map(p => p.id).sort())
     expect(scene.panels).toHaveLength(4)
     expect(scene.shared.map(p => [p.person.id, p.count])).toEqual([['father', 4]])
-    const { w } = getCardDimensions(style), heights = buildCardHeights(people, style)
-    const cards = people.map(p => ({ id: p.id, left: scene.positions[p.id].x, right: scene.positions[p.id].x + w, top: scene.positions[p.id].y, bottom: scene.positions[p.id].y + heights[p.id] }))
+    const sizes = scene.cardSizes
+    const cards = people.map(p => ({ id: p.id, left: scene.positions[p.id].x, right: scene.positions[p.id].x + sizes[p.id].w, top: scene.positions[p.id].y, bottom: scene.positions[p.id].y + sizes[p.id].h }))
     for (const [i, a] of cards.entries()) for (const b of cards.slice(i + 1)) {
       expect(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top, `${a.id} overlaps ${b.id}`).toBe(true)
     }
@@ -67,7 +66,7 @@ for (const orientation of ['vertical', 'horizontal']) for (const style of ['squa
         expect(groups.half).toHaveLength(21)
         expect(groups.uncertain).toHaveLength(0)
         const pos = scene.positions[child.id]
-        expect(pos.x >= panel.x && pos.x + w <= panel.x + panel.width && pos.y >= panel.y && pos.y + heights[child.id] <= panel.y + panel.height, `${child.id} outside its family`).toBe(true)
+        expect(pos.x >= panel.x && pos.x + sizes[child.id].w <= panel.x + panel.width && pos.y >= panel.y && pos.y + sizes[child.id].h <= panel.y + panel.height, `${child.id} outside its family`).toBe(true)
       }
     }
     for (const c of scene.connections) for (let i = 1; i < c.points.length; i++) for (const card of cards) {
@@ -109,7 +108,7 @@ async function fixture(page: Page, width: number, layout = 'vertical', dark = fa
   })
   await page.goto(`/tree/${treeId}`)
   await expect(page.getByTestId('tree-person-card')).toHaveCount(33)
-  await expect(page.getByTestId('tree-zoom')).not.toHaveText('85%')
+  await expect(page.locator('[data-testid="tree-person-card"][data-compact="true"]')).toHaveCount(width < 768 ? 33 : 28)
   return { errors, writes }
 }
 
@@ -177,7 +176,11 @@ for (const layout of ['vertical', 'horizontal']) for (const width of [375, 768, 
   test(`4x7 browser ${layout} ${width}px: every family remains intact`, async ({ page }, info) => {
     const state = await fixture(page, width, layout)
     await checkRenderedGraph(page)
-    await record(page, info, `four-by-seven-${layout}-${width}-initial`)
+    const initial = await record(page, info, `four-by-seven-${layout}-${width}-initial`)
+    expect(initial.fatherFullyVisible, 'The common parent must be visible on opening').toBe(true)
+    expect(initial.zoom).toBeGreaterThanOrEqual(.85)
+    if (layout === 'vertical' && width === 1600) expect(initial.fullyVisible).toBe(33)
+    if (layout === 'vertical' && width === 375) expect(initial.fullyVisible).toBeGreaterThanOrEqual(9)
     await page.getByTestId('tree-zoom-controls').getByRole('button').last().click()
     const overview = await record(page, info, `four-by-seven-${layout}-${width}-overview`)
     expect(overview.fullyVisible).toBe(33)
@@ -199,7 +202,10 @@ test('4x7 mobile navigation reaches each mother without filtering children', asy
     await page.getByTestId('union-navigation').getByRole('button', { name: partner.firstName, exact: true }).click()
     await expect(page.locator(`[data-testid="tree-person-card"][data-person-id="${partner.id}"]`)).toBeInViewport()
     await checkRenderedGraph(page)
-    await record(page, info, `four-by-seven-mobile-${partner.id}`)
+    const current = await record(page, info, `four-by-seven-mobile-${partner.id}`)
+    const expected = ['father', partner.id, ...childrenOf(partners.indexOf(partner))]
+    for (const id of expected) expect(current.cards.find(c => c.id === id)?.fullyVisible, `${id} must be visible with both parents`).toBe(true)
+    expect(current.zoom).toBeGreaterThanOrEqual(.85)
   }
   expect(state.errors).toEqual([])
   expect(state.writes).toEqual([])
@@ -217,4 +223,33 @@ test('4x7 Families mode lists seven children under each exact parent pair', asyn
   await page.screenshot({ path: info.outputPath('four-by-seven-family-reader.png'), fullPage: true })
   expect(state.errors).toEqual([])
   expect(state.writes).toEqual([])
+})
+
+
+test('4x7 full-card switch and narrow resize preserve all people without saving coordinates', async ({ page }) => {
+  const state = await fixture(page, 1600)
+  await page.getByTestId('compact-siblings').click()
+  await expect(page.locator('[data-compact="true"]')).toHaveCount(0)
+  await checkRenderedGraph(page)
+  await page.getByTestId('compact-siblings').click()
+  await expect(page.locator('[data-compact="true"]')).toHaveCount(28)
+  await page.setViewportSize({ width: 375, height: 900 })
+  await expect(page.locator('[data-compact="true"]')).toHaveCount(33)
+  await checkRenderedGraph(page)
+  await expect(page.locator('[data-testid="tree-person-card"][data-person-id="father"]')).toBeInViewport()
+  expect(state.writes).toEqual([]); expect(state.errors).toEqual([])
+})
+
+test('compact sibling cards keep legible names and keyboard access to their original person', async ({ page }) => {
+  await fixture(page, 1600)
+  const names = page.locator('[data-compact="true"] [data-person-name]')
+  await expect(names).toHaveCount(28)
+  expect(await names.evaluateAll(elements => elements.every(el => {
+    const card = el.closest('[data-testid="tree-person-card"]') as HTMLElement
+    const scale = card.getBoundingClientRect().width / card.offsetWidth
+    return parseFloat(getComputedStyle(el).fontSize) * scale >= 11
+  }))).toBe(true)
+  const child = page.locator('[data-testid="tree-person-card"][data-person-id="child-0-0"]')
+  await child.focus(); await page.keyboard.press('Enter')
+  await expect(page.locator('aside')).toContainText('Issa')
 })

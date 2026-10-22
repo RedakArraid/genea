@@ -5,6 +5,7 @@ import { PersonCard } from './person-card'
 import { FamilyReader } from './family-reader'
 import { UnionOverviewLayer, UNION_TONES } from './union-overview-layer'
 import { computeUnionOverview } from '@/utils/union-overview'
+import { unionReadingView } from '@/utils/union-viewport'
 import type { UnionConnection } from '@/utils/union-overview'
 import { readableConnections } from '@/utils/readable-connections'
 import { readingFamilies } from '@/lib/family-reading'
@@ -87,13 +88,18 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   }
   const familyData = useMemo(() => readingFamilies(people), [people])
   const [familyScope, setFamilyScope] = useState('all')
+  const [activeUnion, setActiveUnion] = useState<string | undefined>()
+  const [compactSiblings, setCompactSiblings] = useState(true)
+  const hasLargeSiblings = familyData.groups.some(f => f.children.length >= 5)
+  const narrowUnion = viewport.width > 0 && viewport.width < 768
   const scopedFamily = familyData.groups.find(group => group.key === familyScope)
   const scopedIds = useMemo(() => !reading && !pasteMode && scopedFamily ? new Set([...scopedFamily.parents, ...scopedFamily.children].map(p => p.id)) : null, [reading, pasteMode, scopedFamily])
   // The focused family is a temporary projection, not a rewrite of saved coordinates.
   const projection = useMemo(() => scopedIds ? computeLayout(people.filter(p => scopedIds.has(p.id)), layout, tweaks.density, { organization: isOrg, cardStyle: style }).positions : null,
     [scopedIds, people, layout, tweaks.density, isOrg, style])
   const unionScene = useMemo(() => !reading && !pasteMode && !isOrg && !scopedIds && multipleUnions && unionMode
-    ? computeUnionOverview(people, layout, style) : null, [reading, pasteMode, isOrg, scopedIds, multipleUnions, unionMode, people, layout, style])
+    ? computeUnionOverview(people, layout, style, { compactSiblings, narrow: narrowUnion, focusedFamily: activeUnion }) : null, [reading, pasteMode, isOrg, scopedIds, multipleUnions, unionMode, people, layout, style, compactSiblings, narrowUnion, activeUnion])
+  const compactPersonIds = useMemo(() => new Set(unionScene?.compactIds), [unionScene])
   const positions = projection || unionScene?.positions || savedPositions
   positionsRef.current = positions
   const canMoveCards = canDrag && !projection && !unionScene
@@ -131,18 +137,20 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
     if (!visible.length || viewport.width <= 0 || viewport.height <= viewport.top) return
     updateView(fitViewport(bounds, viewport.width, viewport.height, viewport.top))
   }, [bounds, viewport, visible.length, updateView])
-  const fitKey = `${!!unionScene}/${unionMode}/${reading}/${familyScope}/${layout}/${tweaks.density}/${style}/${genFilter}/${searchQuery}/${fitRequestId}/${viewport.width}/${viewport.height}/${viewport.top}/${visible.map(p => `${p.id}:${heights[p.id]}:${!!positions[p.id]}`).sort().join(',')}`
+  const fitKey = `${activeUnion}/${compactSiblings}/${!!unionScene}/${unionMode}/${reading}/${familyScope}/${layout}/${tweaks.density}/${style}/${genFilter}/${searchQuery}/${fitRequestId}/${viewport.width}/${viewport.height}/${viewport.top}/${visible.map(p => `${p.id}:${heights[p.id]}:${!!positions[p.id]}`).sort().join(',')}`
   useLayoutEffect(() => {
     if (reading || draggingRef.current || pointers.current.size || lastFit.current === fitKey || !visible.length || viewport.width <= 0) return
     lastFit.current = fitKey
     const fitted = fitViewport(bounds, viewport.width, viewport.height, viewport.top)
-    if (unionScene && fitted.scale < .85) {
+    if (unionScene && hasLargeSiblings) {
+      updateView(unionReadingView(unionScene, viewport.width, viewport.height, viewport.top, activeUnion))
+    } else if (unionScene && fitted.scale < .85) {
       // Keep names readable. All unions remain present and pannable; overview is an explicit action.
       const first = unionScene.panels[0]
       const scale = .95
       updateView({ scale, pan: { x: viewport.width / 2 - (first.x + first.width / 2) * scale, y: viewport.top + 24 - first.y * scale } })
     } else fitToView()
-  }, [fitKey, fitToView, visible.length, viewport, reading, bounds, unionScene, updateView])
+  }, [fitKey, fitToView, visible.length, viewport, reading, bounds, unionScene, updateView, activeUnion, hasLargeSiblings])
 
   const zoom = useCallback((factor: number, anchor?: Point) => {
     const rect = wrapRef.current?.getBoundingClientRect()
@@ -252,8 +260,9 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
     if (!pos || !r) return
     focusRequest.current = null
     const scale = Math.max(.9, viewRef.current.scale)
-    updateView({ scale, pan: { x: r.width / 2 - (pos.x + cardW / 2) * scale, y: viewport.top + (r.height - viewport.top) / 2 - (pos.y + (heights[id] || cardH) / 2) * scale } })
-  }, [focusVersion, reading, visibleIds, viewport, cardW, cardH, heights, updateView])
+    const size = unionScene?.cardSizes[id] || { w: cardW, h: heights[id] || cardH }
+    updateView({ scale, pan: { x: r.width / 2 - (pos.x + size.w / 2) * scale, y: viewport.top + (r.height - viewport.top) / 2 - (pos.y + size.h / 2) * scale } })
+  }, [focusVersion, reading, visibleIds, viewport, cardW, cardH, heights, updateView, unionScene])
 
   const runAction = (action: () => void) => { setMobileToolbarOpen(false); queueMicrotask(action) }
   const canReorganize = !projection && !unionScene && !!onReorganize && people.length > 0 && (!readOnly || isDemo)
@@ -299,6 +308,7 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
               <div className="flex flex-wrap gap-1">{generationOptions.map(opt => <Button key={opt.value} size="sm" variant={genFilter === opt.value ? 'default' : 'outline'} onClick={() => runAction(() => onSetTweak('generation', opt.value))}>{opt.label}</Button>)}</div>
               <p className="text-sm font-medium">{t('canvas.layoutLabel')}</p>
               <div className="flex flex-wrap gap-1">{(['vertical','horizontal','radial'] as const).map(l => <Button key={l} data-testid={`layout-${l}`} size="sm" variant={layout === l ? 'default' : 'outline'} onClick={() => runAction(() => { choosePresentation('graph'); onSetTweak('layout', l) })}>{layoutLabels[l]}</Button>)}</div>
+              {unionScene && hasLargeSiblings && narrowUnion && <label className="grid gap-1 text-sm">{t('family:reader.familyFilter')}<select data-testid="graph-family-filter-menu" className="h-10 rounded border bg-background px-2" value={familyScope} onChange={e => runAction(() => setFamilyScope(e.target.value))}><option value="all">{t('family:reader.allFamilies')}</option>{familyData.groups.map(f => <option key={f.key} value={f.key}>{f.parents.map(personName).join(' + ')}</option>)}</select></label>}
               {actions(true)}
             </div>
           </SheetContent>
@@ -314,9 +324,10 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
           <Button size="sm" data-testid="graph-unions" variant={unionScene ? 'default' : 'ghost'} aria-pressed={!!unionScene} onClick={() => chooseUnionMode(true)}>{en ? 'By union' : 'Par unions'}</Button>
           <Button size="sm" data-testid="graph-free" variant={!unionScene ? 'default' : 'ghost'} aria-pressed={!unionScene} onClick={() => chooseUnionMode(false)}>{en ? 'Free layout' : 'Placement libre'}</Button>
         </div>
-        <span className="text-muted-foreground">{unionScene ? (en ? 'All unions are connected here. Positions are not chronological.' : 'Toutes les unions sont reliées ici. Leur position ne donne pas leur chronologie.') : (en ? 'Free arrangement, including radial and saved positions.' : 'Disposition libre, dont la vue radiale et vos positions enregistrées.')}</span>
+        {unionScene && hasLargeSiblings && <Button size="sm" variant="outline" data-testid="compact-siblings" aria-pressed={compactSiblings} onClick={() => setCompactSiblings(value => !value)}>{en ? (compactSiblings ? 'Compact siblings' : 'Full cards') : (compactSiblings ? 'Fratries compactes' : 'Grandes cartes')}</Button>}
+        <span className="hidden text-muted-foreground md:inline">{unionScene ? (en ? 'All unions are connected here. Positions are not chronological.' : 'Toutes les unions sont reliées ici. Leur position ne donne pas leur chronologie.') : (en ? 'Free arrangement, including radial and saved positions.' : 'Disposition libre, dont la vue radiale et vos positions enregistrées.')}</span>
       </div>}
-      {!reading && !isOrg && familyData.groups.length > 0 && <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+      {!reading && !isOrg && familyData.groups.length > 0 && <div className={cn("flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1", unionScene && hasLargeSiblings && narrowUnion && "hidden")}>
         <label className="flex min-w-0 items-center gap-2 text-xs font-medium">
           <span className="shrink-0">{t('family:reader.familyFilter')}</span>
           <select data-testid="graph-family-filter" className="h-9 min-w-0 max-w-[280px] rounded-md border bg-background px-2 text-sm" value={scopedIds ? familyScope : 'all'} onChange={e => setFamilyScope(e.target.value)}>
@@ -324,11 +335,12 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
             {familyData.groups.map(group => <option key={group.key} value={group.key}>{group.label} - {group.parents.map(personName).join(' + ')}</option>)}
           </select>
         </label>
-        <p className="text-xs leading-5 text-muted-foreground">{unionScene ? (en ? 'Dotted: parent to group. Solid: group to children. Names identify each union.' : 'Pointillés : parents du groupe. Traits pleins : enfants du groupe. Chaque union porte ses noms.') : t('family:reader.graphLegend')}{projection && <span className="block">{t('family:reader.projectionHint')}</span>}</p>
+        <p className={cn("text-xs leading-5 text-muted-foreground", unionScene && "hidden md:block")}>{unionScene ? (en ? 'Dotted: parents. Solid: children. Rows in one frame are siblings, not generations.' : 'Pointillés : parents. Traits pleins : enfants. Dans un cadre, les rangées forment une seule fratrie.') : t('family:reader.graphLegend')}{projection && <span className="block">{t('family:reader.projectionHint')}</span>}</p>
       </div>}
     {unionScene && viewport.width < 768 && <div data-no-pan data-testid="union-navigation" className="flex gap-2 overflow-x-auto pb-1">
+      {hasLargeSiblings && unionScene.shared.map(({ person }) => <button key={person.id} type="button" data-testid="common-parent-navigation" className="min-h-10 shrink-0 rounded-lg border bg-muted px-3 text-xs font-medium" onClick={() => window.__focusOn?.(person.id)}>{person.given} (parent)</button>)}
       {unionScene.panels.map(panel => <button type="button" key={panel.family.key} className="min-h-10 shrink-0 rounded-lg border bg-background px-3 text-xs font-medium" data-navigate-family={panel.family.key}
-        onClick={() => updateView({ scale: .95, pan: { x: viewport.width / 2 - (panel.x + panel.width / 2) * .95, y: viewport.top + 24 - panel.y * .95 } })}>{panel.family.parents.filter(p => !unionScene.shared.some(s => s.person.id === p.id)).map(p => p.given).join(' + ') || (en ? 'Unknown parent' : 'Parent inconnu')}</button>)}
+        onClick={() => { if (hasLargeSiblings) { setActiveUnion(panel.family.key); updateView(unionReadingView(unionScene, viewport.width, viewport.height, viewport.top, panel.family.key)) } else updateView({ scale: .95, pan: { x: viewport.width / 2 - (panel.x + panel.width / 2) * .95, y: viewport.top + 24 - panel.y * .95 } }) }}>{panel.family.parents.filter(p => !unionScene.shared.some(s => s.person.id === p.id)).map(p => p.given).join(' + ') || (en ? 'Unknown parent' : 'Parent inconnu')}</button>)}
     </div>}
     </div>
     {reading && <div className="absolute inset-x-0 bottom-0 z-[2]" style={{ top: viewport.top }}>
@@ -345,7 +357,7 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
       <svg className="tree-connections pointer-events-none absolute z-[1]" viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`} width={bounds.width} height={bounds.height} style={{ left: bounds.minX, top: bounds.minY }}>
         {connections.map((c, i) => <g key={i}><path d={c.path} fill="none" stroke="var(--background)" strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" /><path data-connection-kind={c.kind} data-connection-ids={c.ids.join(',')} data-family-key={familyKey(c.parentIds || c.ids)} data-union-role={(c as UnionConnection).role} className={unionScene ? UNION_TONES[unionScene.panels.find(p => p.family.key === familyKey(c.parentIds || c.ids))?.color || 0] : undefined} d={c.path} fill="none" stroke={unionScene ? 'currentColor' : c.kind === 'spouse' ? 'var(--muted-foreground)' : 'var(--primary)'} strokeWidth={lineage && c.ids.every(id => lineage.has(id)) ? 3 : 2.5} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={c.kind === 'spouse' ? '6 4' : undefined} opacity={lineage && !c.ids.every(id => lineage.has(id)) ? .5 : .95} /></g>)}
       </svg>
-      {visible.map(p => positions[p.id] && <PersonCard key={p.id} person={p} pos={positions[p.id]} scale={view.scale} cardStyle={style} isOrg={isOrg} maxGeneration={maxGens} lexicon={orgLexicon}
+      {visible.map(p => positions[p.id] && <PersonCard key={p.id} person={p} pos={positions[p.id]} scale={view.scale} cardStyle={style} compact={compactPersonIds.has(p.id)} isOrg={isOrg} maxGeneration={maxGens} lexicon={orgLexicon}
         hidePhotos={tweaks.hidePhotos} hideDates={tweaks.hideDates} hidePlaces={tweaks.hidePlaces} selected={selectedId === p.id} dragging={draggingId === p.id}
         dim={!!lineage && !lineage.has(p.id) || !!unionScene && filtering && !matchIds.has(p.id)} highlight={!!lineage?.has(p.id)} onSelect={onSelect} onHover={onHover}
         onDrag={canMoveCards ? onCardDrag : undefined} onDragStart={canMoveCards ? () => { draggingRef.current = true; setDraggingId(p.id); onCardDragStateChange?.(true) } : undefined} onDragEnd={canMoveCards ? onCardDragEnd : undefined} />)}

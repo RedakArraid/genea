@@ -18,12 +18,12 @@ function fixture(n=3,common='father') {
   people.push(person('unknown-child',[common],[],2),person('isolated'))
   return people
 }
-function verify(people, orientation, style) {
-  const scene=U.computeUnionOverview(people,orientation,style)
+function verify(people, orientation, style, options) {
+  const scene=U.computeUnionOverview(people,orientation,style,options)
   assert.ok(scene); assert.equal(scene.unresolved,0,'Every recorded link must be routed')
   assert.deepEqual(Object.keys(scene.positions).sort(),people.map(p=>p.id).sort(),'No duplicates or lost people')
-  const {w}=G.getCardDimensions(style), heights=G.buildCardHeights(people,style)
-  const cards=people.map(p=>({id:p.id,left:scene.positions[p.id].x,right:scene.positions[p.id].x+w,top:scene.positions[p.id].y,bottom:scene.positions[p.id].y+heights[p.id]}))
+  const sizes=scene.cardSizes
+  const cards=people.map(p=>({id:p.id,left:scene.positions[p.id].x,right:scene.positions[p.id].x+sizes[p.id].w,top:scene.positions[p.id].y,bottom:scene.positions[p.id].y+sizes[p.id].h}))
   const unknowns=scene.panels.filter(p=>p.unknown).map(p=>({id:`unknown:${p.family.key}`,left:p.unknown.x,right:p.unknown.x+p.unknown.width,top:p.unknown.y,bottom:p.unknown.y+p.unknown.height}))
   const obstacles=[...cards,...unknowns]
   for(const [i,a] of obstacles.entries()) {
@@ -49,8 +49,8 @@ function verify(people, orientation, style) {
     if(p.family.children.every(child=>!scene.panels.some(other=>other.family.parents.some(parent=>parent.id===child.id)))) {
       for(const child of p.family.children) {
         const pos=scene.positions[child.id]
-        assert.ok(pos.x>=p.x && pos.x+w<=p.x+p.width,`${child.id} outside family width`)
-        assert.ok(pos.y>=p.y && pos.y+heights[child.id]<=p.y+p.height,`${child.id} outside family height`)
+        assert.ok(pos.x>=p.x && pos.x+sizes[child.id].w<=p.x+p.width,`${child.id} outside family width`)
+        assert.ok(pos.y>=p.y && pos.y+sizes[child.id].h<=p.y+p.height,`${child.id} outside family height`)
       }
     }
   }
@@ -85,4 +85,56 @@ for(const orientation of ['vertical','horizontal'])test(`removed union card leav
    const childEdge=Math.min(...panel.family.children.map(p=>scene.positions[p.id][axis]))
    assert.equal(childEdge-parentEdge,104,'Only the routing corridor remains, not an empty label slot')
  }
+})
+
+function largeFamily() {
+ const p=[person('father',[],['a','b','c','d'])]
+ for(const partner of ['a','b','c','d']) {
+  p.push(person(partner,[],['father']))
+  for(let i=0;i<7;i++) p.push(person(`${partner}-${i}`,['father',partner],[],2))
+ }
+ return p
+}
+const V=load('frontend/src/utils/union-viewport.ts')
+for(const direction of ['vertical','horizontal'])for(const style of ['square','round','minimal','horizontal'])for(const narrow of [false,true])test(`compact 4x7 ${direction}/${style}/${narrow?'narrow':'wide'}`,()=>{
+ const people=largeFamily(), scene=verify(people,direction,style,{narrow})
+ assert.equal(scene.panels.length,4)
+ assert.equal(scene.compactIds.length,narrow?33:28)
+ for(const panel of scene.panels) {
+  assert.ok(panel.compact)
+  const cross=p=>direction==='horizontal'?p.y:p.x
+  assert.equal(new Set(panel.family.children.map(p=>cross(scene.positions[p.id]))).size,2,'Exactly two sibling columns, not seven')
+  assert.ok(panel.family.children.every(p=>p.generation===2),'Wrapping cannot change a generation')
+ }
+ assert.deepEqual(U.computeUnionOverview([...people].reverse(),direction,style,{narrow}).positions,scene.positions)
+ if(direction==='vertical' && style==='square' && !narrow) {
+  assert.ok(scene.bounds.width<1800,JSON.stringify(scene.bounds))
+  assert.ok(scene.bounds.height<1000,JSON.stringify(scene.bounds))
+ }
+})
+test('compact mobile navigation keeps one common parent above each chosen family',()=>{
+ const people=largeFamily(), initial=U.computeUnionOverview(people,'vertical','square',{narrow:true})
+ for(const family of initial.panels) {
+  const scene=verify(people,'vertical','square',{narrow:true,focusedFamily:family.family.key})
+  const view=V.unionReadingView(scene,375,766,172,family.family.key)
+  assert.ok(view.scale>=.85)
+  for(const p of [...family.family.parents,...family.family.children]) {
+   const pos=scene.positions[p.id],size=scene.cardSizes[p.id]
+   assert.ok(pos.x*view.scale+view.pan.x>=0 && (pos.x+size.w)*view.scale+view.pan.x<=375,'Family fits narrow viewport width')
+   assert.ok(pos.y*view.scale+view.pan.y>=172 && (pos.y+size.h)*view.scale+view.pan.y<=714,'Family fits above zoom controls')
+  }
+ }
+})
+test('full card opt-out preserves all links and restores the normal card sizes',()=>{
+ const people=largeFamily(), scene=verify(people,'vertical','square',{compactSiblings:false})
+ assert.equal(scene.compactIds.length,0)
+ for(const p of people)assert.deepEqual(scene.cardSizes[p.id],G.getCardDimensions('square'))
+ assert.equal(scene.connections.length,36)
+})
+test('a sibling with descendants is never wrapped into a false intermediate generation',()=>{
+ const p=largeFamily();p.push(person('grandchild',['a-0'],[],3))
+ const scene=verify(p,'vertical','square')
+ assert.ok(!scene.compactIds.includes('a-0'))
+ assert.equal(scene.panels.find(p=>p.family.parents.some(p=>p.id==='a')).compact,false)
+ assert.equal(scene.panels.find(p=>p.family.parents.some(p=>p.id==='b')).compact,true)
 })

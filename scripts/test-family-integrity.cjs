@@ -129,3 +129,42 @@ test('failure during second parent write rolls back person, first parent and nod
   assert.equal(await prisma.relationship.count({ where: { OR: [{ sourceId: payload.clientRequestId }, { targetId: payload.clientRequestId }] } }), 0);
   assert.equal(await prisma.nodePosition.count({ where: { nodeId: payload.clientRequestId } }), 0);
 });
+
+test('exact 4x7 family persists 33 people and 56 parent links without crossing mothers', async () => {
+  const largeTree = await prisma.familyTree.create({ data: { name: 'Four partners seven children', ownerId: owner.id } });
+  try {
+    const add = async (name, links = []) => {
+      const payload = field(name, links);
+      const response = await post(`/api/persons/tree/${largeTree.id}/family-member`, payload);
+      assert.equal(response.status, 201, JSON.stringify(response.body));
+      return { person: response.body.person, payload };
+    };
+    const { person: dad } = await add('Common father');
+    const pairs = [];
+    for (let i = 0; i < 4; i++) {
+      const { person: mother } = await add(`Partner ${i}`, [{ type: 'spouse', personId: dad.id }]);
+      const children = [];
+      for (let j = 0; j < 7; j++) {
+        const child = await add(`Child ${i}-${j}`, [{ type: 'child', personId: dad.id }, { type: 'child', personId: mother.id }]);
+        children.push(child);
+      }
+      pairs.push({ mother, children });
+    }
+    assert.equal(await prisma.person.count({ where: { treeId: largeTree.id } }), 33);
+    for (const pair of pairs) for (const { person } of pair.children) {
+      assert.deepEqual(await parentsOf(person.id), [dad.id, pair.mother.id].sort());
+      assert.equal(await prisma.relationship.count({ where: { sourceId: person.id, type: 'child' } }), 2);
+    }
+    const ids = (await prisma.person.findMany({ where: { treeId: largeTree.id }, select: { id: true } })).map(p => p.id);
+    assert.equal(await prisma.relationship.count({ where: { sourceId: { in: ids }, type: 'parent' } }), 56);
+    assert.equal(await prisma.relationship.count({ where: { sourceId: { in: ids }, type: 'spouse' } }), 8);
+    const retry = await post(`/api/persons/tree/${largeTree.id}/family-member`, pairs[0].children[0].payload);
+    assert.equal(retry.status, 200);
+    const conflict = await post(`/api/persons/tree/${largeTree.id}/link-child`, { childId: pairs[0].children[0].person.id, parentIds: [dad.id, pairs[1].mother.id] });
+    assert.equal(conflict.status, 409);
+    assert.deepEqual(await parentsOf(pairs[0].children[0].person.id), [dad.id, pairs[0].mother.id].sort());
+    assert.equal(await prisma.person.count({ where: { treeId: largeTree.id } }), 33);
+  } finally {
+    await prisma.familyTree.deleteMany({ where: { id: largeTree.id } });
+  }
+});

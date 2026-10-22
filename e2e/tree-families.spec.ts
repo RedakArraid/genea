@@ -137,3 +137,40 @@ for (const width of [375, 1600]) for (const layout of ['vertical', 'horizontal',
   })).toBe(true)
   await page.screenshot({ path: info.outputPath(`half-siblings-${width}-${layout}.png`), fullPage: true })
 })
+
+test('real 4x7 creation, reload and wrong-parent rejection preserve every family', async ({ page, request }, info) => {
+  // Replace ONLY this test's disposable fixture, never a production tree.
+  await db.person.deleteMany({ where: { treeId: tree.id } })
+  const headers = { Authorization: `Bearer ${jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' })}` }
+  const add = async (firstName: string, links: Array<{ type: string; personId: string }> = []) => {
+    const response = await request.post(`http://127.0.0.1:3001/api/persons/tree/${tree.id}/family-member`, {
+      headers, data: { firstName, lastName: 'Test', clientRequestId: randomUUID(), links },
+    })
+    expect(response.status(), await response.text()).toBe(201)
+    return (await response.json()).person
+  }
+  const dad = await add('Moussa'), families: Array<{ mother: any; children: any[] }> = []
+  for (const name of ['Fatou', 'Aicha', 'Mariam', 'Aminata']) {
+    const mother = await add(name, [{ type: 'spouse', personId: dad.id }]), kids = []
+    for (let i = 1; i <= 7; i++) kids.push(await add(`${name}${i}`, [{ type: 'child', personId: dad.id }, { type: 'child', personId: mother.id }]))
+    families.push({ mother, children: kids })
+  }
+  for (const family of families) for (const child of family.children) expect(await parentsOf(child.firstName)).toEqual([dad.id, family.mother.id].sort())
+  await page.goto(`/family-tree/${tree.id}`)
+  await expect(page.getByTestId('tree-person-card')).toHaveCount(33)
+  await expect(page.getByTestId('union-junction')).toHaveCount(0)
+  await expect(page.locator(`[data-testid="tree-person-card"][data-person-id="${dad.id}"]`)).toBeInViewport()
+  await page.screenshot({ path: info.outputPath('real-four-by-seven-desktop.png'), fullPage: true })
+  const conflict = await request.post(`http://127.0.0.1:3001/api/persons/tree/${tree.id}/link-child`, {
+    headers, data: { childId: families[0].children[0].id, parentIds: [dad.id, families[1].mother.id] },
+  })
+  expect(conflict.status()).toBe(409)
+  await page.reload()
+  await expect(page.getByTestId('tree-person-card')).toHaveCount(33)
+  for (const family of families) for (const child of family.children) expect(await parentsOf(child.firstName)).toEqual([dad.id, family.mother.id].sort())
+  await page.setViewportSize({ width: 375, height: 900 })
+  await page.reload()
+  await expect(page.getByTestId('tree-person-card')).toHaveCount(33)
+  await expect(page.locator(`[data-testid="tree-person-card"][data-person-id="${dad.id}"]`)).toBeInViewport()
+  await page.screenshot({ path: info.outputPath('real-four-by-seven-mobile.png'), fullPage: true })
+})

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { formatGenerationBadge } from '@/lib/generation-level'
 import { AuthenticatedImage } from '@/components/ui/authenticated-image'
-import { getCardDimensions, getPersonCardHeight } from '@/lib/tree-geometry'
+import { getCardDimensions, getPersonCardHeight, getCompactCardDimensions } from '@/lib/tree-geometry'
 import type { NormalizedPerson, PersonTone, OrgLexiconConfig } from '@/types'
 
 const TONE_STYLES: Record<PersonTone, { bg: string; fg: string }> = {
@@ -15,19 +15,19 @@ const TONE_STYLES: Record<PersonTone, { bg: string; fg: string }> = {
 }
 interface PersonCardProps {
   person: NormalizedPerson; pos: { x: number; y: number }; scale: number
-  cardStyle?: string; isOrg?: boolean; maxGeneration?: number; lexicon?: OrgLexiconConfig | null
+  cardStyle?: string; compact?: boolean; isOrg?: boolean; maxGeneration?: number; lexicon?: OrgLexiconConfig | null
   hidePhotos?: boolean; hideDates?: boolean; hidePlaces?: boolean
   selected?: boolean; dragging?: boolean; dim?: boolean; highlight?: boolean
   onSelect?: (id: string) => void
   onDrag?: (id: string, pos: { x: number; y: number }) => void
   onDragStart?: () => void; onDragEnd?: () => void; onHover?: (id: string | null) => void
 }
-export function PersonCard({ person, pos, scale, cardStyle = 'square', isOrg = false, maxGeneration, lexicon,
+export function PersonCard({ person, pos, scale, cardStyle = 'square', compact = false, isOrg = false, maxGeneration, lexicon,
   hidePhotos = false, hideDates = false, hidePlaces = false, selected = false, dragging = false,
   dim = false, highlight = false, onSelect, onDrag, onDragStart, onDragEnd, onHover }: PersonCardProps) {
   const tone = isOrg ? TONE_STYLES[person.tone] || TONE_STYLES.stone : TONE_STYLES.stone
-  const { w } = getCardDimensions(cardStyle, { organization: isOrg })
-  const height = getPersonCardHeight(person, cardStyle, isOrg)
+  const { w } = compact ? getCompactCardDimensions() : getCardDimensions(cardStyle, { organization: isOrg })
+  const height = compact ? getCompactCardDimensions().h : getPersonCardHeight(person, cardStyle, isOrg)
   const fullName = `${person.given}${person.sur && person.sur !== '-' ? ` ${person.sur}` : ''}`
   const initials = `${(person.given || '?')[0].toUpperCase()}${person.sur && person.sur !== '-' ? person.sur[0].toUpperCase() : ''}`
   const lifespan = `${person.born ?? '?'}${person.died != null ? `\u2013${person.died}` : person.born != null ? '\u2013' : ''}`
@@ -77,17 +77,27 @@ export function PersonCard({ person, pos, scale, cardStyle = 'square', isOrg = f
   const badge = !isOrg || lexicon?.showLevelOnCard !== false
   return (
     <div
-      data-testid="tree-person-card" data-person-id={person.id} data-card-style={cardStyle} data-generation={person.generation}
+      data-testid="tree-person-card" data-compact={compact || undefined} data-person-id={person.id} data-card-style={cardStyle} data-generation={person.generation}
       role={onSelect ? 'button' : undefined} tabIndex={onSelect ? 0 : undefined}
       aria-label={fullName} aria-pressed={onSelect ? selected : undefined}
       className={cn('tree-person-card absolute z-[2] flex select-none rounded-lg border bg-card text-card-foreground shadow-sm transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-primary',
-        horizontal ? 'flex-row gap-2 p-2' : 'flex-col', onDrag ? 'cursor-grab active:cursor-grabbing' : onSelect ? 'cursor-pointer' : '',
+        horizontal && !compact ? 'flex-row gap-2 p-2' : 'flex-col', onDrag ? 'cursor-grab active:cursor-grabbing' : onSelect ? 'cursor-pointer' : '',
         dragging && 'z-[30]', selected && 'ring-2 ring-primary', highlight && !selected && 'ring-2 ring-primary/50', dim && 'opacity-75')}
       style={{ left: pos.x, top: pos.y, width: w, height, minHeight: height }}
       onPointerDown={onPointerDown} onDragStart={e => e.preventDefault()}
       onKeyDown={e => { if (onSelect && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); onSelect(person.id) } }}
       onMouseEnter={() => onHover?.(person.id)} onMouseLeave={() => onHover?.(null)}
     >
+      {compact ? <div className="flex h-full items-center gap-2 px-2" title={fullName}>
+        <div className={cn('relative size-7 shrink-0 overflow-hidden rounded-full', tone.bg)}>
+          {!hidePhotos && person.photoUrl && !photoFailed ? <AuthenticatedImage src={person.photoUrl} alt="" draggable={false} className="size-full object-cover" onError={() => setPhotoFailed(true)} fallback={<span className="flex size-full items-center justify-center text-[10px]">{initials}</span>} />
+            : <span className={cn('flex size-full items-center justify-center text-[10px] font-medium', tone.fg)}>{initials}</span>}
+        </div>
+        <div data-card-content className="min-w-0 flex-1">
+          <p data-person-name className="line-clamp-2 text-[13px] font-semibold leading-4 [overflow-wrap:anywhere]">{fullName}</p>
+          {badge && <p className="text-[10px] leading-3 text-muted-foreground">{formatGenerationBadge(person.generation, { isOrg, maxGeneration, lexicon })}</p>}
+        </div>
+      </div> : <>
       {!minimal && (
         <div className={cn('relative shrink-0 overflow-hidden', tone.bg,
           horizontal ? 'size-16 rounded-md' : round ? 'mx-auto mt-2 size-14 rounded-full' : isOrg ? 'h-[128px] rounded-t-lg' : 'h-20 rounded-t-lg')}>
@@ -108,6 +118,7 @@ export function PersonCard({ person, pos, scale, cardStyle = 'square', isOrg = f
           {!hidePlaces && person.place && <p className="truncate text-[10px] leading-[14px] text-muted-foreground" title={person.place}>{person.place}</p>}
         </>}
       </div>
+      </>}
     </div>
   )
 }
