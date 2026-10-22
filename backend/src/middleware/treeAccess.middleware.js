@@ -194,9 +194,11 @@ const canEditPersonInfo = async (req, res, next) => {
 
 const canWriteEdge = async (req, res, next) => {
   try {
+    const edgeId = req.params.id;
     let treeId = req.body?.treeId || req.params.treeId;
-    if (!treeId && req.params.id) {
-      const edge = await prisma.edge.findUnique({ where: { id: req.params.id } });
+    if (edgeId) {
+      // Existing edges determine their own authorization scope.
+      const edge = await prisma.edge.findUnique({ where: { id: edgeId } });
       if (!edge) {
         return res.status(404).json({ message: 'Arête non trouvée' });
       }
@@ -206,7 +208,22 @@ const canWriteEdge = async (req, res, next) => {
       return res.status(400).json({ message: 'ID d\'arbre manquant' });
     }
     req.params.treeId = treeId;
-    return canWriteTree(req, res, next);
+    return canWriteTree(req, res, async () => {
+      try {
+        // Demo writes target the user's clone, never the canonical demo edge.
+        const forkTreeId = res.locals.demoForkTreeId;
+        if (edgeId && forkTreeId && forkTreeId !== treeId) {
+          const forkedEdgeId = await translateDemoEntityId(forkTreeId, 'edge', edgeId);
+          if (!forkedEdgeId) {
+            return res.status(404).json({ message: 'Arête non trouvée dans votre copie de la démo' });
+          }
+          req.params.id = forkedEdgeId;
+        }
+        return next();
+      } catch (error) {
+        return sendStatusError(res, error);
+      }
+    });
   } catch (error) {
     sendStatusError(res, error);
   }

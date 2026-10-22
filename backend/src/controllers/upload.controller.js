@@ -142,7 +142,8 @@ exports.serveFile = async (req, res, next) => {
 
     const { stream, contentType, contentLength } = await storage.getObjectStream(key);
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    // Access-controlled files must not be retained by shared caches.
+    res.setHeader('Cache-Control', 'private, no-store');
     if (contentLength) res.setHeader('Content-Length', contentLength);
     stream.pipe(res);
   } catch (error) {

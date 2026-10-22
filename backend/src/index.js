@@ -54,6 +54,8 @@ app.use(cors({
   },
   credentials: true,
 }));
+// Verify payment signatures before any JSON parser consumes the raw body.
+app.use('/api/billing/webhooks', billingWebhookRoutes);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -71,7 +73,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/api/billing/webhooks', billingWebhookRoutes);
 app.use(morgan('dev'));
 
 // Routes de base

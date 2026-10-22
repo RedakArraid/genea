@@ -1,0 +1,31 @@
+name: Audit regression checks
+
+on:
+  push:
+    branches: [dev, staging, main, 'fix/audit-2026-10-22']
+  pull_request:
+    branches: [dev, staging, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-regressions-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression-tests:
+    name: Targeted security regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check backend syntax and build entry point
+        run: npm --prefix backend run build
+      - name: Run isolated regression tests
+        run: node --test scripts/test-audit-regressions.cjs
