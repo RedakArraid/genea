@@ -11,7 +11,9 @@ import { isOrganizationTree } from '@/lib/tree-type'
 import type { TreeBackgroundConfig } from '@/lib/tree-background'
 import { TreeCanvas } from '@/components/family-tree/tree-canvas'
 import { SidePanel } from '@/components/family-tree/side-panel'
-import { AddPersonDialog, ShareDialog, TreeSettingsSheet, AddRelationDialog, LinkExistingChildDialog } from '@/components/family-tree/dialogs'
+import { ShareDialog, TreeSettingsSheet, AddRelationDialog } from '@/components/family-tree/dialogs'
+import { AddPersonDialog, LinkExistingChildDialog } from '@/components/family-tree/family-dialogs'
+import { createFamilyMember, linkFamilyChild, type FamilyLink } from '@/lib/family-api'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Eye, Info } from 'lucide-react'
@@ -52,8 +54,9 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   const navigate = useNavigate(), location = useLocation()
   const { isAuthenticated, user } = useAuthStore()
   const isPublicRoute = location.pathname.startsWith('/tree/')
-  const { currentTree, treeAccess, isLoading, error, fetchTreeById, resetState, updateNodePositions, addPerson, updatePerson, deletePerson, addRelationship, deleteRelationship } = useFamilyTreeStore()
+  const { currentTree, treeAccess, isLoading, error, fetchTreeById, resetState, updateNodePositions, updatePerson, deletePerson, addRelationship, deleteRelationship } = useFamilyTreeStore()
   const [exportBusy, setExportBusy] = useState(false), [importBusy, setImportBusy] = useState(false)
+  const uploadedPhotoRef = useRef<{ file: File; url: string } | null>(null)
   const [subtreeClipboard, setSubtreeClipboard] = useState<SubtreeClipboardState | null>(() => loadSubtreeClipboard())
   const [subtreeBusy, setSubtreeBusy] = useState(false), [pasteMode, setPasteMode] = useState(false)
   const isDemo = publicDemo || treeAccess?.isDemo || currentTree?.isDemo
@@ -93,6 +96,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     if (forkedTreeId && forkedTreeId !== treeId) { toast.success(t('page.demoForked')); navigate(`/family-tree/${forkedTreeId}`, { replace: true }) }
   }
   const handleOpenAddModal = (parentId: string | null = null, relType: string | null = null, parent2Id: string | null = null) => {
+    uploadedPhotoRef.current = null
     setAddPersonRelData({ parentId, parent2Id, relType }); setIsAddOpen(true)
   }
   useEffect(() => {
@@ -124,12 +128,10 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     if (positionsBootstrappedRef.current === bootstrapKey) return
     const db: Record<string, Position> = {}
     currentTree.NodePosition?.forEach(p => { if (isFinitePoint(p)) db[p.nodeId] = { x: p.x, y: p.y } })
-    // Retain current manual edits across a refresh. Additions/deletions must still be reconciled.
     const source = positionsBootstrappedRef.current && positionsDirtyRef.current ? { ...db, ...positionsRef.current } : db
     const missing = normalized.some(p => !isFinitePoint(source[p.id]))
     const computed: Record<string, Position> = missing ? computeLayout(normalized, tweaks.layout, tweaks.density, options).positions : {}
     let next = Object.fromEntries(normalized.map(p => [p.id, isFinitePoint(source[p.id]) ? source[p.id] : computed[p.id]]))
-    // Fix genuine collisions caused by taller text/new cards, not harmless translations or distant spouses.
     const { w } = getCardDimensions(tweaks.cardStyle, options)
     next = separateOverlappingCards(normalized, next, w, heights, tweaks.layout)
     setPositions(next)
@@ -167,7 +169,6 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
 
   const handleSetTweak = (key: keyof TreeTweaks, val: string | boolean) => {
     const next = { ...tweaks, [key]: val } as TreeTweaks
-    // Event side effects do not belong in a React state updater (which StrictMode can replay).
     setTweaks(next)
     try { localStorage.setItem(`geneamap:tree-view:v1:${treeId}`, JSON.stringify(next)) } catch { /* Storage can be disabled. */ }
     if (key === 'layout' || key === 'density' || key === 'cardStyle') {
@@ -186,17 +187,24 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
   }
 
   const handleAddPerson = async (formData: Record<string, string>, relToId?: string | null, relType?: string | null, relToId2?: string | null, photoFile?: File | null) => {
-    if (!treeId) return
+    if (!treeId || !canWrite) throw new Error('Tree is not writable')
     let photoUrl: string | null = null
-    if (photoFile) { try { const { url } = await uploadPersonPhoto(photoFile, treeId); photoUrl = url } catch { toast.error(t('person.photoUploadFailed')); return } }
-    const result = await addPerson(treeId, { firstName: formData.firstName, lastName: formData.lastName || '-', birthDate: formData.birthDate || undefined,
-      birthPlace: formData.birthPlace || undefined, deathDate: formData.deathDate || undefined, occupation: formData.occupation || undefined,
-      biography: formData.biography || undefined, gender: formData.gender || undefined, photoUrl: photoUrl ?? undefined, position: { x: 300, y: 200 } })
-    if (result.success && result.person) {
-      if (relToId && relType) await addRelationship({ sourceId: relType === 'parent' ? result.person.id : relToId, targetId: relType === 'parent' ? relToId : result.person.id, type: relType === 'spouse' ? 'spouse' : 'parent' })
-      if (relToId2 && relType === 'child') await addRelationship({ sourceId: relToId2, targetId: result.person.id, type: 'parent' })
-      toast.success(t('page.personAdded', { name: result.person.firstName })); refreshOrRedirectAfterWrite(treeId); setIsAddOpen(false)
-    } else toast.error(result.message)
+    if (photoFile) {
+      if (uploadedPhotoRef.current?.file === photoFile) photoUrl = uploadedPhotoRef.current.url
+      else {
+        const uploaded = await uploadPersonPhoto(photoFile, treeId)
+        photoUrl = uploaded.url
+        uploadedPhotoRef.current = { file: photoFile, url: photoUrl }
+      }
+    }
+    const links: FamilyLink[] = []
+    if (relToId && (relType === 'child' || relType === 'parent' || relType === 'spouse')) links.push({ type: relType, personId: relToId })
+    if (relToId2 && relType === 'child') links.push({ type: 'child', personId: relToId2 })
+    const result = await createFamilyMember(treeId, { ...formData, lastName: formData.lastName || '-', photoUrl }, links)
+    toast.success(t('page.personAdded', { name: result.person.firstName }))
+    uploadedPhotoRef.current = null
+    refreshOrRedirectAfterWrite(treeId)
+    setIsAddOpen(false)
   }
   const handleSidePanelSave = async (personId: string, formData: Record<string, string>) => {
     if (!canEditPerson) return
@@ -213,8 +221,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     const person = people.find(p => p.id === personId)
     if (!confirm(t('page.deletePersonConfirm', { name: `${person?.given} ${person?.sur}` }))) return
     const result = await deletePerson(personId)
-    if (result.success) { toast.success(t('page.personDeleted')); setSelectedId(null); if (treeId) refreshOrRedirectAfterWrite(treeId) }
-    else toast.error(result.message)
+    if (result.success) { toast.success(t('page.personDeleted')); setSelectedId(null); if (treeId) refreshOrRedirectAfterWrite(treeId) } else toast.error(result.message)
   }
   const handleOpenLinkChildModal = (parentIds: string[]) => { setLinkChildParentIds(parentIds.filter(Boolean)); setIsLinkChildOpen(true) }
   const handleAddRelationSubmit = async (contextId: string, selectedId: string, relType: string) => {
@@ -223,18 +230,12 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
     if (result.success) { toast.success(t('page.linkCreated')); if (treeId) refreshOrRedirectAfterWrite(treeId); setIsRelationOpen(false) }
     else toast.error(result.message)
   }
-  const handleLinkExistingChild = async (childId: string) => {
-    if (!treeId || !linkChildParentIds.length) return
-    let linked = false, hadExisting = false
-    for (const parentId of linkChildParentIds) {
-      const result = await addRelationship({ sourceId: parentId, targetId: childId, type: 'parent' })
-      if (result.success) linked = true
-      else if (result.statusCode === 409) hadExisting = true
-      else { toast.error(result.message); return }
-    }
-    const child = people.find(p => p.id === childId), name = child ? `${child.given}${child.sur && child.sur !== '-' ? ` ${child.sur}` : ''}` : ''
-    if (linked) toast.success(t('page.childLinked', { name: name || '?' }))
-    else if (hadExisting) toast.info(t('page.linkAlreadyExists'))
+  const handleLinkExistingChild = async (childId: string, parentIds: string[]) => {
+    if (!treeId || !canWrite) throw new Error('Tree is not writable')
+    await linkFamilyChild(treeId, childId, parentIds)
+    const child = people.find(p => p.id === childId)
+    const name = child ? `${child.given} ${child.sur === '-' ? '' : child.sur}`.trim() : '?'
+    toast.success(t('page.childLinked', { name }))
     refreshOrRedirectAfterWrite(treeId); setIsLinkChildOpen(false); setLinkChildParentIds([])
   }
   const handleDeleteRelation = async (relId: string) => {
@@ -312,7 +313,7 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
         onCardDragStateChange={dragging => { isDraggingCardRef.current = dragging; if (dragging) positionsDirtyRef.current = true }} />
     </div>
     {selectedPerson && <SidePanel person={selectedPerson} people={people} currentTree={currentTree} onClose={() => setSelectedId(null)}
-      onSelect={id => { setSelectedId(id); window.__focusOn?.(id) }} onSave={canEditPerson ? handleSidePanelSave : undefined}
+      onSelect={id => { setSelectedId(id); window.__focusOn?.(id) }} onSave={canEditInfo ? handleSidePanelSave : undefined}
       onAddRelation={p => { setRelationPersonData(currentTree.Person?.find(x => x.id === p.id) || personForEdit(p, currentTree.id)); setIsRelationOpen(true) }}
       onAddChildRelation={handleOpenAddModal} onLinkExistingChild={handleOpenLinkChildModal} onDelete={handleDeletePerson} onDeleteRelation={handleDeleteRelation}
       readOnly={readOnly} canEditInfo={canEditPerson} canChangePhoto={canChangePhoto} canVersioning={canVersioning}
@@ -323,11 +324,11 @@ export default function FamilyTreePage({ treeIdOverride, publicDemo = false }: F
       onPasteAsSpouse={() => selectedId && !isOrg && void runPasteSubtree({ attachToPersonId: selectedId, attachAs: 'spouse' })} onStartCanvasPaste={() => setPasteMode(true)} />}
     </div>
     <AddPersonDialog open={isAddOpen} onClose={() => { setIsAddOpen(false); setAddPersonRelData({ parentId: null, parent2Id: null, relType: null }) }} onSubmit={handleAddPerson}
-      treeName={currentTree.name} treeId={currentTree.id} parentId={addPersonRelData.parentId} parent2Id={addPersonRelData.parent2Id} relationType={addPersonRelData.relType} treeLexicon={currentTree} />
+      treeName={currentTree.name} treeId={currentTree.id} people={people} parentId={addPersonRelData.parentId} parent2Id={addPersonRelData.parent2Id} relationType={addPersonRelData.relType} treeLexicon={currentTree} />
     <ShareDialog open={isShareOpen} onClose={() => setIsShareOpen(false)} treeId={currentTree.id} visibility={currentTree.visibility || (currentTree.isPublic ? 'PUBLIC' : 'PRIVATE')}
       canManageCollaborators={canManageCollaborators} canManageVisibility={canManageVisibility} />
     <TreeSettingsSheet open={isTweaksOpen} onClose={() => setIsTweaksOpen(false)} tweaks={tweaks} onSetTweak={handleSetTweak} tree={currentTree} canEditBackground={canWrite && !isDemo} />
     {isRelationOpen && relationPersonData && <AddRelationDialog open={isRelationOpen} onClose={() => { setIsRelationOpen(false); setRelationPersonData(null) }} person={people.find(p => p.id === relationPersonData.id)!} people={people} onSubmit={handleAddRelationSubmit} treeLexicon={currentTree} />}
-    {isLinkChildOpen && <LinkExistingChildDialog open={isLinkChildOpen} onClose={() => { setIsLinkChildOpen(false); setLinkChildParentIds([]) }} parentIds={linkChildParentIds} people={people} onSubmit={handleLinkExistingChild} />}
+    {isLinkChildOpen && <LinkExistingChildDialog open={isLinkChildOpen} onClose={() => { setIsLinkChildOpen(false); setLinkChildParentIds([]) }} parentIds={linkChildParentIds} people={people} organization={isOrg} onSubmit={handleLinkExistingChild} />}
   </div>
 }

@@ -1,0 +1,24 @@
+{
+  "otherParent": "Autre parent de cet enfant",
+  "chooseParent": "Choisir explicitement un parent",
+  "unknownParent": "Autre parent inconnu / non renseigné",
+  "parentChoiceHelp": "Aucun conjoint n’est choisi automatiquement. Sélectionnez le bon parent, ou indiquez qu’il est inconnu.",
+  "selectedParents": "Parents sélectionnés",
+  "oneKnownParent": "un seul parent renseigné",
+  "existingChildHelp": "Les filiations existantes sont conservées. Les enfants déjà liés, les ancêtres et les rattachements incompatibles ne sont pas proposés.",
+  "full": "Mêmes parents renseignés",
+  "half": "Demi-frères et demi-sœurs",
+  "uncertain": "Parent commun — filiation incomplète",
+  "withParent": "Avec {{name}}",
+  "errors": {
+    "FAMILY_PERSON_OUTSIDE_TREE": "Une personne sélectionnée n’appartient pas à cet arbre. Actualisez et réessayez.",
+    "INVALID_FAMILY_LINKS": "Sélectionnez des parents distincts et valides.",
+    "ANCESTRY_CYCLE": "Ce lien ferait d’une personne son propre ancêtre. Aucune modification n’a été enregistrée.",
+    "SELF_RELATIONSHIP": "Une personne ne peut pas être son propre parent ou conjoint.",
+    "PARENT_SET_CONFLICT": "Cet enfant a déjà d’autres parents. Corrigez explicitement sa filiation avant de le rattacher : aucune mère n’est remplacée automatiquement.",
+    "REQUEST_ID_REUSED": "Cette demande a déjà été enregistrée avec un contenu différent. Actualisez l’arbre avant de recommencer.",
+    "INVALID_PERSON_DATE": "Vérifiez les dates : la naissance ne peut pas être future et doit précéder la date de fin.",
+    "INVALID_ORGANIZATION_RELATIONSHIP": "Les liens conjugaux ne sont pas disponibles dans un organigramme.",
+    "RELATIONSHIP_EXISTS": "Ce lien existe déjà."
+  }
+}

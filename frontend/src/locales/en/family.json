@@ -1,0 +1,24 @@
+{
+  "otherParent": "Other parent of this child",
+  "chooseParent": "Choose a parent explicitly",
+  "unknownParent": "Other parent unknown / not recorded",
+  "parentChoiceHelp": "No partner is selected automatically. Choose the correct parent, or indicate that they are unknown.",
+  "selectedParents": "Selected parents",
+  "oneKnownParent": "only one recorded parent",
+  "existingChildHelp": "Existing parentage is preserved. Already linked children, ancestors and incompatible parent sets are not offered.",
+  "full": "Same recorded parents",
+  "half": "Half-siblings",
+  "uncertain": "Shared parent - incomplete parentage",
+  "withParent": "With {{name}}",
+  "errors": {
+    "FAMILY_PERSON_OUTSIDE_TREE": "A selected person does not belong to this tree. Refresh and try again.",
+    "INVALID_FAMILY_LINKS": "Select valid, distinct parents.",
+    "ANCESTRY_CYCLE": "This link would make a person their own ancestor. No changes were saved.",
+    "SELF_RELATIONSHIP": "A person cannot be their own parent or partner.",
+    "PARENT_SET_CONFLICT": "This child already has other parents. Correct the existing parentage explicitly before linking: no mother is replaced automatically.",
+    "REQUEST_ID_REUSED": "This request was already saved with different content. Refresh the tree before trying again.",
+    "INVALID_PERSON_DATE": "Check the dates: birth cannot be in the future and must precede the end date.",
+    "INVALID_ORGANIZATION_RELATIONSHIP": "Partner relationships are not available in organization charts.",
+    "RELATIONSHIP_EXISTS": "This relationship already exists."
+  }
+}

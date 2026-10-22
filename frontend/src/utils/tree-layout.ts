@@ -3,6 +3,7 @@ import type { NormalizedPerson, Person, Relationship, PersonTone } from '../type
 import * as orgLayout from '../lib/org-layout'
 import { CARD_W, CARD_H, getCardDimensions, buildCardHeights, isFinitePoint, contentBounds } from '../lib/tree-geometry'
 import type { Point, Positions } from '../lib/tree-geometry'
+import { familyKey, familyDepthGap, hasMultipleFamilies, unionRoute, familyBusLane } from './family-routing'
 export { CARD_W, CARD_H, getCardDimensions, buildCardHeights }
 export { buildOrgCardHeights, estimateOrgCardHeight } from '../lib/org-layout'
 export interface LayoutOptions { organization?: boolean; cardStyle?: string }
@@ -31,7 +32,7 @@ function components(ids: string[], pairs: Array<[string, string]>) {
   return new Map(ids.map(id => [id, find(id)]))
 }
 
-/** Collapse cyclic components before a topological pass: malformed imports cannot freeze rendering. */
+/** Collapse cycles before the topological pass; malformed imports cannot freeze rendering. */
 function generations(people: LayoutPerson[]) {
   const ids = people.map(p => p.id)
   const family = components(ids, people.flatMap(p => (p.spouseIds || []).map(s => [p.id, s] as [string, string])))
@@ -84,7 +85,6 @@ export function normalizePersons(apiPersons: Person[], apiRelationships: Relatio
     if (kind === 'spouse' || kind === 'SPOUSE_OF') { spouses.get(a)!.add(b); spouses.get(b)!.add(a) }
   }
   for (const r of apiRelationships || []) add(r.sourceId, r.targetId, r.type)
-  // Merge embedded and top-level relations; an empty embedded array must not hide API links.
   for (const p of apiPersons as InputPerson[]) for (const r of p.relations || []) {
     if (r.relatedPersonId) add(p.id, r.relatedPersonId, r.relationType || r.type)
     else add(r.sourceId || r.personAId || p.id, r.targetId || r.personBId, r.relationType || r.type)
@@ -113,22 +113,20 @@ function clusterOrder(row: LayoutPerson[]) {
   const hub = sorted[0], rest = sorted.slice(1).sort((a, b) => a.id.localeCompare(b.id))
   return [...rest.filter((_, i) => i % 2 === 0), hub, ...rest.filter((_, i) => i % 2 === 1)]
 }
-
 function finishLayout(positions: Positions, w: number, h: number, heights: Record<string, number>) {
   const bounds = contentBounds(positions, Object.keys(positions), w, h, heights)
   if (!bounds) return { positions: {}, canvasW: 800, canvasH: 600 }
   for (const p of Object.values(positions)) { p.x += 40 - bounds.minX; p.y += 40 - bounds.minY }
   return { positions, canvasW: bounds.width + 80, canvasH: bounds.height + 80 }
 }
-
 export function computeLayout(people: LayoutPerson[], layout = 'vertical', density = 'spacious', options: LayoutOptions = {}): LayoutResult {
   if (!people?.length) return { positions: {}, canvasW: 800, canvasH: 600 }
   const org = options.organization === true, style = options.cardStyle || 'square'
   const { w, h } = getCardDimensions(style, options)
   const heights = buildCardHeights(people, style, org)
   const gap = org ? density === 'compact' ? 48 : 72 : density === 'compact' ? 20 : 40
-  const depthGap = org ? density === 'compact' ? 104 : 148 : density === 'compact' ? 50 : 100
-  // Keep the existing organization row ordering / PDF parity for the default vertical view.
+  const normalDepthGap = org ? density === 'compact' ? 104 : 148 : density === 'compact' ? 50 : 100
+  const depthGap = org ? normalDepthGap : familyDepthGap(people, normalDepthGap)
   if (org && style === 'square' && layout === 'vertical') return orgLayout.computeVerticalOrg(people, density === 'compact' ? 'compact' : 'spacious')
   const rows = new Map<number, LayoutPerson[]>()
   for (const p of people) {
@@ -141,7 +139,7 @@ export function computeLayout(people: LayoutPerson[], layout = 'vertical', densi
   if (layout === 'radial') {
     let previousRadius = 0, previousHalf = 0
     for (let index = 0; index < levels.length; index++) {
-      const row = [...rows.get(levels[index])!].sort((a, b) => a.id.localeCompare(b.id))
+      const row = [...rows.get(levels[index])!].sort((a, b) => familyKey(a.parentIds || []).localeCompare(familyKey(b.parentIds || [])) || a.id.localeCompare(b.id))
       const diameter = Math.max(...row.map(p => Math.hypot(w, heights[p.id])))
       const n = row.length
       const chordRadius = n > 1 ? (diameter + gap) / (2 * Math.sin(Math.PI / n)) : 0
@@ -177,18 +175,19 @@ export function computeLayout(people: LayoutPerson[], layout = 'vertical', densi
     if (a && a !== b) { a.children.add(b); b.parents.add(a) }
   }
   const center = (g: Group) => g.left + g.width / 2
+  const groupFamily = (g: Group) => familyKey(g.members.flatMap(p => p.parentIds || []))
   const rowWidths = groupsByLevel.map(row => row.reduce((n, g) => n + g.width, 0) + gap * 2 * (row.length - 1))
   const maxWidth = Math.max(...rowWidths)
   groupsByLevel.forEach((row, index) => {
     row.sort((a, b) => {
       const ac = a.parents.size ? meanExtent([...a.parents].map(center)) : 0
       const bc = b.parents.size ? meanExtent([...b.parents].map(center)) : 0
-      return ac - bc || a.members[0].id.localeCompare(b.members[0].id)
+      // A shared father does not make children of different mothers one sibling unit.
+      return ac - bc || groupFamily(a).localeCompare(groupFamily(b)) || a.members[0].id.localeCompare(b.members[0].id)
     })
     let left = (maxWidth - rowWidths[index]) / 2
     for (const g of row) { g.left = left; left += g.width + gap * 2 }
   })
-  // Center parents on descendants, then pack each row without moving a node into another card.
   for (let level = groupsByLevel.length - 1; level >= 0; level--) {
     const row = groupsByLevel[level]
     const targets = row.map(g => g.children.size ? meanExtent([...g.children].map(center)) - g.width / 2 : g.left)
@@ -216,24 +215,21 @@ function edgeToward(pos: Point, target: Point, w: number, h: number): Point {
   return { x: center.x + dx / factor, y: center.y + dy / factor }
 }
 const pathThrough = (points: Point[]) => points.map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ')
-
 export function buildConnections(people: LayoutPerson[], positions: Positions, connStyle = 'elbow', layout = 'vertical', cardW = CARD_W, cardH = CARD_H, cardHeights?: Record<string, number> | null): Connection[] {
   const byId = new Map(people.filter(p => isFinitePoint(positions[p.id])).map(p => [p.id, p]))
   const h = (id: string) => cardHeights && Number.isFinite(cardHeights[id]) && cardHeights[id] > 0 ? cardHeights[id] : cardH
   const center = (id: string) => ({ x: positions[id].x + cardW / 2, y: positions[id].y + h(id) / 2 })
-  const keyOf = (ids: string[]) => JSON.stringify([...ids].sort())
+  const keyOf = familyKey
   const out: Connection[] = [], unions = new Map<string, Point>()
-  const done = new Set<string>()
-  for (const p of people) for (const spouse of p.spouseIds || []) {
-    const key = keyOf([p.id, spouse])
-    if (p.id === spouse || !byId.has(p.id) || !byId.has(spouse) || done.has(key)) continue
-    done.add(key)
-    const a = edgeToward(positions[p.id], center(spouse), cardW, h(p.id))
-    const b = edgeToward(positions[spouse], center(p.id), cardW, h(spouse))
-    // No distance-based deletion: a manually separated spouse is still a spouse.
-    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
-    unions.set(key, mid)
-    out.push({ kind: 'spouse', path: pathThrough([a, b]), points: [a, b], ids: [p.id, spouse], midX: mid.x, midY: mid.y })
+  const multiple = hasMultipleFamilies(people)
+  const spouseKeys = unique(people.flatMap(p => (p.spouseIds || []).filter(id => id !== p.id && byId.has(id) && byId.has(p.id)).map(id => keyOf([p.id, id])))).sort()
+  for (const [rank, key] of spouseKeys.entries()) {
+    const [aId, bId] = JSON.parse(key) as [string, string]
+    const a = edgeToward(positions[aId], center(bId), cardW, h(aId))
+    const b = edgeToward(positions[bId], center(aId), cardW, h(bId))
+    const route = multiple ? unionRoute([aId, bId], [...byId.values()], positions, cardW, h, layout, rank, spouseKeys.length, [a, b]) : { points: [a, b], anchor: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } }
+    unions.set(key, route.anchor)
+    out.push({ kind: 'spouse', path: pathThrough(route.points), points: route.points, ids: [aId, bId], midX: route.anchor.x, midY: route.anchor.y })
   }
   const groups = new Map<string, { parents: string[]; children: string[] }>()
   for (const p of people) {
@@ -245,7 +241,8 @@ export function buildConnections(people: LayoutPerson[], positions: Positions, c
     groups.get(key)!.children.push(p.id)
   }
   const horizontal = layout === 'horizontal', radial = layout === 'radial'
-  for (const { parents, children } of groups.values()) {
+  const orderedGroups = [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
+  for (const [rank, [, { parents, children }]] of orderedGroups.entries()) {
     children.sort((a, b) => (horizontal ? positions[a].y - positions[b].y : positions[a].x - positions[b].x) || a.localeCompare(b))
     const union = parents.length === 2 ? unions.get(keyOf(parents)) : undefined
     const parentEdges = parents.map(id => horizontal ? { x: positions[id].x + cardW, y: center(id).y } : { x: center(id).x, y: positions[id].y + h(id) })
@@ -256,7 +253,6 @@ export function buildConnections(people: LayoutPerson[], positions: Positions, c
     const childEdges = children.map(id => horizontal ? { x: positions[id].x, y: center(id).y } : { x: center(id).x, y: positions[id].y })
     const forward = !radial && childEdges.every(p => horizontal ? p.x > Math.max(...parentEdges.map(e => e.x), anchor.x) : p.y > Math.max(...parentEdges.map(e => e.y), anchor.y))
     if (connStyle !== 'elbow' || !forward) {
-      // Radial/straight/curved paths are independent, including when siblings exist.
       children.forEach((id, i) => {
         const sources = union ? [union] : parents.map(pid => edgeToward(positions[pid], center(id), cardW, h(pid)))
         sources.forEach(source => {
@@ -277,8 +273,7 @@ export function buildConnections(people: LayoutPerson[], positions: Positions, c
     if (!union && parents.length > 1) parentEdges.forEach(p => push(horizontal ? [p, { x: anchor.x, y: p.y }, anchor] : [p, { x: p.x, y: anchor.y }, anchor], parents))
     const parentEdge = horizontal ? Math.max(anchor.x, ...parentEdges.map(p => p.x)) : Math.max(anchor.y, ...parentEdges.map(p => p.y))
     const childEdge = Math.min(...childEdges.map(p => horizontal ? p.x : p.y))
-    const mid = (parentEdge + childEdge) / 2
-    // A complete bus spans *all* siblings and the incoming trunk, in either orientation.
+    const mid = multiple ? familyBusLane(parentEdge, childEdge, rank, groups.size) : (parentEdge + childEdge) / 2
     const min = Math.min(horizontal ? anchor.y : anchor.x, ...childEdges.map(p => horizontal ? p.y : p.x))
     const max = Math.max(horizontal ? anchor.y : anchor.x, ...childEdges.map(p => horizontal ? p.y : p.x))
     const trunk = horizontal ? [anchor, { x: mid, y: anchor.y }] : [anchor, { x: anchor.x, y: mid }]
@@ -288,12 +283,9 @@ export function buildConnections(people: LayoutPerson[], positions: Positions, c
   }
   return out
 }
-
-/** Valid saved/manual positions are not a stale layout merely because they differ from the algorithm. */
 export function layoutNeedsRecompute(people: LayoutPerson[], positions: Positions, _cardW = CARD_W) {
   return !!people?.length && people.some(p => !isFinitePoint(positions?.[p.id]))
 }
-/** Legacy diagnostic only. A difference from auto-layout must not reset saved coordinates. */
 export function layoutNeedsOrgRecompute(people: LayoutPerson[], positions: Positions, density: 'spacious' | 'compact' = 'spacious') {
   return orgLayout.layoutNeedsOrgRecompute(people, positions, density)
 }
