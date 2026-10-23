@@ -207,6 +207,11 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
       // With up to three partners, keep the shared person on the same adult row.
       // Beyond three partners, place that one common person above the aligned
       // partner row; this is a visual hierarchy only and never rewrites data.
+      if (stackShared && options.narrow && hubs.length === 1) {
+        const focused = unit.families.find(f => f.key === options.focusedFamily) || unit.families[0]
+        const focusedLane = laneOf.get(focused.key)!
+        hubX = focusedLane.left + (focusedLane.width - totalHubWidth) / 2
+      }
       if (!stackShared && options.narrow && grids.size && hubs.length === 1) {
         const focused = unit.families.find(f => f.key === options.focusedFamily) || unit.families[0]
         const focusedLane = laneOf.get(focused.key)!
@@ -256,12 +261,14 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
       const start = { x: pos.x + cross(p) * port, y: pos.y + depth(p) }
       const input = node
       if (unit.shared.includes(p)) {
-        const corridorBase = stackedShared(unit)
-          ? Math.max(...unit.members.filter(member => !unit.shared.includes(member)).map(member => logical.get(member.id)!.y + depth(member)))
-          : unit.top + Math.max(...unit.members.map(depth))
-        const corridor = corridorBase + 8 + fIndex * 10
         const side = lane.left + 12 + index * 8
-        add(f, 'parent', [start, { x: start.x, y: corridor }, { x: side, y: corridor }, { x: side, y: node.y - 12 }, { x: input.x, y: node.y - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
+        if (stackedShared(unit)) {
+          const escape = unit.top + depth(p) + 20
+          add(f, 'parent', [start, { x: start.x, y: escape }, { x: side, y: escape }, { x: side, y: node.y - 12 }, { x: input.x, y: node.y - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
+        } else {
+          const corridor = unit.top + Math.max(...unit.members.map(depth)) + 8 + fIndex * 10
+          add(f, 'parent', [start, { x: start.x, y: corridor }, { x: side, y: corridor }, { x: side, y: node.y - 12 }, { x: input.x, y: node.y - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
+        }
       } else add(f, 'parent', [start, { x: start.x, y: node.y - 12 }, { x: input.x, y: node.y - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
     }
     const output = node
