@@ -88,68 +88,66 @@ for(const orientation of ['vertical','horizontal'])test(`removed union card leav
  }
 })
 
-function largeFamily() {
- const p=[person('father',[],['a','b','c','d'])]
- for(const partner of ['a','b','c','d']) {
-  p.push(person(partner,[],['father']))
-  for(let i=0;i<7;i++) p.push(person(`${partner}-${i}`,['father',partner],[],2))
+function largeFamily(common='father', count=4) {
+ const partners=Array.from({length:count},(_,i)=>String.fromCharCode(97+i))
+ const p=[person(common,[],partners)]
+ for(const partner of partners) {
+  p.push(person(partner,[],[common]))
+  for(let i=0;i<7;i++) p.push(person(`${partner}-${i}`,[common,partner],[],2))
  }
  return p
 }
-function panelRows(scene, people, direction) {
- return [...new Set(people.map(p=>p.generation))].map(g=>{
-  const row=people.filter(p=>p.generation===g)
-  return new Set(row.map(p=>direction==='horizontal'?scene.positions[p.id].x:scene.positions[p.id].y)).size
- })
-}
 const V=load('frontend/src/utils/union-viewport.ts')
-for(const direction of ['vertical','horizontal'])for(const style of ['square','round','minimal','horizontal'])for(const narrow of [false,true])test(`compact 4x7 ${direction}/${style}/${narrow?'narrow':'wide'}`,()=>{
+for(const direction of ['vertical','horizontal'])for(const style of ['square','round','minimal','horizontal'])for(const narrow of [false,true])test(`4x7 uniform cards and three visual tiers ${direction}/${style}/${narrow?'narrow':'wide'}`,()=>{
  const people=largeFamily(), scene=verify(people,direction,style,{narrow})
  assert.equal(scene.panels.length,4)
- assert.equal(scene.compactIds.length,narrow?33:28)
- for(const panel of scene.panels) {
-  assert.ok(panel.compact)
-  const cross=p=>direction==='horizontal'?p.y:p.x
-  const generationAxis=p=>direction==='horizontal'?p.x:p.y
-  assert.equal(new Set(panel.family.children.map(p=>generationAxis(scene.positions[p.id]))).size,1,'One generation must stay on one visual axis')
-  assert.equal(new Set(panel.family.children.map(p=>cross(scene.positions[p.id]))).size,7,'Compact siblings remain distinct along the generation row')
-  assert.ok(panel.family.children.every(p=>p.generation===2),'Compaction cannot change a generation')
- }
- assert.deepEqual(U.computeUnionOverview([...people].reverse(),direction,style,{narrow}).positions,scene.positions)
- if(direction==='vertical' && style==='square' && !narrow) {
-  assert.ok(scene.bounds.height<1000,JSON.stringify(scene.bounds))
-  assert.deepEqual(panelRows(scene, people, direction), [1, 1], 'The wide canvas may scroll, but each generation keeps one axis')
- }
-})
-
-for(const direction of ['vertical','horizontal']) test(`every linked person in the same generation shares one visual axis: ${direction}`,()=>{
- const people=largeFamily(), scene=verify(people,direction,'square')
+ assert.equal(scene.compactIds.length,0,'No person gets a role-specific compact card')
+ const expected=G.getCardDimensions(style)
+ for(const p of people) assert.deepEqual(scene.cardSizes[p.id],{w:expected.w,h:expected.h},`${p.id} must keep the same card size`)
  const axis=p=>direction==='horizontal'?scene.positions[p.id].x:scene.positions[p.id].y
- for(const generation of [...new Set(people.map(p=>p.generation))]) {
-  const row=people.filter(p=>p.generation===generation)
-  assert.equal(new Set(row.map(axis)).size,1,`generation ${generation} is not aligned`)
- }
+ const cross=p=>direction==='horizontal'?scene.positions[p.id].y:scene.positions[p.id].x
+ const partners=['a','b','c','d'].map(id=>people.find(p=>p.id===id))
+ const children=people.filter(p=>p.generation===2)
+ assert.ok(axis(people[0]) < axis(partners[0]),'Common person must be above/before partners when partner count exceeds three')
+ assert.equal(new Set(partners.map(axis)).size,1,'All partners are aligned')
+ assert.equal(new Set(children.map(axis)).size,1,'All children are aligned')
+ assert.ok(axis(partners[0]) < axis(children[0]),'Children come after the partner row')
+ assert.equal(new Set(children.map(cross)).size,28,'Children remain individually positioned along one row')
+ assert.deepEqual(U.computeUnionOverview([...people].reverse(),direction,style,{narrow}).positions,scene.positions)
 })
 
-test('compact mobile navigation keeps one common parent above each chosen family',()=>{
+for(const common of ['father','mother']) test(`more than three partners stacks the common ${common} symmetrically`,()=>{
+ const people=largeFamily(common,4), scene=verify(people,'vertical','square')
+ const commonY=scene.positions[common].y
+ const partners=people.filter(p=>p.spouseIds.includes(common))
+ const children=people.filter(p=>p.generation===2)
+ assert.equal(new Set(partners.map(p=>scene.positions[p.id].y)).size,1)
+ assert.equal(new Set(children.map(p=>scene.positions[p.id].y)).size,1)
+ assert.ok(commonY<scene.positions[partners[0].id].y)
+ assert.ok(scene.positions[partners[0].id].y<scene.positions[children[0].id].y)
+})
+for(const count of [1,2,3]) test(`${count} partner(s): adults stay on one line when possible`,()=>{
+ const people=largeFamily('father',count), scene=verify(people,'vertical','square')
+ const adults=people.filter(p=>p.generation===1)
+ assert.equal(new Set(adults.map(p=>scene.positions[p.id].y)).size,1)
+ const children=people.filter(p=>p.generation===2)
+ assert.equal(new Set(children.map(p=>scene.positions[p.id].y)).size,1)
+ assert.ok(scene.positions[adults[0].id].y<scene.positions[children[0].id].y)
+})
+
+test('mobile 4x7 keeps uniform cards and readable family anchors',()=>{
  const people=largeFamily(), initial=U.computeUnionOverview(people,'vertical','square',{narrow:true})
  for(const family of initial.panels) {
   const scene=verify(people,'vertical','square',{narrow:true,focusedFamily:family.family.key})
   const view=V.unionReadingView(scene,375,766,172,family.family.key)
   assert.ok(view.scale>=.85)
-  const visible = id => {
-   const pos=scene.positions[id],size=scene.cardSizes[id]
-   return pos.x*view.scale+view.pan.x>=0 && (pos.x+size.w)*view.scale+view.pan.x<=375
-     && pos.y*view.scale+view.pan.y>=172 && (pos.y+size.h)*view.scale+view.pan.y<=714
-  }
-  for(const p of family.family.parents) assert.ok(visible(p.id),'Both recorded parents remain the mobile anchor')
-  const childAxis = new Set(family.family.children.map(p=>scene.positions[p.id].y))
-  assert.equal(childAxis.size,1,'Children stay aligned even when the row requires horizontal panning')
-  assert.ok(family.family.children.some(p=>visible(p.id)),'At least one child remains in the readable starting viewport')
-  }
+  assert.equal(scene.compactIds.length,0)
+  const childAxis=new Set(family.family.children.map(p=>scene.positions[p.id].y))
+  assert.equal(childAxis.size,1,'Children stay aligned even when horizontal panning is required')
+ }
 })
-test('full card opt-out preserves all links and restores the normal card sizes',()=>{
- const people=largeFamily(), scene=verify(people,'vertical','square',{compactSiblings:false})
+test('all roles use normal card sizes and preserve every link',()=>{
+ const people=largeFamily(), scene=verify(people,'vertical','square')
  assert.equal(scene.compactIds.length,0)
  for(const p of people)assert.deepEqual(scene.cardSizes[p.id],G.getCardDimensions('square'))
  assert.equal(scene.connections.length,36)
