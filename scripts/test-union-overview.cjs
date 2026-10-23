@@ -20,7 +20,9 @@ function fixture(n=3,common='father') {
 }
 function verify(people, orientation, style, options) {
   const scene=U.computeUnionOverview(people,orientation,style,options)
-  assert.ok(scene); assert.equal(scene.unresolved,0,'Every recorded link must be routed')
+  assert.ok(scene)
+  if(scene.unresolved) console.error('UNRESOLVED_DIAGNOSTIC', JSON.stringify({orientation,style,unresolved:scene.unresolved, families:scene.panels.map(p=>({key:p.family.key,parents:p.family.parents.map(x=>x.id),children:p.family.children.map(x=>x.id),parentRoutes:scene.connections.filter(c=>c.family===p.family.key&&c.role==='parent').length,childRoutes:scene.connections.filter(c=>c.family===p.family.key&&c.role==='child').length}))}))
+  assert.equal(scene.unresolved,0,'Every recorded link must be routed')
   assert.deepEqual(Object.keys(scene.positions).sort(),people.map(p=>p.id).sort(),'No duplicates or lost people')
   const sizes=scene.cardSizes
   const cards=people.map(p=>({id:p.id,left:scene.positions[p.id].x,right:scene.positions[p.id].x+sizes[p.id].w,top:scene.positions[p.id].y,bottom:scene.positions[p.id].y+sizes[p.id].h}))
