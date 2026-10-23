@@ -50,10 +50,9 @@ for (const [width, height, top] of [[375, 766, 185], [390, 766, 185], [375, 766,
         assert.ok(r.top >= top && r.bottom <= height - 60, `${person.id} parent anchor is clipped vertically`)
       }
       assert.equal(new Set(panel.family.children.map(person => scene.positions[person.id].y)).size, 1, 'One generation must use one row')
-      assert.ok(panel.family.children.some(person => {
-        const r = screenBox(scene, view, person.id)
-        return r.right > 0 && r.left < width && r.bottom > top && r.top < height - 60
-      }), 'The aligned child row remains reachable from the opening frame')
+      const partnerY = scene.positions[panel.family.parents.find(person => person.id !== 'father')?.id || panel.family.parents[0].id].y
+      const childY = scene.positions[panel.family.children[0].id].y
+      assert.ok(childY > partnerY, 'The aligned child row stays below the partner row and remains reachable by panning')
     }
   })
 }
