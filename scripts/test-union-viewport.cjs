@@ -57,16 +57,18 @@ for (const [width, height, top] of [[375, 766, 185], [390, 766, 185], [375, 766,
     }
   })
 }
-test('4x7 desktop keeps a readable common-parent anchor while all generations stay aligned', () => {
+test('4x7 desktop keeps the common parent above aligned partners and children', () => {
   const people = fixture(), scene = computeUnionOverview(people), view = unionReadingView(scene, 1600, 906, 141)
   assert.ok(view.scale >= .85)
   assert.equal(Object.keys(scene.positions).length, 33)
   const father = screenBox(scene, view, 'father')
   assert.ok(father.left >= 0 && father.right <= 1600 && father.top >= 141 && father.bottom <= 846)
-  for (const generation of [1, 2]) {
-    const row = people.filter(person => person.generation === generation)
-    assert.equal(new Set(row.map(person => scene.positions[person.id].y)).size, 1, `generation ${generation} is not aligned`)
-  }
+  const partners = ['a','b','c','d']
+  assert.equal(new Set(partners.map(id => scene.positions[id].y)).size, 1)
+  const children = people.filter(person => person.parentIds.length)
+  assert.equal(new Set(children.map(person => scene.positions[person.id].y)).size, 1)
+  assert.ok(scene.positions.father.y < scene.positions.a.y)
+  assert.ok(scene.positions.a.y < scene.positions['a-0'].y)
 })
 test('short screens retain a readable common parent, not an illegible automatic overview', () => {
   const scene = computeUnionOverview(fixture(), 'vertical', 'square', { narrow: true })
