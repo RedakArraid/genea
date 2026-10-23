@@ -113,7 +113,9 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
     grids.set(f.key, children)
   }
   const gridPositions = new Map<Unit, Point>()
-  const stackedShared = (unit: Unit) => unit.shared.length === 1 && degree(unit.shared[0], unit) > 3
+  const partnerCount = (person: NormalizedPerson, unit: Unit) => new Set(unit.families.flatMap(f =>
+    f.parents.some(parent => parent.id === person.id) ? f.parents.filter(parent => parent.id !== person.id).map(parent => parent.id) : [])).size
+  const stackedShared = (unit: Unit) => unit.shared.length === 1 && partnerCount(unit.shared[0], unit) > 3
   for (const unit of [...queue].reverse()) {
     for (const f of unit.families) {
       const exclusive = f.parents.filter(p => !unit.shared.includes(p))
