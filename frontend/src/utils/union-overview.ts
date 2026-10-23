@@ -194,7 +194,7 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
           let childLeft = center - total / 2
           for (const child of children) { slots.set(child, childLeft + child.width / 2); childLeft += child.width + GAP }
         }
-        const unknown = f.parents.length === 1 && unit.shared.length ? box({ u: center - cross(f.parents[0]) / 2, v: parentTop, cross: cross(f.parents[0]), depth: parentBandDepth }) : undefined
+        const unknown = f.parents.length === 1 && unit.shared.length ? box({ u: center - cross(f.parents[0]) / 2, v: parentTop, cross: cross(f.parents[0]), depth: depth(f.parents[0]) }) : undefined
         panels.push({ family: f, compact: false, color: panels.length % 6, junction: screen(node.x, node.y), unknown, ...box({ u: lane + 4, v: parentTop - 18, cross: width - 8, depth: junctionTop - parentTop + 36 }) })
         lane += width + GAP
       }
