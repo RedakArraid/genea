@@ -30,6 +30,10 @@ export function unionReadingView(scene: UnionOverview, width: number, height: nu
   if (snug.scale >= .85) return snug
   // Horizontal/nested graphs may need panning. Start on the recorded parents,
   // not on a child disconnected from its context; the full graph remains mounted.
+  const anchorIds = [...family.family.parents.map(p => p.id), ...family.family.children.slice(0, 1).map(p => p.id)]
+  const anchorFamily = boundsOf(anchorIds)
+  const anchorView = fit(anchorFamily, 4)
+  if (anchorView.scale >= .85) return anchorView
   const parents = boundsOf(family.family.parents.map(p => p.id))
   const parentView = fit(parents)
   const scale = Math.max(.85, Math.min(1, parentView.scale))
