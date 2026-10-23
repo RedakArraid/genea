@@ -89,7 +89,6 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   const familyData = useMemo(() => readingFamilies(people), [people])
   const [familyScope, setFamilyScope] = useState('all')
   const [activeUnion, setActiveUnion] = useState<string | undefined>()
-  const [compactSiblings, setCompactSiblings] = useState(true)
   const hasLargeSiblings = familyData.groups.some(f => f.children.length >= 5)
   const narrowUnion = viewport.width > 0 && viewport.width < 768
   const scopedFamily = familyData.groups.find(group => group.key === familyScope)
@@ -98,8 +97,7 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
   const projection = useMemo(() => scopedIds ? computeLayout(people.filter(p => scopedIds.has(p.id)), layout, tweaks.density, { organization: isOrg, cardStyle: style }).positions : null,
     [scopedIds, people, layout, tweaks.density, isOrg, style])
   const unionScene = useMemo(() => !reading && !pasteMode && !isOrg && !scopedIds && multipleUnions && unionMode
-    ? computeUnionOverview(people, layout, style, { compactSiblings, narrow: narrowUnion, focusedFamily: activeUnion }) : null, [reading, pasteMode, isOrg, scopedIds, multipleUnions, unionMode, people, layout, style, compactSiblings, narrowUnion, activeUnion])
-  const compactPersonIds = useMemo(() => new Set(unionScene?.compactIds), [unionScene])
+    ? computeUnionOverview(people, layout, style, { narrow: narrowUnion, focusedFamily: activeUnion }) : null, [reading, pasteMode, isOrg, scopedIds, multipleUnions, unionMode, people, layout, style, narrowUnion, activeUnion])
   const positions = projection || unionScene?.positions || savedPositions
   positionsRef.current = positions
   const canMoveCards = canDrag && !projection && !unionScene
@@ -137,7 +135,7 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
     if (!visible.length || viewport.width <= 0 || viewport.height <= viewport.top) return
     updateView(fitViewport(bounds, viewport.width, viewport.height, viewport.top))
   }, [bounds, viewport, visible.length, updateView])
-  const fitKey = `${activeUnion}/${compactSiblings}/${!!unionScene}/${unionMode}/${reading}/${familyScope}/${layout}/${tweaks.density}/${style}/${genFilter}/${searchQuery}/${fitRequestId}/${viewport.width}/${viewport.height}/${viewport.top}/${visible.map(p => `${p.id}:${heights[p.id]}:${!!positions[p.id]}`).sort().join(',')}`
+  const fitKey = `${activeUnion}/${!!unionScene}/${unionMode}/${reading}/${familyScope}/${layout}/${tweaks.density}/${style}/${genFilter}/${searchQuery}/${fitRequestId}/${viewport.width}/${viewport.height}/${viewport.top}/${visible.map(p => `${p.id}:${heights[p.id]}:${!!positions[p.id]}`).sort().join(',')}`
   useLayoutEffect(() => {
     if (reading || draggingRef.current || pointers.current.size || lastFit.current === fitKey || !visible.length || viewport.width <= 0) return
     lastFit.current = fitKey
@@ -324,7 +322,6 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
           <Button size="sm" data-testid="graph-unions" variant={unionScene ? 'default' : 'ghost'} aria-pressed={!!unionScene} onClick={() => chooseUnionMode(true)}>{en ? 'By union' : 'Par unions'}</Button>
           <Button size="sm" data-testid="graph-free" variant={!unionScene ? 'default' : 'ghost'} aria-pressed={!unionScene} onClick={() => chooseUnionMode(false)}>{en ? 'Free layout' : 'Placement libre'}</Button>
         </div>
-        {unionScene && hasLargeSiblings && <Button size="sm" variant="outline" data-testid="compact-siblings" aria-pressed={compactSiblings} onClick={() => setCompactSiblings(value => !value)}>{en ? (compactSiblings ? 'Compact siblings' : 'Full cards') : (compactSiblings ? 'Fratries compactes' : 'Grandes cartes')}</Button>}
         <span className="hidden text-muted-foreground md:inline">{unionScene ? (en ? 'All unions are connected here. Positions are not chronological.' : 'Toutes les unions sont reliées ici. Leur position ne donne pas leur chronologie.') : (en ? 'Free arrangement, including radial and saved positions.' : 'Disposition libre, dont la vue radiale et vos positions enregistrées.')}</span>
       </div>}
       {!reading && !isOrg && familyData.groups.length > 0 && <div className={cn("flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1", unionScene && hasLargeSiblings && narrowUnion && "hidden")}>
@@ -357,7 +354,7 @@ export function TreeCanvas({ people = [], tweaks, treeMeta, background, position
       <svg className="tree-connections pointer-events-none absolute z-[1]" viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`} width={bounds.width} height={bounds.height} style={{ left: bounds.minX, top: bounds.minY }}>
         {connections.map((c, i) => <g key={i}><path d={c.path} fill="none" stroke="var(--background)" strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" /><path data-connection-kind={c.kind} data-connection-ids={c.ids.join(',')} data-family-key={familyKey(c.parentIds || c.ids)} data-union-role={(c as UnionConnection).role} className={unionScene ? UNION_TONES[unionScene.panels.find(p => p.family.key === familyKey(c.parentIds || c.ids))?.color || 0] : undefined} d={c.path} fill="none" stroke={unionScene ? 'currentColor' : c.kind === 'spouse' ? 'var(--muted-foreground)' : 'var(--primary)'} strokeWidth={lineage && c.ids.every(id => lineage.has(id)) ? 3 : 2.5} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={c.kind === 'spouse' ? '6 4' : undefined} opacity={lineage && !c.ids.every(id => lineage.has(id)) ? .5 : .95} /></g>)}
       </svg>
-      {visible.map(p => positions[p.id] && <PersonCard key={p.id} person={p} pos={positions[p.id]} scale={view.scale} cardStyle={style} compact={compactPersonIds.has(p.id)} isOrg={isOrg} maxGeneration={maxGens} lexicon={orgLexicon}
+      {visible.map(p => positions[p.id] && <PersonCard key={p.id} person={p} pos={positions[p.id]} scale={view.scale} cardStyle={style} isOrg={isOrg} maxGeneration={maxGens} lexicon={orgLexicon}
         hidePhotos={tweaks.hidePhotos} hideDates={tweaks.hideDates} hidePlaces={tweaks.hidePlaces} selected={selectedId === p.id} dragging={draggingId === p.id}
         dim={!!lineage && !lineage.has(p.id) || !!unionScene && filtering && !matchIds.has(p.id)} highlight={!!lineage?.has(p.id)} onSelect={onSelect} onHover={onHover}
         onDrag={canMoveCards ? onCardDrag : undefined} onDragStart={canMoveCards ? () => { draggingRef.current = true; setDraggingId(p.id); onCardDragStateChange?.(true) } : undefined} onDragEnd={canMoveCards ? onCardDragEnd : undefined} />)}
