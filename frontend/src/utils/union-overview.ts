@@ -254,7 +254,9 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
       const start = { x: pos.x + cross(p) * port, y: pos.y + depth(p) }
       const input = node
       if (unit.shared.includes(p)) {
-        const corridorBase = stackedShared(unit) ? parentTop + Math.max(...unit.members.filter(member => !unit.shared.includes(member)).map(depth)) : unit.top + Math.max(...unit.members.map(depth))
+        const corridorBase = stackedShared(unit)
+          ? Math.max(...unit.members.filter(member => !unit.shared.includes(member)).map(member => logical.get(member.id)!.y + depth(member)))
+          : unit.top + Math.max(...unit.members.map(depth))
         const corridor = corridorBase + 8 + fIndex * 10
         const side = lane.left + 12 + index * 8
         add(f, 'parent', [start, { x: start.x, y: corridor }, { x: side, y: corridor }, { x: side, y: node.y - 12 }, { x: input.x, y: node.y - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
