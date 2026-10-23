@@ -126,6 +126,14 @@ for(const common of ['father','mother']) test(`more than three partners stacks t
  assert.ok(commonY<scene.positions[partners[0].id].y)
  assert.ok(scene.positions[partners[0].id].y<scene.positions[children[0].id].y)
 })
+test('an incomplete parent group does not count as an extra partner',()=>{
+ const people=largeFamily('father',3)
+ people.push(person('unknown-child',['father'],[],2))
+ const scene=verify(people,'vertical','square')
+ const adults=people.filter(p=>p.generation===1)
+ assert.equal(new Set(adults.map(p=>scene.positions[p.id].y)).size,1)
+})
+
 for(const count of [1,2,3]) test(`${count} partner(s): adults stay on one line when possible`,()=>{
  const people=largeFamily('father',count), scene=verify(people,'vertical','square')
  const adults=people.filter(p=>p.generation===1)
@@ -157,5 +165,5 @@ test('a sibling with descendants is never wrapped into a false intermediate gene
  const scene=verify(p,'vertical','square')
  assert.ok(!scene.compactIds.includes('a-0'))
  assert.equal(scene.panels.find(p=>p.family.parents.some(p=>p.id==='a')).compact,false)
- assert.equal(scene.panels.find(p=>p.family.parents.some(p=>p.id==='b')).compact,true)
+ assert.equal(scene.panels.find(p=>p.family.parents.some(p=>p.id==='b')).compact,false)
 })
