@@ -4,7 +4,7 @@
  */
 import type { NormalizedPerson } from '../types'
 import type { Point, Positions, Bounds } from '../lib/tree-geometry'
-import { boundsFromPoints, buildCardHeights, getCardDimensions, getCompactCardDimensions } from '../lib/tree-geometry'
+import { boundsFromPoints, buildCardHeights, getCardDimensions } from '../lib/tree-geometry'
 import { readingFamilies, type ReadingFamily } from '../lib/family-reading'
 import { personName } from '../lib/family-model'
 import type { Connection } from './tree-layout'
@@ -104,18 +104,16 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
   }
   if (queue.length !== units.size) return null
   const ownedChildren = (f: ReadingFamily) => [...new Set([...f.children].sort(chronologicalChildren).map(p => unitOf.get(p.id)!))].filter(u => u.owner?.key === f.key)
-  // Only terminal siblings can wrap within a single generation. A child with
-  // a partner/descendants, or a shared incoming lineage, keeps the DAG layout.
+  // Large sibling groups may use tighter spacing, but every person keeps the
+  // exact same card dimensions and interactions, regardless of family role.
   const grids = new Map<string, Unit[]>()
-  if (options.compactSiblings !== false) for (const f of data.groups) {
+  for (const f of data.groups) {
     const children = ownedChildren(f)
     if (f.children.length < 5 || children.length !== f.children.length || children.some(u => u.families.length || u.incoming.length !== 1)) continue
     grids.set(f.key, children)
-    for (const child of f.children) compactIds.add(child.id)
-    if (options.narrow) for (const parent of f.parents) compactIds.add(parent.id)
   }
-  for (const id of compactIds) cardSizes[id] = getCompactCardDimensions()
   const gridPositions = new Map<Unit, Point>()
+  const stackedShared = (unit: Unit) => unit.shared.length === 1 && degree(unit.shared[0], unit) > 3
   for (const unit of [...queue].reverse()) {
     for (const f of unit.families) {
       const exclusive = f.parents.filter(p => !unit.shared.includes(p))
@@ -128,10 +126,12 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
     }
     const laneWidth = unit.families.length ? [...unit.widths.values()].reduce((n, v) => n + v, 0) + GAP * (unit.families.length - 1) : cross(unit.members[0])
     const hubWidth = unit.shared.reduce((n, p) => n + cross(p), 0) + GAP * Math.max(0, unit.shared.length - 1)
-    unit.width = laneWidth + (hubWidth ? hubWidth + UNIT_GAP : 0)
-    const parentBandDepth = Math.max(0, ...unit.members.map(depth), ...unit.families.filter(f => f.parents.length === 1).map(() => horizontal ? w : Math.max(...Object.values(heights))))
+    unit.width = stackedShared(unit) ? Math.max(laneWidth, hubWidth) : laneWidth + (hubWidth ? hubWidth + UNIT_GAP : 0)
+    const sharedDepth = Math.max(0, ...unit.shared.map(depth))
+    const partnerDepth = Math.max(0, ...unit.members.filter(p => !unit.shared.includes(p)).map(depth), ...unit.families.filter(f => f.parents.length === 1).map(() => horizontal ? w : Math.max(...Object.values(heights))))
+    const parentBandDepth = stackedShared(unit) ? sharedDepth + 52 + partnerDepth : Math.max(sharedDepth, partnerDepth)
     const routingDepth = unit.families.length ? 44 + unit.families.length * 10 : 0
-    unit.depth = unit.families.length ? parentBandDepth + routingDepth + (unit.families.some(f => grids.has(f.key)) ? 44 : 76) : depth(unit.members[0]) + 64
+    unit.depth = unit.families.length ? parentBandDepth + routingDepth + 76 : depth(unit.members[0]) + 64
   }
   const levels = [...new Set(queue.map(u => u.level))].sort((a, b) => a - b)
   const logical = new Map<string, Point>() // x is cross-axis, y is generation-axis.
@@ -163,9 +163,12 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
         const p = unit.members[0]; logical.set(p.id, { x: unit.left, y: rowTop }); continue
       }
       const sharedRowWidth = unit.shared.reduce((n, p) => n + cross(p), 0) + GAP * Math.max(0, unit.shared.length - 1)
-      let lane = unit.left + (sharedRowWidth ? sharedRowWidth + UNIT_GAP : 0)
-      const parentTop = rowTop
-      const parentBandDepth = Math.max(0, ...unit.members.map(depth), ...unit.families.filter(f => f.parents.length === 1).map(() => horizontal ? w : Math.max(...Object.values(heights))))
+      const stackShared = stackedShared(unit)
+      let lane = stackShared ? unit.left : unit.left + (sharedRowWidth ? sharedRowWidth + UNIT_GAP : 0)
+      const sharedDepth = Math.max(0, ...unit.shared.map(depth))
+      const parentTop = stackShared ? rowTop + sharedDepth + 52 : rowTop
+      const partnerDepth = Math.max(0, ...unit.members.filter(p => !unit.shared.includes(p)).map(depth), ...unit.families.filter(f => f.parents.length === 1).map(() => horizontal ? w : Math.max(...Object.values(heights))))
+      const parentBandDepth = stackShared ? sharedDepth + 52 + partnerDepth : Math.max(sharedDepth, partnerDepth)
       const junctionTop = rowTop + parentBandDepth + 24 + unit.families.length * 10
       for (const f of unit.families) {
         const width = unit.widths.get(f.key)!, center = lane + width / 2
@@ -190,7 +193,7 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
           for (const child of children) { slots.set(child, childLeft + child.width / 2); childLeft += child.width + GAP }
         }
         const unknown = f.parents.length === 1 && unit.shared.length ? box({ u: center - cross(f.parents[0]) / 2, v: parentTop, cross: cross(f.parents[0]), depth: parentBandDepth }) : undefined
-        panels.push({ family: f, compact: grids.has(f.key), color: panels.length % 6, junction: screen(node.x, node.y), unknown, ...box({ u: lane + 4, v: parentTop - 18, cross: width - 8, depth: junctionTop - parentTop + 36 }) })
+        panels.push({ family: f, compact: false, color: panels.length % 6, junction: screen(node.x, node.y), unknown, ...box({ u: lane + 4, v: parentTop - 18, cross: width - 8, depth: junctionTop - parentTop + 36 }) })
         lane += width + GAP
       }
       const hubs = [...unit.shared].sort((a, b) => {
@@ -198,10 +201,11 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
         return center(a) - center(b) || compare(a, b)
       })
       const totalHubWidth = hubs.reduce((n, p) => n + cross(p), 0) + GAP * Math.max(0, hubs.length - 1)
-      let hubX = unit.left
-      // On a narrow screen the ONE common-parent card follows the chosen lane.
-      // All people/edges stay in the same graph; no saved coordinate is written.
-      if (options.narrow && grids.size && hubs.length === 1) {
+      let hubX = stackShared ? unit.left + (unit.width - totalHubWidth) / 2 : unit.left
+      // With up to three partners, keep the shared person on the same adult row.
+      // Beyond three partners, place that one common person above the aligned
+      // partner row; this is a visual hierarchy only and never rewrites data.
+      if (!stackShared && options.narrow && grids.size && hubs.length === 1) {
         const focused = unit.families.find(f => f.key === options.focusedFamily) || unit.families[0]
         const focusedLane = laneOf.get(focused.key)!
         hubX = focusedLane.left + PAD
@@ -250,8 +254,8 @@ export function computeUnionOverview(people: NormalizedPerson[], orientation = '
       const start = { x: pos.x + cross(p) * port, y: pos.y + depth(p) }
       const input = node
       if (unit.shared.includes(p)) {
-        const parentBandDepth = Math.max(...unit.members.map(depth))
-        const corridor = unit.top + parentBandDepth + 8 + fIndex * 10
+        const corridorBase = stackedShared(unit) ? parentTop + Math.max(...unit.members.filter(member => !unit.shared.includes(member)).map(depth)) : unit.top + Math.max(...unit.members.map(depth))
+        const corridor = corridorBase + 8 + fIndex * 10
         const side = lane.left + 12 + index * 8
         add(f, 'parent', [start, { x: start.x, y: corridor }, { x: side, y: corridor }, { x: side, y: node.y - 12 }, { x: input.x, y: node.y - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
       } else add(f, 'parent', [start, { x: start.x, y: node.y - 12 }, { x: input.x, y: node.y - 12 }, input].map(p => screen(p.x, p.y)), [p.id])
