@@ -81,14 +81,17 @@ for (const orientation of ['vertical', 'horizontal']) for (const style of ['squa
   })
 }
 
-test('4x7 geometry keeps every generation on one visual axis', () => {
+test('4x7 geometry uses common parent, partners, children as three clear tiers', () => {
   for (const orientation of ['vertical', 'horizontal'] as const) {
     const scene = computeUnionOverview(people, orientation, 'square')!
-    for (const generation of [...new Set(people.map(person => person.generation))]) {
-      const row = people.filter(person => person.generation === generation)
-      const axis = row.map(person => orientation === 'horizontal' ? scene.positions[person.id].x : scene.positions[person.id].y)
-      expect(new Set(axis).size, `generation ${generation} must be aligned in ${orientation}`).toBe(1)
-    }
+    const axis = (id: string) => orientation === 'horizontal' ? scene.positions[id].x : scene.positions[id].y
+    const partnerAxis = partners.map(partner => axis(partner.id))
+    const childAxis = partners.flatMap((_, index) => childrenOf(index).map(axis))
+    expect(new Set(partnerAxis).size, `partners must align in ${orientation}`).toBe(1)
+    expect(new Set(childAxis).size, `children must align in ${orientation}`).toBe(1)
+    expect(axis('father')).toBeLessThan(partnerAxis[0])
+    expect(partnerAxis[0]).toBeLessThan(childAxis[0])
+    expect(new Set(Object.values(scene.cardSizes).map(size => `${size.w}x${size.h}`)).size, 'all roles use the same card dimensions').toBe(1)
   }
 })
 
@@ -119,7 +122,7 @@ async function fixture(page: Page, width: number, layout = 'vertical', dark = fa
   })
   await page.goto(`/tree/${treeId}`)
   await expect(page.getByTestId('tree-person-card')).toHaveCount(33)
-  await expect(page.locator('[data-testid="tree-person-card"][data-compact="true"]')).toHaveCount(width < 768 ? 33 : 28)
+  await expect(page.locator('[data-testid="tree-person-card"][data-compact="true"]')).toHaveCount(0)
   return { errors, writes }
 }
 
@@ -243,30 +246,18 @@ test('4x7 Families mode lists seven children under each exact parent pair', asyn
 })
 
 
-test('4x7 full-card switch and narrow resize preserve all people without saving coordinates', async ({ page }) => {
+test('4x7 all person cards share the same dimensions and interaction model', async ({ page }) => {
   const state = await fixture(page, 1600)
-  await page.getByTestId('compact-siblings').click()
-  await expect(page.locator('[data-compact="true"]')).toHaveCount(0)
-  await checkRenderedGraph(page)
-  await page.getByTestId('compact-siblings').click()
-  await expect(page.locator('[data-compact="true"]')).toHaveCount(28)
-  await page.setViewportSize({ width: 375, height: 900 })
-  await expect(page.locator('[data-compact="true"]')).toHaveCount(33)
-  await checkRenderedGraph(page)
-  await expect(page.locator('[data-testid="tree-person-card"][data-person-id="father"]')).toBeInViewport()
-  expect(state.writes).toEqual([]); expect(state.errors).toEqual([])
-})
-
-test('compact sibling cards keep legible names and keyboard access to their original person', async ({ page }) => {
-  await fixture(page, 1600)
-  const names = page.locator('[data-compact="true"] [data-person-name]')
-  await expect(names).toHaveCount(28)
-  expect(await names.evaluateAll(elements => elements.every(el => {
-    const card = el.closest('[data-testid="tree-person-card"]') as HTMLElement
-    const scale = card.getBoundingClientRect().width / card.offsetWidth
-    return parseFloat(getComputedStyle(el).fontSize) * scale >= 11
-  }))).toBe(true)
+  const cards = page.getByTestId('tree-person-card')
+  const dimensions = await cards.evaluateAll(elements => [...new Set(elements.map(el => {
+    const r = (el as HTMLElement).getBoundingClientRect()
+    return `${Math.round(r.width)}x${Math.round(r.height)}`
+  }))])
+  expect(dimensions).toEqual(['120x150'])
+  await expect(page.getByTestId('compact-siblings')).toHaveCount(0)
   const child = page.locator('[data-testid="tree-person-card"][data-person-id="child-0-0"]')
-  await child.focus(); await page.keyboard.press('Enter')
-  await expect(page.locator('aside')).toContainText('Issa')
+  const father = page.locator('[data-testid="tree-person-card"][data-person-id="father"]')
+  await child.focus(); await page.keyboard.press('Enter'); await expect(page.locator('aside')).toContainText('Issa')
+  await father.focus(); await page.keyboard.press('Enter'); await expect(page.locator('aside')).toContainText('Moussa')
+  expect(state.writes).toEqual([]); expect(state.errors).toEqual([])
 })
